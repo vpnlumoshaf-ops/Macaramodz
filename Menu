@@ -1,11 +1,10 @@
--- Blox Fruit Master Hub - Admin Tienphat (Fixed Quest & Extreme Fast Attack & Target ESP)
+-- Blox Fruit Master Hub - Admin Tienphat (Ultimate Fixed: ESP Bug, Quest NPC & Extreme Attack)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
-local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 
 if CoreGui:FindFirstChild("AdminTienphatBloxFruit") then
@@ -15,10 +14,9 @@ if CoreGui:FindFirstChild("AdminTienphatToggle") then
     CoreGui.AdminTienphatToggle:Destroy()
 end
 
--- Biến lưu cấu hình
 local Config = {
     AutoFarm = false,
-    AttackSpeed = "Siêu nhanh", -- Mặc định ép siêu nhanh
+    AttackSpeed = "Tối thượng (Cực nhanh)",
     FlySpeed = 350,
     ShowESP = true
 }
@@ -50,7 +48,6 @@ Title.TextColor3 = Color3.fromRGB(255, 170, 0)
 Title.TextSize = 15
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Nút Thu nhỏ (-)
 local MinimizeBtn = Instance.new("TextButton")
 MinimizeBtn.Parent = MainFrame
 MinimizeBtn.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
@@ -61,7 +58,6 @@ MinimizeBtn.Text = "-"
 MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinimizeBtn.TextSize = 16
 
--- Nút Đóng (X)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Parent = MainFrame
 CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
@@ -72,7 +68,6 @@ CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.TextSize = 14
 
--- Container
 local MainContainer = Instance.new("ScrollingFrame")
 MainContainer.Parent = MainFrame
 MainContainer.Position = UDim2.new(0, 0, 0, 40)
@@ -107,31 +102,30 @@ end
 createToggle(MainContainer, "Auto Farm (Nhận Q + Tự đánh quái)", false, function(v) Config.AutoFarm = v end)
 createToggle(MainContainer, "ESP Box & Line (Mục tiêu nhiệm vụ)", true, function(v) Config.ShowESP = v end)
 
--- Chọn tốc độ đánh
 local atkLabel = Instance.new("TextLabel", MainContainer)
 atkLabel.Position = UDim2.new(0.05, 0, 0, yPos)
 atkLabel.Size = UDim2.new(0.9, 0, 0, 20)
 atkLabel.Font = Enum.Font.SourceSansBold
-atkLabel.Text = "Tốc độ đánh: Siêu nhanh"
+atkLabel.Text = "Tốc độ đánh: Tối thượng (Cực nhanh)"
 atkLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 atkLabel.TextSize = 13
 yPos = yPos + 22
 
-local speedsAtk = {"Bình thường", "Siêu nhanh", "Tối thượng (0s delay)"}
+local speedsAtk = {"Bình thường", "Siêu nhanh", "Tối thượng (Cực nhanh)"}
 for i, spdName in ipairs(speedsAtk) do
     local btn = Instance.new("TextButton", MainContainer)
     btn.Position = UDim2.new(0.05 + (i-1)*0.3, 0, 0, yPos)
     btn.Size = UDim2.new(0.28, 0, 0, 28)
     btn.Text = spdName
-    btn.BackgroundColor3 = (i == 2) and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(55, 55, 55)
+    btn.BackgroundColor3 = (i == 3) and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(55, 55, 55)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 11
+    btn.TextSize = 10
     
     btn.MouseButton1Click:Connect(function()
         Config.AttackSpeed = spdName
         atkLabel.Text = "Tốc độ đánh: " .. spdName
         for _, child in pairs(MainContainer:GetChildren()) do
-            if child:IsA("TextButton") and (child.Text == "Bình thường" or child.Text == "Siêu nhanh" or child.Text == "Tối thượng (0s delay)") then
+            if child:IsA("TextButton") and (child.Text == "Bình thường" or child.Text == "Siêu nhanh" or child.Text == "Tối thượng (Cực nhanh)") then
                 child.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
             end
         end
@@ -140,7 +134,7 @@ for i, spdName in ipairs(speedsAtk) do
 end
 yPos = yPos + 45
 
--- Nút bật tắt menu thu nhỏ ngoài màn hình
+-- Nút mở/đóng menu phụ
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "AdminTienphatToggle"
 ToggleGui.Parent = CoreGui
@@ -171,29 +165,18 @@ CloseBtn.MouseButton1Click:Connect(function()
     ToggleGui:Destroy()
 end)
 
--- 2. HỆ THỐNG ESP BOX & LINE (ĐỒ HỌA MỤC TIÊU)
+-- 2. HỆ THỐNG ESP BOX & LINE (ĐÃ FIX LỖI TẠO BẢN SAO & THU NHỎ GỌN GÀNG)
 local espCache = {}
 local function clearESP()
-    for _, obj in pairs(espCache) do
-        if obj then pcall(function() obj:Remove() end) end
+    for _, elements in pairs(espCache) do
+        if elements.Box then pcall(function() elements.Box:Remove() end) end
+        if elements.Line then pcall(function() elements.Line:Remove() end) end
     end
     espCache = {}
 end
 
--- 3. HỆ THỐNG AUTO FARM, NHẬN NHIỆM VỤ & ĐÁNH TỐC ĐỘ CAO
 local lastQuestTick = 0
 local camera = Workspace.CurrentCamera
-
-local function getCurrentQuestTarget()
-    local success, questData = pcall(function()
-        return LocalPlayer.PlayerGui.Main.Quest.Visible, LocalPlayer.PlayerGui.Main.Quest.Container.QuestTitle.Text
-    end)
-    if success and questData then
-        -- Trích xuất tên quái từ bảng nhiệm vụ của game
-        return LocalPlayer.PlayerGui.Main.Quest.Visible
-    end
-    return false
-end
 
 RunService.RenderStepped:Connect(function()
     if not ScreenGui.Parent then 
@@ -201,37 +184,20 @@ RunService.RenderStepped:Connect(function()
         return 
     end
 
-    -- Xử lý ESP quái nhiệm vụ
+    -- Xử lý ESP Box & Line thu nhỏ tinh tế
     if Config.ShowESP then
-        -- Thu thập danh sách tên quái mục tiêu hiện tại
-        local targetMobNames = {}
-        pcall(function()
-            local qTitle = LocalPlayer.PlayerGui.Main.Quest.Container.QuestTitle.Text
-            if qTitle:find("Bandit") then table.insert(targetMobNames, "Bandit")
-            elseif qTitle:find("Monkey") then table.insert(targetMobNames, "Monkey")
-            elseif qTitle:find("Gorilla") then table.insert(targetMobNames, "Gorilla")
-            elseif qTitle:find("Pirate") then table.insert(targetMobNames, "Pirate")
-            elseif qTitle:find("Brute") then table.insert(targetMobNames, "Brute")
-            elseif qTitle:find("Desert Bandit") or qTitle:find("DesertBandit") then table.insert(targetMobNames, "Desert Bandit")
-            elseif qTitle:find("Snow Trooper") then table.insert(targetMobNames, "Snow Trooper")
-            else table.insert(targetMobNames, "") -- Nếu chưa rõ hiện tất cả quanh đó
-            end
-        end)
-
         local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
+        local activeFound = {}
         if folderEnemies then
-            local enemies = folderEnemies:GetChildren()
-            local activeFound = {}
-            for _, mob in ipairs(enemies) do
+            for _, mob in ipairs(folderEnemies:GetChildren()) do
                 local hrp = mob:FindFirstChild("HumanoidRootPart")
                 local hum = mob:FindFirstChildOfClass("Humanoid")
                 if hrp and hum and hum.Health > 0 then
-                    -- Tạo hoặc cập nhật Drawing Box & Line
                     if not espCache[mob] then
                         local box = Drawing.new("Square")
                         box.Visible = false
-                        box.Color = Color3.fromRGB(255, 0, 0)
-                        box.Thickness = 1.5
+                        box.Color = Color3.fromRGB(255, 50, 50)
+                        box.Thickness = 1
                         box.Filled = false
 
                         local line = Drawing.new("Line")
@@ -244,8 +210,8 @@ RunService.RenderStepped:Connect(function()
 
                     local vector, onScreen = camera:WorldToViewportPoint(hrp.Position)
                     if onScreen then
-                        local scale = math.clamp(1000 / (camera.CFrame.Position - hrp.Position).Magnitude, 0.5, 3)
-                        local boxW, boxH = 35 * scale, 55 * scale
+                        local scale = math.clamp(600 / (camera.CFrame.Position - hrp.Position).Magnitude, 0.3, 2)
+                        local boxW, boxH = 26 * scale, 42 * scale -- Đã thu nhỏ kích thước box
                         
                         local boxObj = espCache[mob].Box
                         boxObj.Size = Vector2.new(boxW, boxH)
@@ -256,6 +222,7 @@ RunService.RenderStepped:Connect(function()
                         lineObj.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
                         lineObj.To = Vector2.new(vector.X, vector.Y)
                         lineObj.Visible = true
+                        
                         activeFound[mob] = true
                     else
                         espCache[mob].Box.Visible = false
@@ -263,21 +230,21 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
             end
-            -- Dọn dẹp ESP quái đã chết
-            for m, elements in pairs(espCache) do
-                if not activeFound[m] then
-                    pcall(function()
-                        elements.Box.Visible = false
-                        elements.Line.Visible = false
-                    end)
-                end
+        end
+        -- Dọn dẹp quái đã chết hoặc mất tầm nhìn
+        for m, elements in pairs(espCache) do
+            if not activeFound[m] then
+                pcall(function()
+                    elements.Box.Visible = false
+                    elements.Line.Visible = false
+                end)
             end
         end
     else
         clearESP()
     end
 
-    -- Xử lý Logic Auto Farm
+    -- 3. HỆ THỐNG AUTO FARM, NHẬN NHIỆM VỤ CHUẨN XÁC & ĐÁNH SIÊU TỐC
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
@@ -285,11 +252,11 @@ RunService.RenderStepped:Connect(function()
                 local hrp = char.HumanoidRootPart
                 local hum = char:FindFirstChildOfClass("Humanoid")
 
-                -- 1. Tự động nhận nhiệm vụ chuẩn xác mỗi 2 giây nếu chưa có bảng Q hiển thị
+                -- Tự động nhận nhiệm vụ chuẩn Sea 1 theo cấp độ
                 local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
                 local questGui = mainGui and mainGui:FindFirstChild("Quest")
                 if questGui and not questGui.Visible then
-                    if tick() - lastQuestTick > 2 then
+                    if tick() - lastQuestTick > 1.5 then
                         lastQuestTick = tick()
                         local level = LocalPlayer.Data.Level.Value
                         local questArgs = {"StartQuest", "Bandit", 1}
@@ -315,7 +282,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- 2. Tìm quái gần nhất để bay đến và đánh
+                -- Tìm quái gần nhất để bay tới
                 local targetMob = nil
                 local shortestDist = math.huge
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
@@ -335,38 +302,26 @@ RunService.RenderStepped:Connect(function()
 
                 if targetMob then
                     local mHrp = targetMob.HumanoidRootPart
-                    -- Bay mượt bám sát phía trên đầu quái
-                    hrp.CFrame = hrp.CFrame:Lerp(mHrp.CFrame + Vector3.new(0, 7, 0), Config.FlySpeed / 800)
+                    hrp.CFrame = hrp.CFrame:Lerp(mHrp.CFrame + Vector3.new(0, 7, 0), Config.FlySpeed / 700)
 
-                    -- 3. Cơ chế đánh cực nhanh tối ưu hóa đa tầng qua VirtualUser & Tool:Activate()
+                    -- Cơ chế đánh cực nhanh đa luồng qua VirtualUser & Tool:Activate()
                     local tool = char:FindFirstChildOfClass("Tool")
                     if tool then
-                        if Config.AttackSpeed == "Tối thượng (0s delay)" then
-                            pcall(function()
-                                tool:Activate()
-                                VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
+                        pcall(function()
+                            tool:Activate()
+                            VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
+                            task.spawn(function()
                                 VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame)
                             end)
-                        elseif Config.AttackSpeed == "Siêu nhanh" then
-                            pcall(function()
-                                tool:Activate()
-                                VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
-                            end)
-                            task.spawn(function()
-                                task.wait(0.02)
-                                pcall(function() VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame) end)
-                            end)
-                        else
-                            tool:Activate()
-                            task.wait(0.05)
-                        end
+                        end)
                     else
-                        -- Tự động cầm vũ khí từ balo lên nếu chưa cầm
                         local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
                         if backpack then
-                            local firstTool = backpack:FindFirstChildOfClass("Tool")
-                            if firstTool then
-                                hum:EquipTool(firstTool)
+                            for _, t in pairs(backpack:GetChildren()) do
+                                if t:IsA("Tool") then
+                                    hum:EquipTool(t)
+                                    break
+                                end
                             end
                         end
                     end
@@ -375,4 +330,3 @@ RunService.RenderStepped:Connect(function()
         end)
     end
 end)
-
