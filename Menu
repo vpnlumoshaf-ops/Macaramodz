@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Ultimate VIP Edition: Fixed Exact NPC Quest Positions & Smooth Farm)
+-- Blox Fruit Master Hub - Admin Tienphat (Ultimate VIP Edition: Universal Level Quest Fix & Slim ESP)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -123,8 +123,8 @@ local function createToggle(parent, text, defaultVal, callback)
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Fix Tọa Độ Q + Gom/Freeze + Đánh Nhanh)", false, function(v) Config.AutoFarm = v end)
-createToggle(MainContainer, "ESP Box & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
+createToggle(MainContainer, "Auto Farm (Fix Level Q + Gom/Freeze + Đánh Nhanh)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "ESP Box Nhỏ Gọn & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
 createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
     Config.FixLag = v 
@@ -197,19 +197,19 @@ ToggleGui.Name = "AdminTienphatToggle"
 ToggleGui.Parent = CoreGui
 ToggleGui.ResetOnSpawn = false
 
-TheOpenBtn = Instance.new("TextButton")
-TheOpenBtn.Parent = ToggleGui
-TheOpenBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-TheOpenBtn.Position = UDim2.new(0, 15, 0.5, -20)
-TheOpenBtn.Size = UDim2.new(0, 80, 0, 40)
-TheOpenBtn.Font = Enum.Font.SourceSansBold
-TheOpenBtn.Text = "Tienphat Hub"
-TheOpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-TheOpenBtn.TextSize = 12
-TheOpenBtn.Draggable = true
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Parent = ToggleGui
+OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+OpenBtn.Position = UDim2.new(0, 15, 0.5, -20)
+OpenBtn.Size = UDim2.new(0, 80, 0, 40)
+OpenBtn.Font = Enum.Font.SourceSansBold
+OpenBtn.Text = "Tienphat Hub"
+OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenBtn.TextSize = 12
+OpenBtn.Draggable = true
 
 local isOpen = true
-TheOpenBtn.MouseButton1Click:Connect(function()
+OpenBtn.MouseButton1Click:Connect(function()
     isOpen = not isOpen
     MainFrame.Visible = isOpen
 end)
@@ -241,9 +241,26 @@ end
 local lastQuestTick = 0
 local camera = Workspace.CurrentCamera
 
--- ĐÃ FIX CHUẨN TỌA ĐỘ VỊ TRÍ CÁC NPC NHẬN NHIỆM VỤ CHÍNH XÁC TRONG BLOX FRUIT (SEA 1)
+-- HỆ THỐNG ĐỌC LEVEL AN TOÀN VÀ XÁC ĐỊNH TỌA ĐỘ Q CHUẨN XÁC
+local function getPlayerLevel()
+    local success, lvl = pcall(function()
+        return LocalPlayer.Data.Level.Value
+    end)
+    if success and lvl then
+        return lvl
+    end
+    -- Fallback nếu đường dẫn Data khác
+    local success2, lvl2 = pcall(function()
+        return LocalPlayer.leaderstats.Level.Value
+    end)
+    if success2 and lvl2 then
+        return lvl2
+    end
+    return 1
+end
+
 local function getQuestNPCData()
-    local level = LocalPlayer.Data.Level.Value
+    local level = getPlayerLevel()
     if level >= 10 and level < 15 then
         return "Monkey", CFrame.new(-1601, 37, 153), {"StartQuest", "Monkey", 1}
     elseif level >= 15 and level < 30 then
@@ -257,7 +274,6 @@ local function getQuestNPCData()
     elseif level >= 120 and level < 150 then
         return "SnowBandit", CFrame.new(1385, 87, -1298), {"StartQuest", "SnowBandit", 1}
     else
-        -- Mặc định Bandit (Đảo Khởi Đầu)
         return "Bandit", CFrame.new(1059, 17, 1179), {"StartQuest", "Bandit", 1}
     end
 end
@@ -272,7 +288,7 @@ RunService.RenderStepped:Connect(function()
         updateWeaponButtons()
     end
 
-    -- ESP Quái
+    -- ESP Quái (Đã tinh chỉnh kích thước box nhỏ gọn, ôm sát)
     if Config.ShowESP then
         local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
         local activeFound = {}
@@ -298,8 +314,9 @@ RunService.RenderStepped:Connect(function()
 
                     local vector, onScreen = camera:WorldToViewportPoint(hrp.Position)
                     if onScreen then
-                        local scale = math.clamp(600 / (camera.CFrame.Position - hrp.Position).Magnitude, 0.3, 2)
-                        local boxW, boxH = 26 * scale, 42 * scale
+                        local dist = (camera.CFrame.Position - hrp.Position).Magnitude
+                        local scale = math.clamp(400 / dist, 0.2, 1.5) -- Đã thu nhỏ hệ số scale để box nhỏ gọn hơn
+                        local boxW, boxH = 18 * scale, 30 * scale
                         
                         local boxObj = espCache[mob].Box
                         boxObj.Size = Vector2.new(boxW, boxH)
@@ -378,7 +395,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 4. AUTO FARM, TÌM NPC Q CHUẨN XÁC, GÔM & FREEZE QUÁI, ĐÁNH SIÊU TỐC
+    -- 4. AUTO FARM, NHẬN Q CHUẨN XÁC, GÔM & FREEZE QUÁI, ĐÁNH NHANH
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
@@ -415,8 +432,7 @@ RunService.RenderStepped:Connect(function()
                 local mobNameNeeded, npcPos, questArgs = getQuestNPCData()
 
                 if questGui and not questGui.Visible then
-                    -- Bay tới đúng vị trí NPC giao nhiệm vụ đã fix chuẩn
-                    if (hrp.Position - npcPos.Position).Magnitude > 4 then
+                    if (hrp.Position - npcPos.Position).Magnitude > 5 then
                         hrp.CFrame = CFrame.new(npcPos.Position + Vector3.new(0, 3, 0))
                     else
                         if tick() - lastQuestTick > 1.2 then
@@ -430,7 +446,7 @@ RunService.RenderStepped:Connect(function()
                     return
                 end
 
-                -- Tìm quái, gom toàn bộ quái trong 100m đè sát lên đầu và khóa cứng (Freeze)
+                -- Tìm và gom toàn bộ quái trong 100m đè sát lên đầu, khóa cứng (Freeze)
                 local targetMob = nil
                 local shortestDist = math.huge
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
