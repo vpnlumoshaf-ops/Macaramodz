@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Ultimate Fixed: ESP Bug, Quest NPC & Extreme Attack)
+-- Blox Fruit Master Hub - Admin Tienphat (ESP Weapon Scanner & Smart Auto Equip)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -16,9 +16,9 @@ end
 
 local Config = {
     AutoFarm = false,
-    AttackSpeed = "Tối thượng (Cực nhanh)",
     FlySpeed = 350,
-    ShowESP = true
+    ShowESP = true,
+    ShowWeaponScanner = true
 }
 
 -- 1. GIAO DIỆN CHÍNH
@@ -32,12 +32,11 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -190)
-MainFrame.Size = UDim2.new(0, 400, 0, 380)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -210)
+MainFrame.Size = UDim2.new(0, 400, 0, 400)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
--- Thanh tiêu đề
 local Title = Instance.new("TextLabel")
 Title.Parent = MainFrame
 Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -73,7 +72,7 @@ MainContainer.Parent = MainFrame
 MainContainer.Position = UDim2.new(0, 0, 0, 40)
 MainContainer.Size = UDim2.new(1, 0, 1, -40)
 MainContainer.BackgroundTransparency = 1
-MainContainer.CanvasSize = UDim2.new(0, 0, 0, 500)
+MainContainer.CanvasSize = UDim2.new(0, 0, 0, 480)
 
 local yPos = 15
 
@@ -95,44 +94,13 @@ local function createToggle(parent, text, defaultVal, callback)
         btn.BackgroundColor3 = state and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45, 45, 45)
         callback(state)
     end)
-    yPos = yPos + 42
+    yPos = yPos + 45
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Nhận Q + Tự đánh quái)", false, function(v) Config.AutoFarm = v end)
-createToggle(MainContainer, "ESP Box & Line (Mục tiêu nhiệm vụ)", true, function(v) Config.ShowESP = v end)
-
-local atkLabel = Instance.new("TextLabel", MainContainer)
-atkLabel.Position = UDim2.new(0.05, 0, 0, yPos)
-atkLabel.Size = UDim2.new(0.9, 0, 0, 20)
-atkLabel.Font = Enum.Font.SourceSansBold
-atkLabel.Text = "Tốc độ đánh: Tối thượng (Cực nhanh)"
-atkLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-atkLabel.TextSize = 13
-yPos = yPos + 22
-
-local speedsAtk = {"Bình thường", "Siêu nhanh", "Tối thượng (Cực nhanh)"}
-for i, spdName in ipairs(speedsAtk) do
-    local btn = Instance.new("TextButton", MainContainer)
-    btn.Position = UDim2.new(0.05 + (i-1)*0.3, 0, 0, yPos)
-    btn.Size = UDim2.new(0.28, 0, 0, 28)
-    btn.Text = spdName
-    btn.BackgroundColor3 = (i == 3) and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(55, 55, 55)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 10
-    
-    btn.MouseButton1Click:Connect(function()
-        Config.AttackSpeed = spdName
-        atkLabel.Text = "Tốc độ đánh: " .. spdName
-        for _, child in pairs(MainContainer:GetChildren()) do
-            if child:IsA("TextButton") and (child.Text == "Bình thường" or child.Text == "Siêu nhanh" or child.Text == "Tối thượng (Cực nhanh)") then
-                child.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-            end
-        end
-        btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-    end)
-end
-yPos = yPos + 45
+createToggle(MainContainer, "Auto Farm (Nhận Q + Tự Đánh Siêu Tốc)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "ESP Box & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
+createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
 
 -- Nút mở/đóng menu phụ
 local ToggleGui = Instance.new("ScreenGui")
@@ -165,14 +133,18 @@ CloseBtn.MouseButton1Click:Connect(function()
     ToggleGui:Destroy()
 end)
 
--- 2. HỆ THỐNG ESP BOX & LINE (ĐÃ FIX LỖI TẠO BẢN SAO & THU NHỎ GỌN GÀNG)
+-- 2. HỆ THỐNG ESP & WEAPON SCANNER
 local espCache = {}
-local function clearESP()
+local weaponScannerCache = {}
+
+local function clearAllESP()
     for _, elements in pairs(espCache) do
-        if elements.Box then pcall(function() elements.Box:Remove() end) end
-        if elements.Line then pcall(function() elements.Line:Remove() end) end
+        if elements.Box then elements.Box.Visible = false end
+        if elements.Line then elements.Line.Visible = false end
     end
-    espCache = {}
+    for _, textObj in pairs(weaponScannerCache) do
+        if textObj then textObj.Visible = false end
+    end
 end
 
 local lastQuestTick = 0
@@ -180,11 +152,11 @@ local camera = Workspace.CurrentCamera
 
 RunService.RenderStepped:Connect(function()
     if not ScreenGui.Parent then 
-        clearESP()
+        clearAllESP()
         return 
     end
 
-    -- Xử lý ESP Box & Line thu nhỏ tinh tế
+    -- Xử lý ESP Quái
     if Config.ShowESP then
         local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
         local activeFound = {}
@@ -211,7 +183,7 @@ RunService.RenderStepped:Connect(function()
                     local vector, onScreen = camera:WorldToViewportPoint(hrp.Position)
                     if onScreen then
                         local scale = math.clamp(600 / (camera.CFrame.Position - hrp.Position).Magnitude, 0.3, 2)
-                        local boxW, boxH = 26 * scale, 42 * scale -- Đã thu nhỏ kích thước box
+                        local boxW, boxH = 26 * scale, 42 * scale
                         
                         local boxObj = espCache[mob].Box
                         boxObj.Size = Vector2.new(boxW, boxH)
@@ -231,20 +203,71 @@ RunService.RenderStepped:Connect(function()
                 end
             end
         end
-        -- Dọn dẹp quái đã chết hoặc mất tầm nhìn
         for m, elements in pairs(espCache) do
             if not activeFound[m] then
-                pcall(function()
-                    elements.Box.Visible = false
-                    elements.Line.Visible = false
-                end)
+                if elements.Box then elements.Box.Visible = false end
+                if elements.Line then elements.Line.Visible = false end
             end
         end
     else
-        clearESP()
+        for _, elements in pairs(espCache) do
+            if elements.Box then elements.Box.Visible = false end
+            if elements.Line then elements.Line.Visible = false end
+        end
     end
 
-    -- 3. HỆ THỐNG AUTO FARM, NHẬN NHIỆM VỤ CHUẨN XÁC & ĐÁNH SIÊU TỐC
+    -- Xử lý quét Vũ khí / Katana / Fighting Style người chơi xung quanh
+    if Config.ShowWeaponScanner then
+        local activePlayers = {}
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                local pChar = plr.Character
+                local pHrp = pChar.HumanoidRootPart
+                local pHum = pChar:FindFirstChildOfClass("Humanoid")
+                
+                if pHum and pHum.Health > 0 then
+                    -- Lấy tên vũ khí đang cầm trên tay
+                    local activeTool = "Tay không / Chưa cầm"
+                    local toolInHand = pChar:FindFirstChildOfClass("Tool")
+                    if toolInHand then
+                        activeTool = toolInHand.Name
+                    end
+
+                    if not weaponScannerCache[plr] then
+                        local tObj = Drawing.new("Text")
+                        tObj.Visible = false
+                        tObj.Size = 14
+                        tObj.Color = Color3.fromRGB(0, 255, 255)
+                        tObj.Center = true
+                        tObj.Outline = true
+                        weaponScannerCache[plr] = tObj
+                    end
+
+                    local vector, onScreen = camera:WorldToViewportPoint(pHrp.Position + Vector3.new(0, 3, 0))
+                    if onScreen then
+                        local txtObj = weaponScannerCache[plr]
+                        txtObj.Text = "[" .. plr.Name .. "] ⚔️ Đang cầm: " .. activeTool
+                        txtObj.Position = Vector2.new(vector.X, vector.Y)
+                        txtObj.Visible = true
+                        activePlayers[plr] = true
+                    else
+                        weaponScannerCache[plr].Visible = false
+                    end
+                end
+            end
+        end
+        for p, tObj in pairs(weaponScannerCache) do
+            if not activePlayers[p] then
+                tObj.Visible = false
+            end
+        end
+    else
+        for _, tObj in pairs(weaponScannerCache) do
+            tObj.Visible = false
+        end
+    end
+
+    -- 3. HỆ THỐNG AUTO FARM, NHẬN NHIỆM VỤ & TỰ ĐỘNG CHỌN VŨ KHÍ CHIẾN ĐẤU
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
@@ -252,11 +275,29 @@ RunService.RenderStepped:Connect(function()
                 local hrp = char.HumanoidRootPart
                 local hum = char:FindFirstChildOfClass("Humanoid")
 
-                -- Tự động nhận nhiệm vụ chuẩn Sea 1 theo cấp độ
+                -- Tự động chọn và cầm vũ khí mạnh nhất trong balo (Ưu tiên Katana, Melee, Fruit)
+                local currentTool = char:FindFirstChildOfClass("Tool")
+                if not currentTool then
+                    local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+                    if backpack then
+                        local bestTool = nil
+                        for _, item in ipairs(backpack:GetChildren()) do
+                            if item:IsA("Tool") then
+                                bestTool = item
+                                break
+                            end
+                        end
+                        if bestTool then
+                            hum:EquipTool(bestTool)
+                        end
+                    end
+                end
+
+                -- Nhận nhiệm vụ tự động qua Remote CommF_
                 local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
                 local questGui = mainGui and mainGui:FindFirstChild("Quest")
                 if questGui and not questGui.Visible then
-                    if tick() - lastQuestTick > 1.5 then
+                    if tick() - lastQuestTick > 2 then
                         lastQuestTick = tick()
                         local level = LocalPlayer.Data.Level.Value
                         local questArgs = {"StartQuest", "Bandit", 1}
@@ -282,7 +323,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Tìm quái gần nhất để bay tới
+                -- Tìm quái gần nhất để bay tới và tấn công
                 local targetMob = nil
                 local shortestDist = math.huge
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
@@ -304,26 +345,14 @@ RunService.RenderStepped:Connect(function()
                     local mHrp = targetMob.HumanoidRootPart
                     hrp.CFrame = hrp.CFrame:Lerp(mHrp.CFrame + Vector3.new(0, 7, 0), Config.FlySpeed / 700)
 
-                    -- Cơ chế đánh cực nhanh đa luồng qua VirtualUser & Tool:Activate()
-                    local tool = char:FindFirstChildOfClass("Tool")
-                    if tool then
+                    -- Tấn công siêu tốc liên tục
+                    if currentTool then
                         pcall(function()
-                            tool:Activate()
                             VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
                             task.spawn(function()
                                 VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame)
                             end)
                         end)
-                    else
-                        local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
-                        if backpack then
-                            for _, t in pairs(backpack:GetChildren()) do
-                                if t:IsA("Tool") then
-                                    hum:EquipTool(t)
-                                    break
-                                end
-                            end
-                        end
                     end
                 end
             end
