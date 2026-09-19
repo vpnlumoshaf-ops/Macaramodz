@@ -1,0 +1,761 @@
+-- Kiểm tra chống spam: Nếu menu hoặc nút nổi đã tồn tại thì dừng luôn
+if game.CoreGui:FindFirstChild("TienPhatMenuGui") or game.CoreGui:FindFirstChild("TienPhatToggleGui") then
+    return
+end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Camera = workspace.CurrentCamera
+
+-- 1. TẠO GIAO DIỆN MENU CHÍNH
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "TienPhatMenuGui"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.Position = UDim2.new(0.5, -140, 0.5, -135)
+MainFrame.Size = UDim2.new(0, 280, 0, 290)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+-- Tiêu đề
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Parent = MainFrame
+Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "  ! Tiến Phát Menu"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 15
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Nút ẩn (-)
+local MinBtn = Instance.new("TextButton")
+MinBtn.Parent = MainFrame
+MinBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+MinBtn.Position = UDim2.new(1, -55, 0, 3)
+MinBtn.Size = UDim2.new(0, 24, 0, 24)
+MinBtn.Font = Enum.Font.SourceSansBold
+MinBtn.Text = "-"
+MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinBtn.TextSize = 16
+
+-- Nút đóng (X) có xác nhận
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Parent = MainFrame
+CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+CloseBtn.Position = UDim2.new(1, -27, 0, 3)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+
+-- Khung xác nhận đóng menu
+local ConfirmFrame = Instance.new("Frame")
+ConfirmFrame.Parent = MainFrame
+ConfirmFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ConfirmFrame.Size = UDim2.new(1, 0, 1, 0)
+ConfirmFrame.Visible = false
+ConfirmFrame.ZIndex = 10
+
+local ConfirmText = Instance.new("TextLabel")
+ConfirmText.Parent = ConfirmFrame
+ConfirmText.BackgroundTransparency = 1
+ConfirmText.Position = UDim2.new(0, 0, 0.3, 0)
+ConfirmText.Size = UDim2.new(1, 0, 0, 30)
+ConfirmText.Font = Enum.Font.SourceSansBold
+ConfirmText.Text = "Bạn có chắc muốn tắt menu không?"
+ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
+ConfirmText.TextSize = 15
+ConfirmText.ZIndex = 11
+
+local YesBtn = Instance.new("TextButton")
+YesBtn.Parent = ConfirmFrame
+YesBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+YesBtn.Position = UDim2.new(0.15, 0, 0.55, 0)
+YesBtn.Size = UDim2.new(0.3, 0, 0, 35)
+YesBtn.Font = Enum.Font.SourceSansBold
+YesBtn.Text = "Có"
+YesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+YesBtn.TextSize = 14
+YesBtn.ZIndex = 11
+
+local NoBtn = Instance.new("TextButton")
+NoBtn.Parent = ConfirmFrame
+NoBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+NoBtn.Position = UDim2.new(0.55, 0, 0.55, 0)
+NoBtn.Size = UDim2.new(0.3, 0, 0, 35)
+NoBtn.Font = Enum.Font.SourceSansBold
+NoBtn.Text = "Không"
+NoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoBtn.TextSize = 14
+NoBtn.ZIndex = 11
+
+CloseBtn.MouseButton1Click:Connect(function() ConfirmFrame.Visible = true end)
+NoBtn.MouseButton1Click:Connect(function() ConfirmFrame.Visible = false end)
+YesBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+    local toggleGui = game.CoreGui:FindFirstChild("TienPhatToggleGui")
+    if toggleGui then toggleGui:Destroy() end
+end)
+
+-- Thanh TabBar
+local TabBar = Instance.new("Frame")
+TabBar.Parent = MainFrame
+TabBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+TabBar.Position = UDim2.new(0, 0, 0, 30)
+TabBar.Size = UDim2.new(1, 0, 0, 30)
+
+-- Khung chứa nội dung
+local Container = Instance.new("Frame")
+Container.Parent = MainFrame
+Container.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Container.Position = UDim2.new(0, 0, 0, 60)
+Container.Size = UDim2.new(1, 0, 1, -60)
+
+local TabMain = Instance.new("ScrollingFrame")
+TabMain.Parent = Container
+TabMain.Size = UDim2.new(1, 0, 1, 0)
+TabMain.BackgroundTransparency = 1
+TabMain.Visible = true
+TabMain.CanvasSize = UDim2.new(0, 0, 0, 280)
+
+local TabSettings = Instance.new("ScrollingFrame")
+TabSettings.Parent = Container
+TabSettings.Size = UDim2.new(1, 0, 1, 0)
+TabSettings.BackgroundTransparency = 1
+TabSettings.Visible = false
+TabSettings.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+local TabVisual = Instance.new("ScrollingFrame")
+TabVisual.Parent = Container
+TabVisual.Size = UDim2.new(1, 0, 1, 0)
+TabVisual.BackgroundTransparency = 1
+TabVisual.Visible = false
+TabVisual.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+local function SwitchTab(selectedTab)
+    TabMain.Visible = (selectedTab == TabMain)
+    TabSettings.Visible = (selectedTab == TabSettings)
+    TabVisual.Visible = (selectedTab == TabVisual)
+end
+
+local BtnMain = Instance.new("TextButton")
+BtnMain.Parent = TabBar
+BtnMain.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+BtnMain.Size = UDim2.new(0.333, 0, 1, 0)
+BtnMain.Font = Enum.Font.SourceSansBold
+BtnMain.Text = "Main"
+BtnMain.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnMain.TextSize = 13
+BtnMain.MouseButton1Click:Connect(function() SwitchTab(TabMain) end)
+
+local BtnSettings = Instance.new("TextButton")
+BtnSettings.Parent = TabBar
+BtnSettings.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+BtnSettings.Position = UDim2.new(0.333, 0, 0, 0)
+BtnSettings.Size = UDim2.new(0.333, 0, 1, 0)
+BtnSettings.Font = Enum.Font.SourceSansBold
+BtnSettings.Text = "Settings"
+BtnSettings.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnSettings.TextSize = 13
+BtnSettings.MouseButton1Click:Connect(function() SwitchTab(TabSettings) end)
+
+local BtnVisual = Instance.new("TextButton")
+BtnVisual.Parent = TabBar
+BtnVisual.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+BtnVisual.Position = UDim2.new(0.666, 0, 0, 0)
+BtnVisual.Size = UDim2.new(0.334, 0, 1, 0)
+BtnVisual.Font = Enum.Font.SourceSansBold
+BtnVisual.Text = "Visual"
+BtnVisual.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnVisual.TextSize = 13
+BtnVisual.MouseButton1Click:Connect(function() SwitchTab(TabVisual) end)
+
+-- ===== TAB MAIN: ESP BOX =====
+local EspBtn = Instance.new("TextButton")
+EspBtn.Parent = TabMain
+EspBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+EspBtn.Position = UDim2.new(0.1, 0, 0.03, 0)
+EspBtn.Size = UDim2.new(0.8, 0, 0, 28)
+EspBtn.Font = Enum.Font.SourceSansBold
+EspBtn.Text = "ESP Box: Off"
+EspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspBtn.TextSize = 13
+
+local espEnabled = false
+local espCache = {}
+
+local function RemoveEsp(player)
+    if espCache[player] then
+        if espCache[player].box then espCache[player].box:Remove() end
+        if espCache[player].name then espCache[player].name:Remove() end
+        espCache[player] = nil
+    end
+end
+
+EspBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    if espEnabled then
+        EspBtn.Text = "ESP Box: On"
+        EspBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    else
+        EspBtn.Text = "ESP Box: Off"
+        EspBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        for _, p in pairs(Players:GetPlayers()) do RemoveEsp(p) end
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not espEnabled then return end
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") then
+            local character = player.Character
+            local rootPart = character.HumanoidRootPart
+            local humanoid = character.Humanoid
+            if humanoid.Health > 0 then
+                if not espCache[player] then
+                    local box = Drawing.new("Square")
+                    box.Visible = false; box.Filled = false; box.Thickness = 1.5; box.Color = Color3.fromRGB(0, 255, 0)
+                    local nameTag = Drawing.new("Text")
+                    nameTag.Visible = false; nameTag.Center = true; nameTag.Outline = true; nameTag.Font = 2; nameTag.Size = 16; nameTag.Color = Color3.fromRGB(0, 255, 0)
+                    espCache[player] = {box = box, name = nameTag}
+                end
+                local box, nameTag = espCache[player].box, espCache[player].name
+                local vector, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                if onScreen then
+                    local head = character:FindFirstChild("Head")
+                    local distance = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (rootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude or 0
+                    if head then
+                        local headVector = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                        local legVector = Camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0))
+                        local height = math.abs(headVector.Y - legVector.Y)
+                        local width = height / 2
+                        box.Size = Vector2.new(width, height)
+                        box.Position = Vector2.new(vector.X - width / 2, headVector.Y)
+                        box.Visible = true
+                        nameTag.Text = player.Name .. " [" .. math.floor(distance) .."m]"
+                        nameTag.Position = Vector2.new(vector.X, headVector.Y - 20)
+                        nameTag.Visible = true
+                    else
+                        box.Visible = false; nameTag.Visible = false
+                    end
+                else
+                    box.Visible = false; nameTag.Visible = false
+                end
+            else
+                RemoveEsp(player)
+            end
+        else
+            RemoveEsp(player)
+        end
+    end
+end)
+Players.PlayerRemoving:Connect(function(player) RemoveEsp(player) end)
+
+-- ===== TAB MAIN: ESP TRỨNG =====
+local EspEggBtn = Instance.new("TextButton")
+EspEggBtn.Parent = TabMain
+EspEggBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+EspEggBtn.Position = UDim2.new(0.1, 0, 0.16, 0)
+EspEggBtn.Size = UDim2.new(0.8, 0, 0, 28)
+EspEggBtn.Font = Enum.Font.SourceSansBold
+EspEggBtn.Text = "ESP Trứng: Off"
+EspEggBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspEggBtn.TextSize = 13
+
+local espEggEnabled = false
+local eggDrawings = {}
+
+EspEggBtn.MouseButton1Click:Connect(function()
+    espEggEnabled = not espEggEnabled
+    if espEggEnabled then
+        EspEggBtn.Text = "ESP Trứng: On"
+        EspEggBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    else
+        EspEggBtn.Text = "ESP Trứng: Off"
+        EspEggBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        for _, obj in pairs(eggDrawings) do if obj then obj:Remove() end end
+        eggDrawings = {}
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not espEggEnabled then 
+        for _, obj in pairs(eggDrawings) do if obj then obj.Visible = false end end
+        return 
+    end
+    
+    local activeEggs = {}
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("BasePart") then
+            local nameLower = string.lower(obj.Name)
+            if (nameLower:find("egg") or nameLower:find("trứng")) and not nameLower:find("safe") and not nameLower:find("spawn") and not nameLower:find("machine") and not nameLower:find("máy") and not nameLower:find("roll") and not obj:FindFirstChildOfClass("Humanoid") then
+                local isBeingUsed = false
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        local pos = obj:IsA("Model") and obj:GetPivot().Position or obj.Position
+                        if (p.Character.HumanoidRootPart.Position - pos).Magnitude < 2.5 and p ~= LocalPlayer then
+                            isBeingUsed = true
+                            break
+                        end
+                    end
+                end
+                if not isBeingUsed then
+                    table.insert(activeEggs, obj)
+                end
+            end
+        end
+    end
+    
+    for i, egg in ipairs(activeEggs) do
+        if not eggDrawings[i] then
+            local txt = Drawing.new("Text")
+            txt.Visible = false
+            txt.Center = true
+            txt.Outline = true
+            txt.Font = 2
+            txt.Size = 14
+            txt.Color = Color3.fromRGB(255, 215, 0)
+            eggDrawings[i] = txt
+        end
+        
+        local txtObj = eggDrawings[i]
+        local pos = egg:IsA("Model") and egg:GetPivot().Position or egg.Position
+        local vector, onScreen = Camera:WorldToViewportPoint(pos)
+        if onScreen then
+            local dist = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (pos - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude or 0
+            txtObj.Text = "🥚 Trứng " .. i .. " [" .. math.floor(dist) .. "m]"
+            txtObj.Position = Vector2.new(vector.X, vector.Y)
+            txtObj.Visible = true
+        else
+            txtObj.Visible = false
+        end
+    end
+    for j = #activeEggs + 1, #eggDrawings do
+        if eggDrawings[j] then eggDrawings[j].Visible = false end
+    end
+end)
+
+-- ===== TAB MAIN: ESP KHU VỰC (ĐÃ FIX ĐÚNG TÊN TOAST / BIỂN BÁO VÙNG & LOẠI BỎ SPAWN/SAFE ZONE) =====
+local EspZoneBtn = Instance.new("TextButton")
+EspZoneBtn.Parent = TabMain
+EspZoneBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+EspZoneBtn.Position = UDim2.new(0.1, 0, 0.29, 0)
+EspZoneBtn.Size = UDim2.new(0.8, 0, 0, 28)
+EspZoneBtn.Font = Enum.Font.SourceSansBold
+EspZoneBtn.Text = "ESP Khu Vực: Off"
+EspZoneBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspZoneBtn.TextSize = 13
+
+local espZoneEnabled = false
+local zoneDrawings = {}
+
+EspZoneBtn.MouseButton1Click:Connect(function()
+    espZoneEnabled = not espZoneEnabled
+    if espZoneEnabled then
+        EspZoneBtn.Text = "ESP Khu Vực: On"
+        EspZoneBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    else
+        EspZoneBtn.Text = "ESP Khu Vực: Off"
+        EspZoneBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        for _, obj in pairs(zoneDrawings) do if obj then obj:Remove() end end
+        zoneDrawings = {}
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not espZoneEnabled then
+        for _, obj in pairs(zoneDrawings) do if obj then obj.Visible = false end end
+        return
+    end
+    
+    local zones = {}
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("Part") or obj:IsA("Folder") then
+            local nameLower = string.lower(obj.Name)
+            -- Lọc các mốc khu vực (snow, desert, prehistory, island, zone, area,...) và loại bỏ tuyệt đối các khu vực Safe Zone/Spawn
+            if (nameLower:find("snow") or nameLower:find("desert") or nameLower:find("prehistory") or nameLower:find("zone") or nameLower:find("island") or nameLower:find("area") or nameLower:find("world") or nameLower:find("biome")) 
+               and not nameLower:find("safe") and not nameLower:find("spawn") and not nameLower:find("lobby") then
+                table.insert(zones, obj)
+            end
+        end
+    end
+    
+    for i, zone in ipairs(zones) do
+        if not zoneDrawings[i] then
+            local txt = Drawing.new("Text")
+            txt.Visible = false
+            txt.Center = true
+            txt.Outline = true
+            txt.Font = 2
+            txt.Size = 15
+            txt.Color = Color3.fromRGB(0, 255, 255)
+            zoneDrawings[i] = txt
+        end
+        
+        local txtObj = zoneDrawings[i]
+        local success, pos = pcall(function()
+            return zone:IsA("Model") and zone:GetPivot().Position or zone.Position
+        end)
+        
+        if success and pos then
+            local vector, onScreen = Camera:WorldToViewportPoint(pos)
+            if onScreen then
+                -- Hiển thị đúng tên của khu vực đó (Ví dụ: Snow, Desert,...)
+                txtObj.Text = "📍 [" .. zone.Name .. "]"
+                txtObj.Position = Vector2.new(vector.X, vector.Y)
+                txtObj.Visible = true
+            else
+                txtObj.Visible = false
+            end
+        else
+            zoneDrawings[i].Visible = false
+        end
+    end
+    for j = #zones + 1, #zoneDrawings do
+        if zoneDrawings[j] then zoneDrawings[j].Visible = false end
+    end
+end)
+
+-- ===== TAB MAIN: FLY & NOCLIP =====
+local FlyBtn = Instance.new("TextButton")
+FlyBtn.Parent = TabMain
+FlyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+FlyBtn.Position = UDim2.new(0.1, 0, 0.42, 0)
+FlyBtn.Size = UDim2.new(0.53, 0, 0, 28)
+FlyBtn.Font = Enum.Font.SourceSansBold
+FlyBtn.Text = "Fly: Off"
+FlyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlyBtn.TextSize = 13
+
+local StopFlyBtn = Instance.new("TextButton")
+StopFlyBtn.Parent = TabMain
+StopFlyBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+StopFlyBtn.Position = UDim2.new(0.65, 0, 0.42, 0)
+StopFlyBtn.Size = UDim2.new(0.25, 0, 0, 28)
+StopFlyBtn.Font = Enum.Font.SourceSansBold
+StopFlyBtn.Text = "Dừng"
+StopFlyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+StopFlyBtn.TextSize = 13
+
+local flying = false
+local flySpeed = 45
+local bv, bg, noclipConnection
+
+local function DisableFly()
+    flying = false
+    FlyBtn.Text = "Fly: Off"
+    FlyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    if bv then bv:Destroy() end
+    if bg then bg:Destroy() end
+    if noclipConnection then noclipConnection:Disconnect() end
+end
+
+FlyBtn.MouseButton1Click:Connect(function()
+    flying = not flying
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local root = char.HumanoidRootPart
+    
+    if flying then
+        FlyBtn.Text = "Fly: On"
+        FlyBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+        
+        bv = Instance.new("BodyVelocity")
+        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        bv.Velocity = Vector3.new(0, 0, 0)
+        bv.Parent = root
+        
+        bg = Instance.new("BodyGyro")
+        bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bg.CFrame = root.CFrame
+        bg.Parent = root
+        
+        noclipConnection = RunService.Stepped:Connect(function()
+            if char and flying then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            end
+        end)
+        
+        task.spawn(function()
+            while flying and char and root.Parent do
+                bg.CFrame = Camera.CFrame
+                local moveDir = char.Humanoid.MoveDirection
+                bv.Velocity = (Camera.CFrame.LookVector * moveDir.Z + Camera.CFrame.RightVector * moveDir.X) * flySpeed + Vector3.new(0, (moveDir.Y > 0 and flySpeed or 0), 0)
+                RunService.RenderStepped:Wait()
+            end
+        end)
+    else
+        DisableFly()
+    end
+end)
+
+StopFlyBtn.MouseButton1Click:Connect(function() DisableFly() end)
+
+-- ===== TAB MAIN: BẢNG CHỌN TRỨNG THỦ CÔNG (ĐÃ FIX NÚT DỪNG KHÔNG KÉO VỀ VỊ TRÍ CŨ GÂY KICK) =====
+local AutoEggBtn = Instance.new("TextButton")
+AutoEggBtn.Parent = TabMain
+AutoEggBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+AutoEggBtn.Position = UDim2.new(0.1, 0, 0.55, 0)
+AutoEggBtn.Size = UDim2.new(0.8, 0, 0, 32)
+AutoEggBtn.Font = Enum.Font.SourceSansBold
+AutoEggBtn.Text = "Mở Bảng Chọn Trứng"
+AutoEggBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AutoEggBtn.TextSize = 13
+
+local EggListFrame = Instance.new("Frame")
+EggListFrame.Parent = ScreenGui
+EggListFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+EggListFrame.Position = UDim2.new(0.5, -160, 0.5, -145)
+EggListFrame.Size = UDim2.new(0, 320, 0, 310)
+EggListFrame.Visible = false
+EggListFrame.Active = true
+EggListFrame.Draggable = true
+
+local EggListTitle = Instance.new("TextLabel")
+EggListTitle.Parent = EggListFrame
+EggListTitle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+EggListTitle.Size = UDim2.new(1, 0, 0, 30)
+EggListTitle.Font = Enum.Font.SourceSansBold
+EggListTitle.Text = "  Danh Sách Trứng Trống Trên Server"
+EggListTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+EggListTitle.TextSize = 13
+EggListTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Nút Làm Mới (Refresh) danh sách trứng
+local RefreshEggBtn = Instance.new("TextButton")
+RefreshEggBtn.Parent = EggListFrame
+RefreshEggBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 70)
+RefreshEggBtn.Position = UDim2.new(1, -55, 0, 3)
+RefreshEggBtn.Size = UDim2.new(0, 24, 0, 24)
+RefreshEggBtn.Font = Enum.Font.SourceSansBold
+RefreshEggBtn.Text = "🔄"
+RefreshEggBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RefreshEggBtn.TextSize = 12
+
+local CloseEggList = Instance.new("TextButton")
+CloseEggList.Parent = EggListFrame
+CloseEggList.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+CloseEggList.Position = UDim2.new(1, -27, 0, 3)
+CloseEggList.Size = UDim2.new(0, 24, 0, 24)
+CloseEggList.Font = Enum.Font.SourceSansBold
+CloseEggList.Text = "X"
+CloseEggList.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseEggList.TextSize = 13
+CloseEggList.MouseButton1Click:Connect(function() EggListFrame.Visible = false end)
+
+-- Nút Dừng Bay Tới Trứng (Dừng ngay tại chỗ, không kéo về vị trí cũ nữa)
+local StopAutoEggBtn = Instance.new("TextButton")
+StopAutoEggBtn.Parent = EggListFrame
+StopAutoEggBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+StopAutoEggBtn.Position = UDim2.new(0.05, 0, 0, 35)
+StopAutoEggBtn.Size = UDim2.new(0.9, 0, 0, 26)
+StopAutoEggBtn.Font = Enum.Font.SourceSansBold
+StopAutoEggBtn.Text = "🛑 Dừng Bay Tới Trứng"
+StopAutoEggBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+StopAutoEggBtn.TextSize = 13
+
+local ScrollEggs = Instance.new("ScrollingFrame")
+ScrollEggs.Parent = EggListFrame
+ScrollEggs.Position = UDim2.new(0, 0, 0, 65)
+ScrollEggs.Size = UDim2.new(1, 0, 1, -65)
+ScrollEggs.BackgroundTransparency = 1
+ScrollEggs.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+local isAutoEggRunning = false
+
+StopAutoEggBtn.MouseButton1Click:Connect(function()
+    isAutoEggRunning = false
+end)
+
+local function LoadEggList()
+    for _, v in pairs(ScrollEggs:GetChildren()) do
+        if v:IsA("TextButton") then v:Destroy() end
+    end
+    
+    local count = 0
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if (obj:IsA("Model") or obj:IsA("BasePart")) then
+            local nameLower = string.lower(obj.Name)
+            if (nameLower:find("egg") or nameLower:find("trứng")) and not nameLower:find("safe") and not nameLower:find("spawn") and not nameLower:find("machine") and not nameLower:find("máy") and not nameLower:find("roll") and not nameLower:find("upgrade") then
+                count = count + 1
+                local btn = Instance.new("TextButton")
+                btn.Parent = ScrollEggs
+                btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                btn.Position = UDim2.new(0.03, 0, 0, (count - 1) * 45 + 5)
+                btn.Size = UDim2.new(0.94, 0, 0, 40)
+                btn.Font = Enum.Font.SourceSansBold
+                btn.Text = "🥚 Trứng Số " .. count .. " (" .. obj.Name .. ")"
+                btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                btn.TextSize = 13
+                
+                local targetObj = obj
+                btn.MouseButton1Click:Connect(function()
+                    EggListFrame.Visible = false
+                    local char = LocalPlayer.Character
+                    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+                    local root = char.HumanoidRootPart
+                    local targetPos = targetObj:IsA("Model") and targetObj:GetPivot().Position or targetObj.Position
+                    
+                    isAutoEggRunning = true
+                    
+                    task.spawn(function()
+                        local conn = RunService.Stepped:Connect(function()
+                            if char then
+                                for _, p in pairs(char:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end
+                            end
+                        end)
+                        
+                        local tempBv = Instance.new("BodyVelocity")
+                        tempBv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                        tempBv.Parent = root
+                        
+                        -- Bay từ từ tới quả trứng
+                        while isAutoEggRunning and (root.Position - targetPos).Magnitude > 4 and char.Parent do
+                            local dir = (targetPos - root.Position).Unit
+                            tempBv.Velocity = dir * 65 
+                            RunService.RenderStepped:Wait()
+                        end
+                        
+                        if isAutoEggRunning then
+                            tempBv.Velocity = Vector3.new(0, 0, 0)
+                            task.wait(0.2)
+                            pcall(function() game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.E, false, game) end)
+                            task.wait(0.8)
+                            pcall(function() game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.E, false, game) end)
+                        end
+                        
+                        tempBv:Destroy()
+                        conn:Disconnect()
+                        isAutoEggRunning = false
+                    end)
+                end)
+            end
+        end
+    end
+    ScrollEggs.CanvasSize = UDim2.new(0, 0, 0, count * 45 + 10)
+end
+
+AutoEggBtn.MouseButton1Click:Connect(function()
+    EggListFrame.Visible = true
+    LoadEggList()
+end)
+
+RefreshEggBtn.MouseButton1Click:Connect(function()
+    LoadEggList()
+end)
+
+-- Nội dung Tab Settings
+local TxtSettings = Instance.new("TextLabel")
+TxtSettings.Parent = TabSettings
+TxtSettings.Size = UDim2.new(1, 0, 1, 0)
+TxtSettings.BackgroundTransparency = 1
+TxtSettings.Font = Enum.Font.SourceSans
+TxtSettings.Text = "Tab Settings (Đang trống)..."
+TxtSettings.TextColor3 = Color3.fromRGB(150, 150, 150)
+TxtSettings.TextSize = 14
+
+-- ===== TAB VISUAL: FIX LAG =====
+local FixLagBtn = Instance.new("TextButton")
+FixLagBtn.Parent = TabVisual
+FixLagBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+FixLagBtn.Position = UDim2.new(0.1, 0, 0.1, 0)
+FixLagBtn.Size = UDim2.new(0.8, 0, 0, 35)
+FixLagBtn.Font = Enum.Font.SourceSansBold
+FixLagBtn.Text = "Fix Lag: Off"
+FixLagBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FixLagBtn.TextSize = 14
+
+local ModeFrame = Instance.new("Frame")
+ModeFrame.Parent = TabVisual
+ModeFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+ModeFrame.Position = UDim2.new(0.1, 0, 0.32, 0)
+ModeFrame.Size = UDim2.new(0.8, 0, 0, 75)
+ModeFrame.Visible = false
+
+local BtnNhe = Instance.new("TextButton")
+BtnNhe.Parent = ModeFrame
+BtnNhe.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+BtnNhe.Position = UDim2.new(0.05, 0, 0.4, 0)
+BtnNhe.Size = UDim2.new(0.42, 0, 0, 32)
+BtnNhe.Font = Enum.Font.SourceSansBold
+BtnNhe.Text = "Nhẹ"
+BtnNhe.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnNhe.TextSize = 13
+
+local BtnTrungBinh = Instance.new("TextButton")
+BtnTrungBinh.Parent = ModeFrame
+BtnTrungBinh.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+BtnTrungBinh.Position = UDim2.new(0.53, 0, 0.4, 0)
+BtnTrungBinh.Size = UDim2.new(0.42, 0, 0, 32)
+BtnTrungBinh.Font = Enum.Font.SourceSansBold
+BtnTrungBinh.Text = "Trung Bình"
+BtnTrungBinh.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnTrungBinh.TextSize = 13
+
+FixLagBtn.MouseButton1Click:Connect(function() ModeFrame.Visible = not ModeFrame.Visible end)
+
+BtnNhe.MouseButton1Click:Connect(function()
+    Lighting.FogEnd = 999999
+    if Lighting:FindFirstChild("Atmosphere") then Lighting.Atmosphere.Density = 0 end
+    if LocalPlayer.Character then
+        for _, v in pairs(LocalPlayer.Character:GetChildren()) do
+            if v:IsA("Accessory") or v:IsA("Clothing") then v:Destroy() end
+        end
+    end
+    FixLagBtn.Text = "Fix Lag: Nhẹ (On)"
+    FixLagBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    ModeFrame.Visible = false
+end)
+
+BtnTrungBinh.MouseButton1Click:Connect(function()
+    Lighting.FogEnd = 999999
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("Texture") or v:IsA("Decal") then v:Destroy()
+        elseif v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end
+    end
+    FixLagBtn.Text = "Fix Lag: Trung Bình (On)"
+    FixLagBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    ModeFrame.Visible = false
+end)
+
+-- 2. TẠO NÚT TRÒN NỔI
+local ToggleGui = Instance.new("ScreenGui")
+ToggleGui.Name = "TienPhatToggleGui"
+ToggleGui.Parent = game.CoreGui
+
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Parent = ToggleGui
+OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+OpenBtn.Position = UDim2.new(0, 20, 0.5, -20)
+OpenBtn.Size = UDim2.new(0, 50, 0, 40)
+OpenBtn.Font = Enum.Font.SourceSansBold
+OpenBtn.Text = "XCheat"
+OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenBtn.TextSize = 13
+OpenBtn.Draggable = true
+
+local isOpen = true
+local function ToggleMenu(state)
+    isOpen = state
+    MainFrame.Visible = isOpen
+    OpenBtn.Text = isOpen and "On" or "Off"
+    OpenBtn.BackgroundColor3 = isOpen and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(60, 60, 60)
+end
+
+OpenBtn.MouseButton1Click:Connect(function() ToggleMenu(not isOpen) end)
+MinBtn.MouseButton1Click:Connect(function() ToggleMenu(false) end)
+task.delay(1, function() ToggleMenu(isOpen) end)
+
