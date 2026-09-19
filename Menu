@@ -1,11 +1,11 @@
 -- Kiểm tra chống spam: Nếu menu đã tồn tại rồi thì không tạo mới nữa
-if game.CoreGui:FindFirstChild("TienPhatXCheatGui") then
+if game.CoreGui:FindFirstChild("TienPhatMenuGui") then
     return
 end
 
 -- Tạo ScreenGui chính gắn vào CoreGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TienPhatXCheatGui"
+ScreenGui.Name = "TienPhatMenuGui"
 ScreenGui.Parent = game.CoreGui
 ScreenGui.ResetOnSpawn = false
 
@@ -13,27 +13,117 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.Position = UDim2.new(0.5, -100, 0.5, -75)
-MainFrame.Size = UDim2.new(0, 220, 0, 160)
+MainFrame.Position = UDim2.new(0.5, -110, 0.5, -90)
+MainFrame.Size = UDim2.new(0, 220, 0, 180)
 MainFrame.Active = true
 MainFrame.Draggable = true -- Cho phép kéo thả menu trên Delta X
 
+-- Tiêu đề (Đổi thành "Tiến Phát Menu" và căn trái)
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
 Title.Parent = MainFrame
 Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.Font = Enum.Font.SourceSansBold
-Title.Text = "Tiến Phát XCheat"
+Title.Text = "  Tiến Phát Menu"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 16
+Title.TextSize = 15
+Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Nút tính năng mẫu trong menu
+-- Nút ẩn menu (-)
+local MinBtn = Instance.new("TextButton")
+MinBtn.Parent = MainFrame
+MinBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+MinBtn.Position = UDim2.new(1, -55, 0, 3)
+MinBtn.Size = UDim2.new(0, 24, 0, 24)
+MinBtn.Font = Enum.Font.SourceSansBold
+MinBtn.Text = "-"
+MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinBtn.TextSize = 16
+
+-- Nút tắt hẳn menu (X)
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Parent = MainFrame
+CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+CloseBtn.Position = UDim2.new(1, -27, 0, 3)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+
+-- Nút tính năng mẫu (Trạng thái On / Off)
 local ActionBtn = Instance.new("TextButton")
 ActionBtn.Name = "ActionBtn"
 ActionBtn.Parent = MainFrame
 ActionBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-ActionBtn.Position = UDim2.new(0.1, 0, 0.35, 0)
+ActionBtn.Position = UDim2.new(0.1, 0, 0.4, 0)
+ActionBtn.Size = UDim2.new(0.8, 0, 0, 35)
+ActionBtn.Font = Enum.Font.SourceSansBold
+ActionBtn.Text = "Tính năng 1: Off"
+ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ActionBtn.TextSize = 14
+
+local active = false
+ActionBtn.MouseButton1Click:Connect(function()
+    active = not active
+    if active then
+        ActionBtn.Text = "Tính năng 1: On"
+        ActionBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+        -- Viết code chức năng khi BẬT ở đây
+    else
+        ActionBtn.Text = "Tính năng 1: Off"
+        ActionBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        -- Viết code chức năng khi TẮT ở đây
+    end
+end)
+
+-- Nút tròn nổi trên màn hình để mở/tắt menu (Mặc định hiển thị chữ On)
+local ToggleGui = Instance.new("ScreenGui")
+ToggleGui.Name = "TienPhatToggleGui"
+ToggleGui.Parent = game.CoreGui
+
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Parent = ToggleGui
+OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+OpenBtn.Position = UDim2.new(0, 20, 0.5, -20)
+OpenBtn.Size = UDim2.new(0, 45, 0, 40)
+OpenBtn.Font = Enum.Font.SourceSansBold
+OpenBtn.Text = "On"
+OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenBtn.TextSize = 14
+OpenBtn.Draggable = true
+
+local isOpen = true
+
+-- Hàm ẩn/hiện menu chung
+local function ToggleMenu(state)
+    isOpen = state
+    MainFrame.Visible = isOpen
+    if isOpen then
+        OpenBtn.Text = "On"
+        OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    else
+        OpenBtn.Text = "Off"
+        OpenBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    end
+end
+
+-- Bấm nút tròn nổi ngoài màn hình
+OpenBtn.MouseButton1Click:Connect(function()
+    ToggleMenu(not isOpen)
+end)
+
+-- Bấm nút trừ (-) trên bảng để ẩn menu
+MinBtn.MouseButton1Click:Connect(function()
+    ToggleMenu(false)
+end)
+
+-- Bấm nút X trên bảng để xoá hẳn menu khỏi game
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+    ToggleGui:Destroy()
+end)
 ActionBtn.Size = UDim2.new(0.8, 0, 0, 35)
 ActionBtn.Font = Enum.Font.SourceSans
 ActionBtn.Text = "Tính năng 1 (Off)"
