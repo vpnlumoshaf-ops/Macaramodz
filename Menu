@@ -1,13 +1,18 @@
 -- Kiểm tra chống spam menu Blox Fruit
-if game.CoreGui:FindFirstChild("BloxFruitMasterGui") or game.CoreGui:FindFirstChild("BloxFruitToggleGui") then
-    return
-end
-
+local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Xóa menu cũ nếu bật đè
+if LocalPlayer.PlayerGui:FindFirstChild("BloxFruitMasterGui") then
+    LocalPlayer.PlayerGui.BloxFruitMasterGui:Destroy()
+end
+if LocalPlayer.PlayerGui:FindFirstChild("BloxFruitToggleGui") then
+    LocalPlayer.PlayerGui.BloxFruitToggleGui:Destroy()
+end
 
 -- Trạng thái cấu hình script Blox Fruit
 local Config = {
@@ -17,11 +22,12 @@ local Config = {
     ThemeColor = Color3.fromRGB(30, 30, 30)
 }
 
--- 1. GIAO DIỆN CHÍNH
+-- 1. GIAO DIỆN CHÍNH (Đưa vào PlayerGui để Delta X render chắc chắn 100%)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BloxFruitMasterGui"
-ScreenGui.Parent = game.CoreGui
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
@@ -88,7 +94,7 @@ local function createToggle(parent, text, callback)
     return btn
 end
 
--- Bật tính năng Auto Farm (Nhận Q theo cấp độ + Bay trên đầu quái)
+-- Bật tính năng Auto Farm
 createToggle(MainContainer, "Auto Farm (Nhận Q + Bay trên đầu quái)", function(v) Config.AutoFarm = v end)
 
 -- Lựa chọn Tốc độ đánh
@@ -160,7 +166,8 @@ yPos = yPos + 50
 -- Nút mở/đóng menu phụ bên ngoài màn hình
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "BloxFruitToggleGui"
-ToggleGui.Parent = game.CoreGui
+ToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+ToggleGui.ResetOnSpawn = false
 
 local OpenBtn = Instance.new("TextButton")
 OpenBtn.Parent = ToggleGui
@@ -193,19 +200,24 @@ RunService.RenderStepped:Connect(function()
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
                 local hrp = char.HumanoidRootPart
-                local hum = char:FindFirstChildOfClass("Humanoid")
                 
-                -- Kiểm tra nhận nhiệm vụ tự động theo cấp độ nhân vật
-                local playerLevel = LocalPlayer.Data.Level.Value
-                local questName = LocalPlayer.PlayerGui.Main.Quest.Visible
-                
-                if not questName then
-                    -- Gửi tín hiệu nhận nhiệm vụ tương ứng với level (Hệ thống tự động giả lập nhận Q trong game)
-                    local args = {"StartQuest", "Bandit", 1} -- Ví dụ nhiệm vụ cơ bản, có thể mở rộng theo cấp độ
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
+                -- An toàn check dữ liệu level để tránh lỗi đỏ nếu chưa load xong data
+                local dataFolder = LocalPlayer:FindFirstChild("Data")
+                if dataFolder and dataFolder:FindFirstChild("Level") then
+                    local playerLevel = dataFolder.Level.Value
+                    local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+                    local questVisible = mainGui and mainGui:FindFirstChild("Quest") and mainGui.Quest.Visible
+                    
+                    if not questVisible then
+                        local args = {"StartQuest", "Bandit", 1}
+                        local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+                        if remotes and remotes:FindFirstChild("CommF_") then
+                            remotes.CommF_:InvokeServer(unpack(args))
+                        end
+                    end
                 end
                 
-                -- Tìm quái trong Workspace (hỗ trợ cả thư mục Enemies và MobFolders)
+                -- Tìm quái trong Workspace
                 local targetMonster = nil
                 local shortestDistance = math.huge
                 
@@ -226,13 +238,10 @@ RunService.RenderStepped:Connect(function()
                 
                 if targetMonster then
                     local mHrp = targetMonster.HumanoidRootPart
-                    -- Bay lên trên đầu quái khoảng 7 đơn vị để né đòn tấn công của quái tuyệt đối
                     local targetCFrame = mHrp.CFrame + Vector3.new(0, 7, 0)
                     
-                    -- Dịch chuyển mượt đến đầu quái theo tốc độ bay đã chọn
                     hrp.CFrame = hrp.CFrame:Lerp(targetCFrame, Config.FlySpeed / 1000)
                     
-                    -- Kích hoạt tấn công theo tốc độ đã chọn
                     local tool = char:FindFirstChildOfClass("Tool")
                     if tool then
                         if Config.AttackSpeed == "Siêu nhanh" then
