@@ -4,6 +4,7 @@ local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualUser = game:GetService("VirtualUser")
 
 if LocalPlayer.PlayerGui:FindFirstChild("BloxFruitMasterGui") then
     LocalPlayer.PlayerGui.BloxFruitMasterGui:Destroy()
@@ -204,8 +205,8 @@ CloseBtn.MouseButton1Click:Connect(function()
     ToggleGui:Destroy()
 end)
 
--- 2. HỆ THỐNG TỰ ĐỘNG NHẬN NHIỆM VỤ & ĐÁNH QUÁI THÔNG MINH
-local lastQuestCheck = 0
+-- 2. HỆ THỐNG AUTO FARM TỰ ĐỘNG NHẬN Q & ĐÁNH TỐC ĐỘ CAO
+local lastQuestTick = 0
 local connection
 connection = RunService.RenderStepped:Connect(function()
     if not ScreenGui.Parent then
@@ -220,50 +221,52 @@ connection = RunService.RenderStepped:Connect(function()
                 local hrp = char.HumanoidRootPart
                 local hum = char:FindFirstChildOfClass("Humanoid")
                 
-                -- Kiểm tra nhận nhiệm vụ định kỳ mỗi 3 giây để tránh spam server
-                if tick() - lastQuestCheck > 3 then
-                    lastQuestCheck = tick()
-                    local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
-                    local questFrame = mainGui and mainGui:FindFirstChild("Quest")
+                -- Nhận nhiệm vụ tự động mỗi 2.5 giây
+                if tick() - lastQuestTick > 2.5 then
+                    lastQuestTick = tick()
+                    local mainPlayerGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+                    local questContainer = mainPlayerGui and mainPlayerGui:FindFirstChild("Quest")
                     
-                    if questFrame and not questFrame.Visible then
-                        -- Lấy cấp độ hiện tại để chọn đúng loại quái/nhiệm vụ tương ứng
+                    if questContainer and not questContainer.Visible then
                         local levelVal = LocalPlayer.Data.Level.Value
-                        local questData = {"StartQuest", "Bandit", 1} -- Mặc định Sea 1 đầu game
+                        local questInfo = {"StartQuest", "Bandit", 1}
                         
+                        -- Phân loại cấu hình tên quái theo cấp độ chuẩn của Sea 1
                         if levelVal >= 10 and levelVal < 15 then
-                            questData = {"StartQuest", "Monkey", 1}
+                            questInfo = {"StartQuest", "Monkey", 1}
                         elseif levelVal >= 15 and levelVal < 30 then
-                            questData = {"StartQuest", "Gorilla", 1}
+                            questInfo = {"StartQuest", "Gorilla", 1}
                         elseif levelVal >= 30 and levelVal < 60 then
-                            questData = {"StartQuest", "Pirate", 1}
-                        elseif levelVal >= 60 then
-                            questData = {"StartQuest", "Brute", 1}
+                            questInfo = {"StartQuest", "Pirate", 1}
+                        elseif levelVal >= 60 and levelVal < 90 then
+                            questInfo = {"StartQuest", "Brute", 1}
+                        elseif levelVal >= 90 and levelVal < 120 then
+                            questInfo = {"StartQuest", "DesertBandit", 1}
                         end
                         
-                        local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-                        if remotes and remotes:FindFirstChild("CommF_") then
-                            remotes.CommF_:InvokeServer(unpack(questData))
+                        local commF = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
+                        if commF then
+                            commF:InvokeServer(unpack(questInfo))
                         end
                     end
                 end
                 
-                -- Tìm quái gần nhất trong Workspace
+                -- Tìm quái gần nhất
                 local targetMonster = nil
-                local shortestDistance = math.huge
+                local shortestDist = math.huge
                 
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 if folderEnemies then
-                    local enemiesList = folderEnemies:GetChildren()
-                    for i = 1, #enemiesList do
-                        local obj = enemiesList[i]
-                        local mHrp = obj:FindFirstChild("HumanoidRootPart")
-                        local mHum = obj:FindFirstChildOfClass("Humanoid")
-                        if mHrp and mHum and mHum.Health > 0 then
-                            local dist = (mHrp.Position - hrp.Position).Magnitude
-                            if dist < shortestDistance then
-                                shortestDistance = dist
-                                targetMonster = obj
+                    local listEnemies = folderEnemies:GetChildren()
+                    for i = 1, #listEnemies do
+                        local mob = listEnemies[i]
+                        local mobHrp = mob:FindFirstChild("HumanoidRootPart")
+                        local mobHum = mob:FindFirstChildOfClass("Humanoid")
+                        if mobHrp and mobHum and mobHum.Health > 0 then
+                            local d = (mobHrp.Position - hrp.Position).Magnitude
+                            if d < shortestDist then
+                                shortestDist = d
+                                targetMonster = mob
                             end
                         end
                     end
@@ -271,27 +274,27 @@ connection = RunService.RenderStepped:Connect(function()
                 
                 if targetMonster then
                     local mHrp = targetMonster.HumanoidRootPart
-                    -- Bay lên đầu quái cự ly an toàn 7 đơn vị
-                    local targetCFrame = mHrp.CFrame + Vector3.new(0, 7, 0)
-                    hrp.CFrame = hrp.CFrame:Lerp(targetCFrame, Config.FlySpeed / 1000)
+                    -- Bay lơ lửng trên đầu quái
+                    hrp.CFrame = hrp.CFrame:Lerp(mHrp.CFrame + Vector3.new(0, 7, 0), Config.FlySpeed / 1000)
                     
-                    -- Kích hoạt tấn công mượt mà bằng task.spawn
+                    -- Tự động equip vũ khí và tấn công siêu tốc
                     local tool = char:FindFirstChildOfClass("Tool")
                     if tool then
-                        task.spawn(function()
-                            if Config.AttackSpeed == "Siêu nhanh" then
+                        if Config.AttackSpeed == "Siêu nhanh" then
+                            tool:Activate()
+                            VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                        elseif Config.AttackSpeed == "Tối thượng" then
+                            tool:Activate()
+                            VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                            task.spawn(function()
+                                task.wait(0.01)
                                 tool:Activate()
-                            elseif Config.AttackSpeed == "Tối thượng" then
-                                tool:Activate()
-                                task.wait(0.02)
-                                tool:Activate()
-                            else
-                                tool:Activate()
-                                task.wait(0.12)
-                            end
-                        end)
+                            end)
+                        else
+                            tool:Activate()
+                            task.wait(0.08)
+                        end
                     else
-                        -- Tự động cầm vũ khí trong balo lên nếu chưa cầm
                         local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
                         if backpack then
                             local firstTool = backpack:FindFirstChildOfClass("Tool")
