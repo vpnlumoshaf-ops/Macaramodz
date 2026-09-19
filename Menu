@@ -6,6 +6,8 @@ end
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
 
 -- 1. TẠO GIAO DIỆN MENU CHÍNH
 local ScreenGui = Instance.new("ScreenGui")
@@ -129,16 +131,116 @@ BtnVisual.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnVisual.TextSize = 13
 BtnVisual.MouseButton1Click:Connect(function() SwitchTab(TabVisual) end)
 
--- Nội dung Tab Main & Settings (Hoàn toàn trống, không còn nút "Tính năng 1" rác)
-local TxtMain = Instance.new("TextLabel")
-TxtMain.Parent = TabMain
-TxtMain.Size = UDim2.new(1, 0, 1, 0)
-TxtMain.BackgroundTransparency = 1
-TxtMain.Font = Enum.Font.SourceSans
-TxtMain.Text = "Tab Main (Đang trống)..."
-TxtMain.TextColor3 = Color3.fromRGB(150, 150, 150)
-TxtMain.TextSize = 14
+-- ===== TAB MAIN: TÍNH NĂNG ESP BOX =====
+local EspBtn = Instance.new("TextButton")
+EspBtn.Parent = TabMain
+EspBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+EspBtn.Position = UDim2.new(0.1, 0, 0.1, 0)
+EspBtn.Size = UDim2.new(0.8, 0, 0, 35)
+EspBtn.Font = Enum.Font.SourceSansBold
+EspBtn.Text = "ESP Box: Off"
+EspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspBtn.TextSize = 14
 
+local espEnabled = false
+local espCache = {}
+
+local function RemoveEsp(player)
+    if espCache[player] then
+        if espCache[player].box then espCache[player].box:Remove() end
+        if espCache[player].name then espCache[player].name:Remove() end
+        espCache[player] = nil
+    end
+end
+
+EspBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    if espEnabled then
+        EspBtn.Text = "ESP Box: On"
+        EspBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    else
+        EspBtn.Text = "ESP Box: Off"
+        EspBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        for _, p in pairs(Players:GetPlayers()) do
+            RemoveEsp(p)
+        end
+    end
+end)
+
+-- Vòng lặp vẽ ESP chạy mỗi khung hình
+RunService.RenderStepped:Connect(function()
+    if not espEnabled then return end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") then
+            local character = player.Character
+            local rootPart = character.HumanoidRootPart
+            local humanoid = character.Humanoid
+            
+            if humanoid.Health > 0 then
+                if not espCache[player] then
+                    local box = Drawing.new("Square")
+                    box.Visible = false
+                    box.Filled = false
+                    box.Thickness = 1.5
+                    box.Color = Color3.fromRGB(255, 0, 0)
+                    
+                    local nameTag = Drawing.new("Text")
+                    nameTag.Visible = false
+                    nameTag.Center = true
+                    nameTag.Outline = true
+                    nameTag.Font = 2
+                    nameTag.Size = 16
+                    nameTag.Color = Color3.fromRGB(255, 255, 255)
+                    
+                    espCache[player] = {box = box, name = nameTag}
+                end
+                
+                local box = espCache[player].box
+                local nameTag = espCache[player].name
+                
+                local vector, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                
+                if onScreen then
+                    local head = character:FindFirstChild("Head")
+                    local distance = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (rootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude or 0
+                    
+                    if head then
+                        local headVector = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                        local legVector = Camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0))
+                        
+                        local height = math.abs(headVector.Y - legVector.Y)
+                        local width = height / 2
+                        
+                        box.Size = Vector2.new(width, height)
+                        box.Position = Vector2.new(vector.X - width / 2, headVector.Y)
+                        box.Visible = true
+                        
+                        nameTag.Text = player.Name .. " [" .. math.floor(distance) .."m]"
+                        nameTag.Position = Vector2.new(vector.X, headVector.Y - 20)
+                        nameTag.Visible = true
+                    else
+                        box.Visible = false
+                        nameTag.Visible = false
+                    end
+                else
+                    box.Visible = false
+                    nameTag.Visible = false
+                end
+            else
+                RemoveEsp(player)
+            end
+        else
+            RemoveEsp(player)
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    RemoveEsp(player)
+end)
+
+-- Nội dung Tab Settings
 local TxtSettings = Instance.new("TextLabel")
 TxtSettings.Parent = TabSettings
 TxtSettings.Size = UDim2.new(1, 0, 1, 0)
@@ -148,7 +250,7 @@ TxtSettings.Text = "Tab Settings (Đang trống)..."
 TxtSettings.TextColor3 = Color3.fromRGB(150, 150, 150)
 TxtSettings.TextSize = 14
 
--- Tab Visual: Fix Lag
+-- ===== TAB VISUAL: TÍNH NĂNG FIX LAG =====
 local FixLagBtn = Instance.new("TextButton")
 FixLagBtn.Parent = TabVisual
 FixLagBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
