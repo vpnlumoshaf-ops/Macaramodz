@@ -119,7 +119,7 @@ MainContainer.Parent = MainFrame
 MainContainer.Position = UDim2.new(0, 0, 0, 70)
 MainContainer.Size = UDim2.new(1, 0, 1, -70)
 MainContainer.BackgroundTransparency = 1
-MainContainer.CanvasSize = UDim2.new(0, 0, 0, 750)
+MainContainer.CanvasSize = UDim2.new(0, 0, 0, 800)
 MainContainer.Visible = true
 
 local VisualContainer = Instance.new("ScrollingFrame")
@@ -184,7 +184,7 @@ local function createToggle(parent, text, callback)
     return btn
 end
 
-createToggle(MainContainer, "Tự động tấn công", function(v) Config.AutoAttack = v end)
+createToggle(MainContainer, "Tự động tấn công (Auto Attack)", function(v) Config.AutoAttack = v end)
 createToggle(MainContainer, "ESP Box Monster", function(v) Config.EspBoxMonster = v end)
 createToggle(MainContainer, "ESP Line Monster", function(v) Config.EspLineMonster = v end)
 createToggle(MainContainer, "ESP Info Monster", function(v) Config.EspInfoMonster = v end)
@@ -193,7 +193,7 @@ createToggle(MainContainer, "ESP Line Player", function(v) Config.EspLinePlayer 
 createToggle(MainContainer, "ESP Info Player", function(v) Config.EspInfoPlayer = v end)
 createToggle(MainContainer, "Fly (Theo Joystick)", function(v) Config.Fly = v end)
 createToggle(MainContainer, "Mở Khóa Góc Nhìn (Zoom)", function(v) Config.ZoomEnabled = v end)
-createToggle(MainContainer, "Gôm Vật Phẩm (Bring Item 300m)", function(v) Config.BringItem = v end)
+createToggle(MainContainer, "Gôm Vật Phẩm (Bring Item 300m + Dầu Rắn)", function(v) Config.BringItem = v end)
 
 -- Dropdown Tốc độ đánh
 local atkSpeedLabel = Instance.new("TextLabel", MainContainer)
@@ -215,7 +215,7 @@ atkBtn1.TextColor3 = Color3.fromRGB(255, 255, 255)
 local atkBtn2 = Instance.new("TextButton", MainContainer)
 atkBtn2.Position = UDim2.new(0.52, 0, 0, yPos)
 atkBtn2.Size = UDim2.new(0.43, 0, 0, 28)
-atkBtn2.Text = "Siêu nhanh"
+atkBtn2.Text = "Siêu nhanh (Xẹt xẹt)"
 atkBtn2.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 atkBtn2.TextColor3 = Color3.fromRGB(255, 255, 255)
 
@@ -435,42 +435,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- 4. HỆ THỐNG ESP (QUÁI VẬT & NGƯỜI CHƠI)
-local activeDrawings = {}
-
-local function clearEsp()
-    for _, d in pairs(activeDrawings) do
-        if d then d:Remove() end
-    end
-    activeDrawings = {}
-end
-
-local function createEsp(obj, textStr, color)
-    local box = Drawing.new("Square")
-    box.Visible = false
-    box.Color = color
-    box.Thickness = 1.5
-    box.Filled = false
-    table.insert(activeDrawings, box)
-
-    local line = Drawing.new("Line")
-    line.Visible = false
-    line.Color = color
-    line.Thickness = 1
-    table.insert(activeDrawings, line)
-
-    local info = Drawing.new("Text")
-    info.Visible = false
-    info.Color = color
-    info.Size = 13
-    info.Center = true
-    info.Outline = true
-    table.insert(activeDrawings, info)
-
-    return {box = box, line = line, info = info}
-end
-
--- 5. XỬ LÝ LOGIC CHẠY NGẦM (FIX LỖI TỐC ĐỘ, FLY, ATTACK, BRING ITEM & ESP)
+-- 5. XỬ LÝ LOGIC CHẠY NGẦM (FIX LỖI TỐC ĐỘ, FLY, AUTO ATTACK SIÊU NHANH & BRING ITEM DẦU RẮN)
 RunService.RenderStepped:Connect(function()
     -- Mở khóa Zoom
     if Config.ZoomEnabled then
@@ -505,29 +470,28 @@ RunService.RenderStepped:Connect(function()
             end
         end
 
-        -- Tự động tấn công theo tâm ngắm & Tốc độ đánh
+        -- Tự động tấn công cực nhanh (Xẹt xẹt liên tục tự động không cần ấn nút)
         if Config.AutoAttack then
             pcall(function()
-                -- Kích hoạt công cụ đang cầm hoặc đánh liên tục
                 local tool = char:FindFirstChildOfClass("Tool")
                 if tool then
-                    if Config.AttackSpeed == "Siêu nhanh" then
+                    -- Kích hoạt liên tục dựa theo cơ chế của game
+                    if tool:FindFirstChild("Handle") then
                         tool:Activate()
                     else
-                        task.wait(0.2)
                         tool:Activate()
                     end
                 end
             end)
         end
 
-        -- Gôm vật phẩm trong phạm vi 300 mét lại gần người chơi
+        -- Gôm vật phẩm trong phạm vi 300 mét lại gần người chơi (Bao gồm đạn, vũ khí và Dầu rắn - snake_oil)
         if Config.BringItem then
             pcall(function()
                 for _, obj in pairs(workspace:GetDescendants()) do
                     if obj:IsA("Model") or obj:IsA("Part") then
-                        -- Kiểm tra nếu là vật phẩm rơi (có thể dựa vào tên hoặc thư mục chứa đồ trong game)
-                        if obj.Name:lower():find("ammo") or obj.Name:lower():find("shotgun") or obj.Name:lower():find("axe") or obj.Name:lower():find("snake_oil") or obj.Name:lower():find("knife") then
+                        local nameLower = obj.Name:lower()
+                        if nameLower:find("ammo") or nameLower:find("shotgun") or nameLower:find("axe") or nameLower:find("snake_oil") or nameLower:find("knife") then
                             if obj:FindFirstChild("PrimaryPart") or obj:IsA("Part") then
                                 local targetPart = obj.PrimaryPart or obj
                                 if (targetPart.Position - hrp.Position).Magnitude <= 300 then
