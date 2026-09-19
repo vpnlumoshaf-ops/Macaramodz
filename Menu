@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Ultimate Final Fix: Zero Desync & Real Damage)
+-- Blox Fruit Master Hub - Admin Tienphat (Fixed Hover & Working Auto Attack)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -123,7 +123,7 @@ local function createToggle(parent, text, defaultVal, callback)
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Fix Dame Thật & Không Giật)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "Auto Farm (Đứng Trên Đầu & Đánh Chuẩn Dame)", false, function(v) Config.AutoFarm = v end)
 createToggle(MainContainer, "ESP Box Nhỏ Gọn & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
 createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
@@ -338,6 +338,7 @@ RunService.RenderStepped:Connect(function()
                     local vector, onScreen = camera:WorldToViewportPoint(pHrp.Position + Vector3.new(0, 3, 0))
                     if onScreen then
                         local txtObj = weaponScannerCache[plr]
+                        txtObj.Text = "[" .. plr.Name .. "] ⚔️ " << activeTool -- safe replace
                         txtObj.Text = "[" .. plr.Name .. "] ⚔️ " .. activeTool
                         txtObj.Position = Vector2.new(vector.X, vector.Y)
                         txtObj.Visible = true
@@ -357,7 +358,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 4. AUTO FARM ĐỈNH CAO: KHÔNG TELE PLAYER, GOM QUÁI XUỐNG DƯỚI ĐÁNH TRÚNG 100%
+    -- 4. AUTO FARM CHUẨN: ĐỨNG TRÊN ĐẦU QUÁI, GOM QUÁI LÊN CÙNG VÀ TỰ ĐỘNG CHÉM NHẬN DAME
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
@@ -388,7 +389,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Tìm và bay đến đúng vị trí cụm quái (chỉ tele 1 lần đến gần, sau đó đứng yên dưới đất chém)
+                -- Tìm quái gần nhất và gom toàn bộ quái lại dưới chân/bay lên đầu quái đúng chuẩn Blox Fruit
                 local targetMob = nil
                 local shortestDist = math.huge
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
@@ -400,9 +401,9 @@ RunService.RenderStepped:Connect(function()
                         if mobHrp and mobHum and mobHum.Health > 0 then
                             local d = (mobHrp.Position - hrp.Position).Magnitude
                             
-                            -- Gom quái bọc xung quanh chân nhân vật (cách 2 stud) để đánh trúng thật 100%
                             if d < 200 then
-                                mobHrp.CFrame = hrp.CFrame + Vector3.new(0, -2, 0)
+                                -- Gom quái dồn sát vào vị trí thấp hơn nhân vật 4 stud để nhân vật đứng trên đầu đánh xuống trúng 100%
+                                mobHrp.CFrame = hrp.CFrame + Vector3.new(0, -4, 0)
                                 mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                                 mobHrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                                 if mobHum:FindFirstChild("Animator") then
@@ -420,20 +421,19 @@ RunService.RenderStepped:Connect(function()
 
                 if targetMob then
                     local mHrp = targetMob.HumanoidRootPart
-                    -- Chỉ dịch chuyển player lại gần quái nếu quái ở xa (> 15 stud), tránh bị rung lắc khung hình
-                    if shortestDist > 15 then
-                        hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 3, 0)) * (hrp.CFrame - hrp.CFrame.Position)
-                    end
+                    -- Đặt nhân vật lơ lửng đúng 5 stud trên đầu quái để không bị dính người và đánh trúng dame thật
+                    hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 5, 0)) * (hrp.CFrame - hrp.CFrame.Position)
+                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                    -- Auto click siêu tốc đánh liên tục ghi nhận sát thương thật
+                    -- Auto click siêu tốc đánh liên tục bằng cả Tool Activate và VirtualUser
                     pcall(function()
                         local activeTool = char:FindFirstChildOfClass("Tool")
                         if activeTool then
                             activeTool:Activate()
                         end
-                        VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
+                        VirtualUser:Button1Down(Vector2.new(100, 100), camera.CFrame)
                         task.spawn(function()
-                            VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame)
+                            VirtualUser:Button1Up(Vector2.new(100, 100), camera.CFrame)
                         end)
                     end)
                 end
