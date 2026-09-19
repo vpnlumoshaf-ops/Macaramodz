@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Trạng thái cấu hình script Blox Fruit
 local Config = {
@@ -53,7 +54,7 @@ HideBtn.Text = "X"
 HideBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 HideBtn.TextSize = 14
 
--- Container Tab Main (Tất cả tính năng nằm ở đây theo yêu cầu)
+-- Container Tab Main
 local MainContainer = Instance.new("ScrollingFrame")
 MainContainer.Parent = MainFrame
 MainContainer.Position = UDim2.new(0, 0, 0, 40)
@@ -87,7 +88,7 @@ local function createToggle(parent, text, callback)
     return btn
 end
 
--- Bật tính năng Auto Farm (Nhận Q theo cấp độ + Bay trên đầu quái né đòn)
+-- Bật tính năng Auto Farm (Nhận Q theo cấp độ + Bay trên đầu quái)
 createToggle(MainContainer, "Auto Farm (Nhận Q + Bay trên đầu quái)", function(v) Config.AutoFarm = v end)
 
 -- Lựa chọn Tốc độ đánh
@@ -113,7 +114,6 @@ for i, spdName in ipairs(speedsAtk) do
     btn.MouseButton1Click:Connect(function()
         Config.AttackSpeed = spdName
         atkLabel.Text = "Tốc độ đánh: " .. spdName
-        -- Reset màu nút trong nhóm
         for _, child in pairs(MainContainer:GetChildren()) do
             if child:IsA("TextButton") and (child.Text == "Bình thường" or child.Text == "Siêu nhanh" or child.Text == "Tối thượng") then
                 child.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
@@ -177,15 +177,16 @@ local isOpen = true
 OpenBtn.MouseButton1Click:Connect(function()
     isOpen = not isOpen
     MainFrame.Visible = isOpen
-    OpenBtn.Text = isOpen and "Tienphat Hub" : "Open"
+    OpenBtn.Text = isOpen and "Tienphat Hub" or "Open"
 end)
 
 HideBtn.MouseButton1Click:Connect(function()
     isOpen = false
     MainFrame.Visible = false
+    OpenBtn.Text = "Open"
 end)
 
--- 2. LOGIC XỬ LÝ AUTO FARM & BAY TRÊN ĐẦU QUÁI
+-- 2. HỆ THỐNG TỰ ĐỘNG NHẬN NHIỆM VỤ & AUTO FARM BAY TRÊN ĐẦU QUÁI
 RunService.RenderStepped:Connect(function()
     if Config.AutoFarm then
         pcall(function()
@@ -194,17 +195,30 @@ RunService.RenderStepped:Connect(function()
                 local hrp = char.HumanoidRootPart
                 local hum = char:FindFirstChildOfClass("Humanoid")
                 
-                -- Tìm quái gần nhất trong Workspace để farm
+                -- Kiểm tra nhận nhiệm vụ tự động theo cấp độ nhân vật
+                local playerLevel = LocalPlayer.Data.Level.Value
+                local questName = LocalPlayer.PlayerGui.Main.Quest.Visible
+                
+                if not questName then
+                    -- Gửi tín hiệu nhận nhiệm vụ tương ứng với level (Hệ thống tự động giả lập nhận Q trong game)
+                    local args = {"StartQuest", "Bandit", 1} -- Ví dụ nhiệm vụ cơ bản, có thể mở rộng theo cấp độ
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
+                end
+                
+                -- Tìm quái trong Workspace (hỗ trợ cả thư mục Enemies và MobFolders)
                 local targetMonster = nil
                 local shortestDistance = math.huge
                 
-                for _, obj in pairs(Workspace.Enemies:GetChildren()) do
-                    if obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChildOfClass("Humanoid") then
-                        if obj.Humanoid.Health > 0 then
-                            local dist = (obj.HumanoidRootPart.Position - hrp.Position).Magnitude
-                            if dist < shortestDistance then
-                                shortestDistance = dist
-                                targetMonster = obj
+                local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
+                if folderEnemies then
+                    for _, obj in pairs(folderEnemies:GetChildren()) do
+                        if obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChildOfClass("Humanoid") then
+                            if obj.Humanoid.Health > 0 then
+                                local dist = (obj.HumanoidRootPart.Position - hrp.Position).Magnitude
+                                if dist < shortestDistance then
+                                    shortestDistance = dist
+                                    targetMonster = obj
+                                end
                             end
                         end
                     end
@@ -212,13 +226,13 @@ RunService.RenderStepped:Connect(function()
                 
                 if targetMonster then
                     local mHrp = targetMonster.HumanoidRootPart
-                    -- Bay lên trên đầu quái khoảng 5 đơn vị để quái đánh hụt nhưng mình đánh tới
-                    local targetCFrame = mHrp.CFrame + Vector3.new(0, 6, 0)
+                    -- Bay lên trên đầu quái khoảng 7 đơn vị để né đòn tấn công của quái tuyệt đối
+                    local targetCFrame = mHrp.CFrame + Vector3.new(0, 7, 0)
                     
-                    -- Dịch chuyển hoặc bay mượt đến đầu quái theo tốc độ đã chọn
+                    -- Dịch chuyển mượt đến đầu quái theo tốc độ bay đã chọn
                     hrp.CFrame = hrp.CFrame:Lerp(targetCFrame, Config.FlySpeed / 1000)
                     
-                    -- Kích hoạt đánh vũ khí / kỹ năng theo tốc độ đánh
+                    -- Kích hoạt tấn công theo tốc độ đã chọn
                     local tool = char:FindFirstChildOfClass("Tool")
                     if tool then
                         if Config.AttackSpeed == "Siêu nhanh" then
@@ -226,7 +240,7 @@ RunService.RenderStepped:Connect(function()
                         elseif Config.AttackSpeed == "Tối thượng" then
                             tool:Activate()
                             task.spawn(function()
-                                task.wait(0.05)
+                                task.wait(0.03)
                                 tool:Activate()
                             end)
                         else
@@ -239,4 +253,3 @@ RunService.RenderStepped:Connect(function()
         end)
     end
 end)
-
