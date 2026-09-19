@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local Camera = workspace.CurrentCamera
 
 -- 1. TẠO GIAO DIỆN MENU CHÍNH
@@ -261,7 +262,7 @@ RunService.RenderStepped:Connect(function()
 end)
 Players.PlayerRemoving:Connect(function(player) RemoveEsp(player) end)
 
--- ===== TAB MAIN: ESP TRỨNG (ĐÃ LỌC TRỨNG ĐANG ẤP CỦA NGƯỜI KHÁC) =====
+-- ===== TAB MAIN: ESP TRỨNG =====
 local EspEggBtn = Instance.new("TextButton")
 EspEggBtn.Parent = TabMain
 EspEggBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
@@ -298,8 +299,7 @@ RunService.RenderStepped:Connect(function()
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") or obj:IsA("BasePart") then
             local nameLower = string.lower(obj.Name)
-            -- Lọc các từ khóa trứng và loại bỏ trứng đang bị người chơi khác chiếm/ấp
-            if (nameLower:find("egg") or nameLower:find("trứng")) and not nameLower:find("machine") and not nameLower:find("máy") and not nameLower:find("roll") and not obj:FindFirstChildOfClass("Humanoid") then
+            if (nameLower:find("egg") or nameLower:find("trứng")) and not nameLower:find("safe") and not nameLower:find("spawn") and not nameLower:find("machine") and not nameLower:find("máy") and not nameLower:find("roll") and not obj:FindFirstChildOfClass("Humanoid") then
                 local isBeingUsed = false
                 for _, p in pairs(Players:GetPlayers()) do
                     if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
@@ -346,7 +346,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ===== TAB MAIN: ESP KHU VỰC BẰNG SỐ THỨ TỰ (ZONE 1, ZONE 2...) =====
+-- ===== TAB MAIN: ESP KHU VỰC =====
 local EspZoneBtn = Instance.new("TextButton")
 EspZoneBtn.Parent = TabMain
 EspZoneBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
@@ -383,7 +383,7 @@ RunService.RenderStepped:Connect(function()
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Folder") or obj:IsA("Model") then
             local nameLower = string.lower(obj.Name)
-            if nameLower:find("zone") or nameLower:find("island") or nameLower:find("map") or nameLower:find("area") or nameLower:find("spawn") or nameLower:find("world") then
+            if (nameLower:find("zone") or nameLower:find("island") or nameLower:find("map") or nameLower:find("area") or nameLower:find("world")) and not nameLower:find("safe") and not nameLower:find("spawn") then
                 table.insert(zones, obj)
             end
         end
@@ -424,7 +424,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ===== TAB MAIN: FLY KÈM JOYSTICK & STOP FLY & NOCLIP =====
+-- ===== TAB MAIN: FLY & NOCLIP =====
 local FlyBtn = Instance.new("TextButton")
 FlyBtn.Parent = TabMain
 FlyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
@@ -501,7 +501,7 @@ end)
 
 StopFlyBtn.MouseButton1Click:Connect(function() DisableFly() end)
 
--- ===== TAB MAIN: BẢNG CHỌN TRỨNG THỦ CÔNG =====
+-- ===== TAB MAIN: BẢNG CHỌN TRỨNG THỦ CÔNG (CÓ NÚT LÀM MỚI & DỪNG BAY) =====
 local AutoEggBtn = Instance.new("TextButton")
 AutoEggBtn.Parent = TabMain
 AutoEggBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
@@ -515,8 +515,8 @@ AutoEggBtn.TextSize = 13
 local EggListFrame = Instance.new("Frame")
 EggListFrame.Parent = ScreenGui
 EggListFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-EggListFrame.Position = UDim2.new(0.5, -160, 0.5, -140)
-EggListFrame.Size = UDim2.new(0, 320, 0, 280)
+EggListFrame.Position = UDim2.new(0.5, -160, 0.5, -145)
+EggListFrame.Size = UDim2.new(0, 320, 0, 310)
 EggListFrame.Visible = false
 EggListFrame.Active = true
 EggListFrame.Draggable = true
@@ -531,6 +531,17 @@ EggListTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 EggListTitle.TextSize = 13
 EggListTitle.TextXAlignment = Enum.TextXAlignment.Left
 
+-- Nút Làm Mới (Refresh) danh sách trứng
+local RefreshEggBtn = Instance.new("TextButton")
+RefreshEggBtn.Parent = EggListFrame
+RefreshEggBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 70)
+RefreshEggBtn.Position = UDim2.new(1, -55, 0, 3)
+RefreshEggBtn.Size = UDim2.new(0, 24, 0, 24)
+RefreshEggBtn.Font = Enum.Font.SourceSansBold
+RefreshEggBtn.Text = "🔄"
+RefreshEggBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RefreshEggBtn.TextSize = 12
+
 local CloseEggList = Instance.new("TextButton")
 CloseEggList.Parent = EggListFrame
 CloseEggList.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
@@ -542,15 +553,32 @@ CloseEggList.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseEggList.TextSize = 13
 CloseEggList.MouseButton1Click:Connect(function() EggListFrame.Visible = false end)
 
+-- Nút Dừng Bay (Dừng tiến trình bay tới trứng ngay lập tức)
+local StopAutoEggBtn = Instance.new("TextButton")
+StopAutoEggBtn.Parent = EggListFrame
+StopAutoEggBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+StopAutoEggBtn.Position = UDim2.new(0.05, 0, 0, 35)
+StopAutoEggBtn.Size = UDim2.new(0.9, 0, 0, 26)
+StopAutoEggBtn.Font = Enum.Font.SourceSansBold
+StopAutoEggBtn.Text = "🛑 Dừng Bay Tới Trứng"
+StopAutoEggBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+StopAutoEggBtn.TextSize = 13
+
 local ScrollEggs = Instance.new("ScrollingFrame")
 ScrollEggs.Parent = EggListFrame
-ScrollEggs.Position = UDim2.new(0, 0, 0, 35)
-ScrollEggs.Size = UDim2.new(1, 0, 1, -35)
+ScrollEggs.Position = UDim2.new(0, 0, 0, 65)
+ScrollEggs.Size = UDim2.new(1, 0, 1, -65)
 ScrollEggs.BackgroundTransparency = 1
 ScrollEggs.CanvasSize = UDim2.new(0, 0, 0, 0)
 
-AutoEggBtn.MouseButton1Click:Connect(function()
-    EggListFrame.Visible = true
+-- Biến kiểm soát tiến trình bay tới trứng
+local isAutoEggRunning = false
+
+StopAutoEggBtn.MouseButton1Click:Connect(function()
+    isAutoEggRunning = false
+end)
+
+local function LoadEggList()
     for _, v in pairs(ScrollEggs:GetChildren()) do
         if v:IsA("TextButton") then v:Destroy() end
     end
@@ -559,7 +587,7 @@ AutoEggBtn.MouseButton1Click:Connect(function()
     for _, obj in pairs(workspace:GetDescendants()) do
         if (obj:IsA("Model") or obj:IsA("BasePart")) then
             local nameLower = string.lower(obj.Name)
-            if (nameLower:find("egg") or nameLower:find("trứng")) and not nameLower:find("machine") and not nameLower:find("máy") and not nameLower:find("roll") and not nameLower:find("upgrade") then
+            if (nameLower:find("egg") or nameLower:find("trứng")) and not nameLower:find("safe") and not nameLower:find("spawn") and not nameLower:find("machine") and not nameLower:find("máy") and not nameLower:find("roll") and not nameLower:find("upgrade") then
                 count = count + 1
                 local btn = Instance.new("TextButton")
                 btn.Parent = ScrollEggs
@@ -578,51 +606,65 @@ AutoEggBtn.MouseButton1Click:Connect(function()
                     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
                     local root = char.HumanoidRootPart
                     local targetPos = targetObj:IsA("Model") and targetObj:GetPivot().Position or targetObj.Position
-                    local safePos = root.Position
+                    
+                    -- Lưu vị trí an toàn (Safe Position) hiện tại trước khi bay để quay về an toàn
+                    local safePos = root.CFrame
+                    isAutoEggRunning = true
                     
                     task.spawn(function()
+                        -- Bật Noclip để xuyên tường không bị kẹt
                         local conn = RunService.Stepped:Connect(function()
-                            for _, p in pairs(char:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end
+                            if char then
+                                for _, p in pairs(char:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end
+                            end
                         end)
                         
                         local tempBv = Instance.new("BodyVelocity")
                         tempBv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
                         tempBv.Parent = root
                         
-                        while (root.Position - targetPos).Magnitude > 4 and char.Parent do
+                        -- Bay từ từ tới quả trứng
+                        while isAutoEggRunning and (root.Position - targetPos).Magnitude > 4 and char.Parent do
                             local dir = (targetPos - root.Position).Unit
-                            tempBv.Velocity = dir * 75 
+                            tempBv.Velocity = dir * 65 
                             RunService.RenderStepped:Wait()
                         end
+                        
+                        if isAutoEggRunning then
+                            tempBv.Velocity = Vector3.new(0, 0, 0)
+                            task.wait(0.2)
+                            pcall(function() game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.E, false, game) end)
+                            task.wait(0.8)
+                            pcall(function() game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.E, false, game) end)
+                        end
+                        
                         tempBv:Destroy()
                         
-                        pcall(function() game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.E, false, game) end)
-                        
-                        local upBv = Instance.new("BodyVelocity")
-                        upBv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-                        upBv.Velocity = Vector3.new(0, 140, 0)
-                        upBv.Parent = root
-                        task.wait(1.0)
-                        upBv:Destroy()
-                        
-                        pcall(function() game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.E, false, game) end)
-                        
-                        local backBv = Instance.new("BodyVelocity")
-                        backBv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-                        backBv.Parent = root
-                        while (root.Position - safePos).Magnitude > 5 and char.Parent do
-                            local dir = (safePos - root.Position).Unit
-                            backBv.Velocity = dir * 85
-                            RunService.RenderStepped:Wait()
+                        -- Sử dụng Tween an toàn thay vì tốc độ đột ngột để chống bị Kich bởi Anti-Cheat
+                        if char and root.Parent then
+                            local tweenInfo = TweenInfo.new(1.2, Enum.EasingStyle.Linear)
+                            local tween = TweenService:Create(root, tweenInfo, {CFrame = safePos})
+                            tween:Play()
+                            tween.Completed:Wait()
                         end
-                        backBv:Destroy()
+                        
                         conn:Disconnect()
+                        isAutoEggRunning = false
                     end)
                 end)
             end
         end
     end
     ScrollEggs.CanvasSize = UDim2.new(0, 0, 0, count * 45 + 10)
+end
+
+AutoEggBtn.MouseButton1Click:Connect(function()
+    EggListFrame.Visible = true
+    LoadEggList()
+end)
+
+RefreshEggBtn.MouseButton1Click:Connect(function()
+    LoadEggList()
 end)
 
 -- Nội dung Tab Settings
@@ -726,4 +768,3 @@ end
 OpenBtn.MouseButton1Click:Connect(function() ToggleMenu(not isOpen) end)
 MinBtn.MouseButton1Click:Connect(function() ToggleMenu(false) end)
 task.delay(1, function() ToggleMenu(isOpen) end)
-
