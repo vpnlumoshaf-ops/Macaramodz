@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 
 -- 1. TẠO GIAO DIỆN MENU CHÍNH
@@ -19,8 +20,8 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.Position = UDim2.new(0.5, -140, 0.5, -110)
-MainFrame.Size = UDim2.new(0, 280, 0, 220)
+MainFrame.Position = UDim2.new(0.5, -140, 0.5, -120)
+MainFrame.Size = UDim2.new(0, 280, 0, 260)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
@@ -47,7 +48,7 @@ MinBtn.Text = "-"
 MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinBtn.TextSize = 16
 
--- Nút đóng (X)
+-- Nút đóng (X) có xác nhận
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Parent = MainFrame
 CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
@@ -57,6 +58,61 @@ CloseBtn.Font = Enum.Font.SourceSansBold
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.TextSize = 14
+
+-- Khung xác nhận đóng menu
+local ConfirmFrame = Instance.new("Frame")
+ConfirmFrame.Parent = MainFrame
+ConfirmFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ConfirmFrame.Size = UDim2.new(1, 0, 1, 0)
+ConfirmFrame.Visible = false
+ConfirmFrame.ZIndex = 10
+
+local ConfirmText = Instance.new("TextLabel")
+ConfirmText.Parent = ConfirmFrame
+ConfirmText.BackgroundTransparency = 1
+ConfirmText.Position = UDim2.new(0, 0, 0.3, 0)
+ConfirmText.Size = UDim2.new(1, 0, 0, 30)
+ConfirmText.Font = Enum.Font.SourceSansBold
+ConfirmText.Text = "Bạn có chắc muốn tắt menu không?"
+ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
+ConfirmText.TextSize = 15
+ConfirmText.ZIndex = 11
+
+local YesBtn = Instance.new("TextButton")
+YesBtn.Parent = ConfirmFrame
+YesBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+YesBtn.Position = UDim2.new(0.15, 0, 0.55, 0)
+YesBtn.Size = UDim2.new(0.3, 0, 0, 35)
+YesBtn.Font = Enum.Font.SourceSansBold
+YesBtn.Text = "Có"
+YesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+YesBtn.TextSize = 14
+YesBtn.ZIndex = 11
+
+local NoBtn = Instance.new("TextButton")
+NoBtn.Parent = ConfirmFrame
+NoBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+NoBtn.Position = UDim2.new(0.55, 0, 0.55, 0)
+NoBtn.Size = UDim2.new(0.3, 0, 0, 35)
+NoBtn.Font = Enum.Font.SourceSansBold
+NoBtn.Text = "Không"
+NoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoBtn.TextSize = 14
+NoBtn.ZIndex = 11
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ConfirmFrame.Visible = true
+end)
+
+NoBtn.MouseButton1Click:Connect(function()
+    ConfirmFrame.Visible = false
+end)
+
+YesBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+    local toggleGui = game.CoreGui:FindFirstChild("TienPhatToggleGui")
+    if toggleGui then toggleGui:Destroy() end
+end)
 
 -- Thanh TabBar
 local TabBar = Instance.new("Frame")
@@ -77,7 +133,7 @@ TabMain.Parent = Container
 TabMain.Size = UDim2.new(1, 0, 1, 0)
 TabMain.BackgroundTransparency = 1
 TabMain.Visible = true
-TabMain.CanvasSize = UDim2.new(0, 0, 0, 0)
+TabMain.CanvasSize = UDim2.new(0, 0, 0, 220)
 
 local TabSettings = Instance.new("ScrollingFrame")
 TabSettings.Parent = Container
@@ -131,16 +187,16 @@ BtnVisual.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnVisual.TextSize = 13
 BtnVisual.MouseButton1Click:Connect(function() SwitchTab(TabVisual) end)
 
--- ===== TAB MAIN: TÍNH NĂNG ESP BOX =====
+-- ===== TAB MAIN: ESP BOX (Đổi sang màu xanh lá) =====
 local EspBtn = Instance.new("TextButton")
 EspBtn.Parent = TabMain
 EspBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-EspBtn.Position = UDim2.new(0.1, 0, 0.1, 0)
-EspBtn.Size = UDim2.new(0.8, 0, 0, 35)
+EspBtn.Position = UDim2.new(0.1, 0, 0.05, 0)
+EspBtn.Size = UDim2.new(0.8, 0, 0, 32)
 EspBtn.Font = Enum.Font.SourceSansBold
 EspBtn.Text = "ESP Box: Off"
 EspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-EspBtn.TextSize = 14
+EspBtn.TextSize = 13
 
 local espEnabled = false
 local espCache = {}
@@ -167,23 +223,20 @@ EspBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Vòng lặp vẽ ESP chạy mỗi khung hình
 RunService.RenderStepped:Connect(function()
     if not espEnabled then return end
-    
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") then
             local character = player.Character
             local rootPart = character.HumanoidRootPart
             local humanoid = character.Humanoid
-            
             if humanoid.Health > 0 then
                 if not espCache[player] then
                     local box = Drawing.new("Square")
                     box.Visible = false
                     box.Filled = false
                     box.Thickness = 1.5
-                    box.Color = Color3.fromRGB(255, 0, 0)
+                    box.Color = Color3.fromRGB(0, 255, 0) -- Đổi thành xanh lá
                     
                     local nameTag = Drawing.new("Text")
                     nameTag.Visible = false
@@ -191,24 +244,21 @@ RunService.RenderStepped:Connect(function()
                     nameTag.Outline = true
                     nameTag.Font = 2
                     nameTag.Size = 16
-                    nameTag.Color = Color3.fromRGB(255, 255, 255)
+                    nameTag.Color = Color3.fromRGB(0, 255, 0) -- Đổi thành xanh lá
                     
                     espCache[player] = {box = box, name = nameTag}
                 end
                 
                 local box = espCache[player].box
                 local nameTag = espCache[player].name
-                
                 local vector, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
                 
                 if onScreen then
                     local head = character:FindFirstChild("Head")
                     local distance = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (rootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude or 0
-                    
                     if head then
                         local headVector = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
                         local legVector = Camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0))
-                        
                         local height = math.abs(headVector.Y - legVector.Y)
                         local width = height / 2
                         
@@ -236,8 +286,174 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-Players.PlayerRemoving:Connect(function(player)
-    RemoveEsp(player)
+Players.PlayerRemoving:Connect(function(player) RemoveEsp(player) end)
+
+-- ===== TAB MAIN: TÍNH NĂNG FLY KÈM JOYSTICK =====
+local FlyBtn = Instance.new("TextButton")
+FlyBtn.Parent = TabMain
+FlyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+FlyBtn.Position = UDim2.new(0.1, 0, 0.38, 0)
+FlyBtn.Size = UDim2.new(0.8, 0, 0, 32)
+FlyBtn.Font = Enum.Font.SourceSansBold
+FlyBtn.Text = "Fly (Joystick): Off"
+FlyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlyBtn.TextSize = 13
+
+local flying = false
+local flySpeed = 50
+local bv, bg
+
+FlyBtn.MouseButton1Click:Connect(function()
+    flying = not flying
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local root = char.HumanoidRootPart
+    
+    if flying then
+        FlyBtn.Text = "Fly (Joystick): On"
+        FlyBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+        
+        bv = Instance.new("BodyVelocity")
+        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        bv.Velocity = Vector3.new(0, 0, 0)
+        bv.Parent = root
+        
+        bg = Instance.new("BodyGyro")
+        bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bg.CFrame = root.CFrame
+        bg.Parent = root
+        
+        task.spawn(function()
+            while flying and char and root.Parent do
+                bg.CFrame = Camera.CFrame
+                local moveDir = char.Humanoid.MoveDirection
+                bv.Velocity = (Camera.CFrame.LookVector * moveDir.Z + Camera.CFrame.RightVector * moveDir.X) * flySpeed + Vector3.new(0, (moveDir.Y > 0 and flySpeed or 0), 0)
+                RunService.RenderStepped:Wait()
+            end
+        end)
+    else
+        FlyBtn.Text = "Fly (Joystick): Off"
+        FlyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        if bv then bv:Destroy() end
+        if bg then bg:Destroy() end
+    end
+end)
+
+-- ===== TAB MAIN: TỰ ĐỘNG LẤY TRỨNG (MỞ BẢNG CHỌN TRỨNG) =====
+local AutoEggBtn = Instance.new("TextButton")
+AutoEggBtn.Parent = TabMain
+AutoEggBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+AutoEggBtn.Position = UDim2.new(0.1, 0, 0.71, 0)
+AutoEggBtn.Size = UDim2.new(0.8, 0, 0, 35)
+AutoEggBtn.Font = Enum.Font.SourceSansBold
+AutoEggBtn.Text = "Mở Bảng Chọn Trứng"
+AutoEggBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AutoEggBtn.TextSize = 13
+
+-- Khung danh sách trứng trong server
+local EggListFrame = Instance.new("Frame")
+EggListFrame.Parent = ScreenGui
+EggListFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+EggListFrame.Position = UDim2.new(0.5, -150, 0.5, -130)
+EggListFrame.Size = UDim2.new(0, 300, 0, 260)
+EggListFrame.Visible = false
+EggListFrame.Active = true
+EggListFrame.Draggable = true
+
+local EggListTitle = Instance.new("TextLabel")
+EggListTitle.Parent = EggListFrame
+EggListTitle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+EggListTitle.Size = UDim2.new(1, 0, 0, 30)
+EggListTitle.Font = Enum.Font.SourceSansBold
+EggListTitle.Text = "  Danh Sách Trứng Trong Server"
+EggListTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+EggListTitle.TextSize = 14
+EggListTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local CloseEggList = Instance.new("TextButton")
+CloseEggList.Parent = EggListFrame
+CloseEggList.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+CloseEggList.Position = UDim2.new(1, -27, 0, 3)
+CloseEggList.Size = UDim2.new(0, 24, 0, 24)
+CloseEggList.Font = Enum.Font.SourceSansBold
+CloseEggList.Text = "X"
+CloseEggList.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseEggList.TextSize = 13
+CloseEggList.MouseButton1Click:Connect(function() EggListFrame.Visible = false end)
+
+local ScrollEggs = Instance.new("ScrollingFrame")
+ScrollEggs.Parent = EggListFrame
+ScrollEggs.Position = UDim2.new(0, 0, 0, 35)
+ScrollEggs.Size = UDim2.new(1, 0, 1, -35)
+ScrollEggs.BackgroundTransparency = 1
+ScrollEggs.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+AutoEggBtn.MouseButton1Click:Connect(function()
+    EggListFrame.Visible = true
+    -- Xóa danh sách cũ
+    for _, v in pairs(ScrollEggs:GetChildren()) do
+        if v:IsA("TextButton") then v:Destroy() end
+    end
+    
+    local count = 0
+    -- Quét tìm các vật thể có tên chứa chữ "Egg" hoặc "Trứng" trong game
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if (obj:IsA("Model") or obj:IsA("BasePart")) and (string.lower(obj.Name):find("egg") or string.lower(obj.Name):find("trứng")) then
+            count = count + 1
+            local btn = Instance.new("TextButton")
+            btn.Parent = ScrollEggs
+            btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            btn.Position = UDim2.new(0.05, 0, 0, (count - 1) * 40 + 5)
+            btn.Size = UDim2.new(0.9, 0, 0, 35)
+            btn.Font = Enum.Font.SourceSansBold
+            btn.Text = "Trứng: " .. obj.Name
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.TextSize = 13
+            
+            local targetObj = obj
+            btn.MouseButton1Click:Connect(function()
+                EggListFrame.Visible = false
+                local char = LocalPlayer.Character
+                if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+                local root = char.HumanoidRootPart
+                
+                local targetPos = targetObj:IsA("Model") and targetObj:GetPivot().Position or targetObj.Position
+                
+                -- 1. Lưu lại vị trí Safe Zone hiện tại (hoặc mặc định vị trí ban đầu)
+                local safePos = root.Position
+                
+                -- 2. Bay thẳng đến quả trứng thật nhanh
+                root.CFrame = CFrame.new(targetPos + Vector3.new(0, 5, 0))
+                
+                -- 3. Giả lập giữ phím E để lấy trứng
+                task.spawn(function()
+                    virtualInputManager = game:GetService("VirtualInputManager")
+                    -- Bấm giữ phím E
+                    pcall(function()
+                        game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                    end)
+                    
+                    -- Bay lên cao né boss trong lúc đang lấy
+                    local bvTemp = Instance.new("BodyVelocity")
+                    bvTemp.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                    bvTemp.Velocity = Vector3.new(0, 150, 0) -- Vút lên trời cao
+                    bvTemp.Parent = root
+                    
+                    task.wait(1.5) -- Đợi thời gian hớt trứng và né boss
+                    if bvTemp then bvTemp:Destroy() end
+                    
+                    -- Nhả phím E
+                    pcall(function()
+                        game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                    end)
+                    
+                    -- 4. Bay an toàn trở về Safe Zone
+                    root.CFrame = CFrame.new(safePos + Vector3.new(0, 5, 0))
+                end)
+            end)
+        end
+    end
+    ScrollEggs.CanvasSize = UDim2.new(0, 0, 0, count * 40 + 10)
 end)
 
 -- Nội dung Tab Settings
@@ -352,7 +568,7 @@ BtnTrungBinh.MouseButton1Click:Connect(function()
     ModeFrame.Visible = false
 end)
 
--- 2. TẠO DUY NHẤT 1 NÚT TRÒN NỔI NGOÀI MÀN HÌNH (Chống nhân đôi)
+-- 2. TẠO DUY NHẤT 1 NÚT TRÒN NỔI NGOÀI MÀN HÌNH
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "TienPhatToggleGui"
 ToggleGui.Parent = game.CoreGui
@@ -390,12 +606,7 @@ MinBtn.MouseButton1Click:Connect(function()
     ToggleMenu(false)
 end)
 
-CloseBtn.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-    ToggleGui:Destroy()
-end)
-
--- Sau 1 giây đồng bộ chữ XCheat thành On/Off theo trạng thái menu
 task.delay(1, function()
     ToggleMenu(isOpen)
 end)
+
