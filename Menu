@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Ultimate VIP Edition: Ultra Smooth Farm, Fixed Freeze & Fast Auto Click)
+-- Blox Fruit Master Hub - Admin Tienphat (Ultimate VIP Edition: Fixed Exact NPC Quest Positions & Smooth Farm)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -123,7 +123,7 @@ local function createToggle(parent, text, defaultVal, callback)
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Tự Q + Gom/Freeze + Đánh Siêu Tốc)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "Auto Farm (Fix Tọa Độ Q + Gom/Freeze + Đánh Nhanh)", false, function(v) Config.AutoFarm = v end)
 createToggle(MainContainer, "ESP Box & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
 createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
@@ -197,19 +197,19 @@ ToggleGui.Name = "AdminTienphatToggle"
 ToggleGui.Parent = CoreGui
 ToggleGui.ResetOnSpawn = false
 
-local OpenBtn = Instance.new("TextButton")
-OpenBtn.Parent = ToggleGui
-OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-OpenBtn.Position = UDim2.new(0, 15, 0.5, -20)
-OpenBtn.Size = UDim2.new(0, 80, 0, 40)
-OpenBtn.Font = Enum.Font.SourceSansBold
-OpenBtn.Text = "Tienphat Hub"
-OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-OpenBtn.TextSize = 12
-OpenBtn.Draggable = true
+TheOpenBtn = Instance.new("TextButton")
+TheOpenBtn.Parent = ToggleGui
+TheOpenBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+TheOpenBtn.Position = UDim2.new(0, 15, 0.5, -20)
+TheOpenBtn.Size = UDim2.new(0, 80, 0, 40)
+TheOpenBtn.Font = Enum.Font.SourceSansBold
+TheOpenBtn.Text = "Tienphat Hub"
+TheOpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TheOpenBtn.TextSize = 12
+TheOpenBtn.Draggable = true
 
 local isOpen = true
-OpenBtn.MouseButton1Click:Connect(function()
+TheOpenBtn.MouseButton1Click:Connect(function()
     isOpen = not isOpen
     MainFrame.Visible = isOpen
 end)
@@ -241,21 +241,23 @@ end
 local lastQuestTick = 0
 local camera = Workspace.CurrentCamera
 
+-- ĐÃ FIX CHUẨN TỌA ĐỘ VỊ TRÍ CÁC NPC NHẬN NHIỆM VỤ CHÍNH XÁC TRONG BLOX FRUIT (SEA 1)
 local function getQuestNPCData()
     local level = LocalPlayer.Data.Level.Value
     if level >= 10 and level < 15 then
-        return "Monkey", CFrame.new(-1598, 37, 153), {"StartQuest", "Monkey", 1}
+        return "Monkey", CFrame.new(-1601, 37, 153), {"StartQuest", "Monkey", 1}
     elseif level >= 15 and level < 30 then
-        return "Gorilla", CFrame.new(-1598, 37, 153), {"StartQuest", "Gorilla", 1}
+        return "Gorilla", CFrame.new(-1601, 37, 153), {"StartQuest", "Gorilla", 1}
     elseif level >= 30 and level < 60 then
-        return "Pirate", CFrame.new(1045, 16, 1330), {"StartQuest", "Pirate", 1}
+        return "Pirate", CFrame.new(1137, 17, 1630), {"StartQuest", "Pirate", 1}
     elseif level >= 60 and level < 90 then
-        return "Brute", CFrame.new(1113, 17, 4363), {"StartQuest", "Brute", 1}
+        return "Brute", CFrame.new(1137, 17, 1630), {"StartQuest", "Brute", 1}
     elseif level >= 90 and level < 120 then
         return "DesertBandit", CFrame.new(896, 7, 4390), {"StartQuest", "DesertBandit", 1}
     elseif level >= 120 and level < 150 then
         return "SnowBandit", CFrame.new(1385, 87, -1298), {"StartQuest", "SnowBandit", 1}
     else
+        -- Mặc định Bandit (Đảo Khởi Đầu)
         return "Bandit", CFrame.new(1059, 17, 1179), {"StartQuest", "Bandit", 1}
     end
 end
@@ -376,7 +378,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 4. AUTO FARM, GÔM & FREEZE QUÁI, NHẬN Q & AUTO CLICK MƯỢT MÀ
+    -- 4. AUTO FARM, TÌM NPC Q CHUẨN XÁC, GÔM & FREEZE QUÁI, ĐÁNH SIÊU TỐC
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
@@ -407,16 +409,17 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Kiểm tra bảng nhiệm vụ
+                -- Kiểm tra trạng thái bảng nhiệm vụ
                 local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
                 local questGui = mainGui and mainGui:FindFirstChild("Quest")
                 local mobNameNeeded, npcPos, questArgs = getQuestNPCData()
 
                 if questGui and not questGui.Visible then
-                    if (hrp.Position - npcPos.Position).Magnitude > 5 then
+                    -- Bay tới đúng vị trí NPC giao nhiệm vụ đã fix chuẩn
+                    if (hrp.Position - npcPos.Position).Magnitude > 4 then
                         hrp.CFrame = CFrame.new(npcPos.Position + Vector3.new(0, 3, 0))
                     else
-                        if tick() - lastQuestTick > 1.5 then
+                        if tick() - lastQuestTick > 1.2 then
                             lastQuestTick = tick()
                             local commF = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
                             if commF then
@@ -427,7 +430,7 @@ RunService.RenderStepped:Connect(function()
                     return
                 end
 
-                -- Tìm quái gần nhất và gom toàn bộ quái trong 100m đè sát lên đầu, khóa cứng (Freeze)
+                -- Tìm quái, gom toàn bộ quái trong 100m đè sát lên đầu và khóa cứng (Freeze)
                 local targetMob = nil
                 local shortestDist = math.huge
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
@@ -439,8 +442,7 @@ RunService.RenderStepped:Connect(function()
                         if mobHrp and mobHum and mobHum.Health > 0 then
                             local d = (mobHrp.Position - hrp.Position).Magnitude
                             if d < 100 then
-                                -- Gom và đóng băng quái cố định tại vị trí trên đầu người chơi
-                                mobHrp.CFrame = hrp.CFrame + Vector3.new(0, 4, 0)
+                                mobHrp.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
                                 mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                                 mobHrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                                 if mobHum:FindFirstChild("Animator") then
@@ -458,10 +460,9 @@ RunService.RenderStepped:Connect(function()
 
                 if targetMob then
                     local mHrp = targetMob.HumanoidRootPart
-                    -- Đặt nhân vật đứng cố định ngay trên đầu quái mục tiêu mà không bị giật
-                    hrp.CFrame = mHrp.CFrame + Vector3.new(0, 5, 0)
+                    hrp.CFrame = mHrp.CFrame + Vector3.new(0, 4, 0)
 
-                    -- Auto Click tốc độ cao kết hợp tool:Activate và VirtualUser
+                    -- Auto Click siêu tốc độ cao liên tục
                     pcall(function()
                         local activeTool = char:FindFirstChildOfClass("Tool")
                         if activeTool then
