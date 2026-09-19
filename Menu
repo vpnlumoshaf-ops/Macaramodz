@@ -1,4 +1,4 @@
--- Kiểm tra chống spam: Nếu menu hoặc nút nổi đã tồn tại rồi thì dừng luôn để tránh bị nhân đôi
+-- Kiểm tra chống spam: Nếu menu hoặc nút nổi đã tồn tại thì dừng luôn
 if game.CoreGui:FindFirstChild("TienPhatMenuGui") or game.CoreGui:FindFirstChild("TienPhatToggleGui") then
     return
 end
@@ -7,7 +7,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Lighting = game:GetService("Lighting")
 
--- ===== 1. TẠO GIAO DIỆN MENU CHÍNH =====
+-- 1. TẠO GIAO DIỆN MENU CHÍNH
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "TienPhatMenuGui"
 ScreenGui.Parent = game.CoreGui
@@ -22,18 +22,281 @@ MainFrame.Size = UDim2.new(0, 280, 0, 220)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
--- Tiêu đề (Tiến Phát Menu - Căn trái)
+-- Tiêu đề
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
 Title.Parent = MainFrame
 Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.Font = Enum.Font.SourceSansBold
-Title.Text = "  Tiến Phát Menu!"
+Title.Text = "  ! Tiến Phát Menu"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 15
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
+-- Nút ẩn (-)
+local MinBtn = Instance.new("TextButton")
+MinBtn.Parent = MainFrame
+MinBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+MinBtn.Position = UDim2.new(1, -55, 0, 3)
+MinBtn.Size = UDim2.new(0, 24, 0, 24)
+MinBtn.Font = Enum.Font.SourceSansBold
+MinBtn.Text = "-"
+MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinBtn.TextSize = 16
+
+-- Nút đóng (X)
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Parent = MainFrame
+CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+CloseBtn.Position = UDim2.new(1, -27, 0, 3)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+
+-- Thanh TabBar
+local TabBar = Instance.new("Frame")
+TabBar.Parent = MainFrame
+TabBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+TabBar.Position = UDim2.new(0, 0, 0, 30)
+TabBar.Size = UDim2.new(1, 0, 0, 30)
+
+-- Khung chứa nội dung
+local Container = Instance.new("Frame")
+Container.Parent = MainFrame
+Container.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Container.Position = UDim2.new(0, 0, 0, 60)
+Container.Size = UDim2.new(1, 0, 1, -60)
+
+local TabMain = Instance.new("ScrollingFrame")
+TabMain.Parent = Container
+TabMain.Size = UDim2.new(1, 0, 1, 0)
+TabMain.BackgroundTransparency = 1
+TabMain.Visible = true
+TabMain.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+local TabSettings = Instance.new("ScrollingFrame")
+TabSettings.Parent = Container
+TabSettings.Size = UDim2.new(1, 0, 1, 0)
+TabSettings.BackgroundTransparency = 1
+TabSettings.Visible = false
+TabSettings.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+local TabVisual = Instance.new("ScrollingFrame")
+TabVisual.Parent = Container
+TabVisual.Size = UDim2.new(1, 0, 1, 0)
+TabVisual.BackgroundTransparency = 1
+TabVisual.Visible = false
+TabVisual.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+local function SwitchTab(selectedTab)
+    TabMain.Visible = (selectedTab == TabMain)
+    TabSettings.Visible = (selectedTab == TabSettings)
+    TabVisual.Visible = (selectedTab == TabVisual)
+end
+
+local BtnMain = Instance.new("TextButton")
+BtnMain.Parent = TabBar
+BtnMain.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+BtnMain.Size = UDim2.new(0.333, 0, 1, 0)
+BtnMain.Font = Enum.Font.SourceSansBold
+BtnMain.Text = "Main"
+BtnMain.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnMain.TextSize = 13
+BtnMain.MouseButton1Click:Connect(function() SwitchTab(TabMain) end)
+
+local BtnSettings = Instance.new("TextButton")
+BtnSettings.Parent = TabBar
+BtnSettings.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+BtnSettings.Position = UDim2.new(0.333, 0, 0, 0)
+BtnSettings.Size = UDim2.new(0.333, 0, 1, 0)
+BtnSettings.Font = Enum.Font.SourceSansBold
+BtnSettings.Text = "Settings"
+BtnSettings.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnSettings.TextSize = 13
+BtnSettings.MouseButton1Click:Connect(function() SwitchTab(TabSettings) end)
+
+local BtnVisual = Instance.new("TextButton")
+BtnVisual.Parent = TabBar
+BtnVisual.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+BtnVisual.Position = UDim2.new(0.666, 0, 0, 0)
+BtnVisual.Size = UDim2.new(0.334, 0, 1, 0)
+BtnVisual.Font = Enum.Font.SourceSansBold
+BtnVisual.Text = "Visual"
+BtnVisual.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnVisual.TextSize = 13
+BtnVisual.MouseButton1Click:Connect(function() SwitchTab(TabVisual) end)
+
+-- Nội dung Tab Main & Settings (Hoàn toàn trống, không còn nút "Tính năng 1" rác)
+local TxtMain = Instance.new("TextLabel")
+TxtMain.Parent = TabMain
+TxtMain.Size = UDim2.new(1, 0, 1, 0)
+TxtMain.BackgroundTransparency = 1
+TxtMain.Font = Enum.Font.SourceSans
+TxtMain.Text = "Tab Main (Đang trống)..."
+TxtMain.TextColor3 = Color3.fromRGB(150, 150, 150)
+TxtMain.TextSize = 14
+
+local TxtSettings = Instance.new("TextLabel")
+TxtSettings.Parent = TabSettings
+TxtSettings.Size = UDim2.new(1, 0, 1, 0)
+TxtSettings.BackgroundTransparency = 1
+TxtSettings.Font = Enum.Font.SourceSans
+TxtSettings.Text = "Tab Settings (Đang trống)..."
+TxtSettings.TextColor3 = Color3.fromRGB(150, 150, 150)
+TxtSettings.TextSize = 14
+
+-- Tab Visual: Fix Lag
+local FixLagBtn = Instance.new("TextButton")
+FixLagBtn.Parent = TabVisual
+FixLagBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+FixLagBtn.Position = UDim2.new(0.1, 0, 0.1, 0)
+FixLagBtn.Size = UDim2.new(0.8, 0, 0, 35)
+FixLagBtn.Font = Enum.Font.SourceSansBold
+FixLagBtn.Text = "Fix Lag: Off"
+FixLagBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FixLagBtn.TextSize = 14
+
+local ModeFrame = Instance.new("Frame")
+ModeFrame.Parent = TabVisual
+ModeFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+ModeFrame.Position = UDim2.new(0.1, 0, 0.32, 0)
+ModeFrame.Size = UDim2.new(0.8, 0, 0, 75)
+ModeFrame.Visible = false
+
+local ModeTitle = Instance.new("TextLabel")
+ModeTitle.Parent = ModeFrame
+ModeTitle.Size = UDim2.new(1, 0, 0, 25)
+ModeTitle.BackgroundTransparency = 1
+ModeTitle.Font = Enum.Font.SourceSansBold
+ModeTitle.Text = "Chọn mức độ Fix Lag:"
+ModeTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+ModeTitle.TextSize = 13
+
+local BtnNhe = Instance.new("TextButton")
+BtnNhe.Parent = ModeFrame
+BtnNhe.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+BtnNhe.Position = UDim2.new(0.05, 0, 0.4, 0)
+BtnNhe.Size = UDim2.new(0.42, 0, 0, 32)
+BtnNhe.Font = Enum.Font.SourceSansBold
+BtnNhe.Text = "Nhẹ"
+BtnNhe.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnNhe.TextSize = 13
+
+local BtnTrungBinh = Instance.new("TextButton")
+BtnTrungBinh.Parent = ModeFrame
+BtnTrungBinh.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+BtnTrungBinh.Position = UDim2.new(0.53, 0, 0.4, 0)
+BtnTrungBinh.Size = UDim2.new(0.42, 0, 0, 32)
+BtnTrungBinh.Font = Enum.Font.SourceSansBold
+BtnTrungBinh.Text = "Trung Bình"
+BtnTrungBinh.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnTrungBinh.TextSize = 13
+
+FixLagBtn.MouseButton1Click:Connect(function()
+    ModeFrame.Visible = not ModeFrame.Visible
+end)
+
+local function RemoveFog()
+    pcall(function()
+        Lighting.FogEnd = 999999
+        if Lighting:FindFirstChild("Atmosphere") then
+            Lighting.Atmosphere.Density = 0
+        end
+    end)
+end
+
+local function RemoveOutfits()
+    pcall(function()
+        if LocalPlayer.Character then
+            for _, v in pairs(LocalPlayer.Character:GetChildren()) do
+                if v:IsA("Accessory") or v:IsA("Clothing") or v:IsA("ShirtGraphic") then
+                    v:Destroy()
+                end
+            end
+        end
+    end)
+end
+
+local function RemoveTextures()
+    pcall(function()
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("Texture") or v:IsA("Decal") then
+                v:Destroy()
+            elseif v:IsA("BasePart") then
+                v.Material = Enum.Material.SmoothPlastic
+                v.Reflectance = 0
+            end
+        end
+    end)
+end
+
+BtnNhe.MouseButton1Click:Connect(function()
+    RemoveFog()
+    RemoveOutfits()
+    FixLagBtn.Text = "Fix Lag: Nhẹ (On)"
+    FixLagBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    ModeFrame.Visible = false
+end)
+
+BtnTrungBinh.MouseButton1Click:Connect(function()
+    RemoveFog()
+    RemoveOutfits()
+    RemoveTextures()
+    FixLagBtn.Text = "Fix Lag: Trung Bình (On)"
+    FixLagBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    ModeFrame.Visible = false
+end)
+
+-- 2. TẠO DUY NHẤT 1 NÚT TRÒN NỔI NGOÀI MÀN HÌNH (Chống nhân đôi)
+local ToggleGui = Instance.new("ScreenGui")
+ToggleGui.Name = "TienPhatToggleGui"
+ToggleGui.Parent = game.CoreGui
+
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Parent = ToggleGui
+OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+OpenBtn.Position = UDim2.new(0, 20, 0.5, -20)
+OpenBtn.Size = UDim2.new(0, 50, 0, 40)
+OpenBtn.Font = Enum.Font.SourceSansBold
+OpenBtn.Text = "XCheat"
+OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenBtn.TextSize = 13
+OpenBtn.Draggable = true
+
+local isOpen = true
+
+local function ToggleMenu(state)
+    isOpen = state
+    MainFrame.Visible = isOpen
+    if isOpen then
+        OpenBtn.Text = "On"
+        OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    else
+        OpenBtn.Text = "Off"
+        OpenBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    end
+end
+
+OpenBtn.MouseButton1Click:Connect(function()
+    ToggleMenu(not isOpen)
+end)
+
+MinBtn.MouseButton1Click:Connect(function()
+    ToggleMenu(false)
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+    ToggleGui:Destroy()
+end)
+
+-- Sau 1 giây đồng bộ chữ XCheat thành On/Off theo trạng thái menu
+task.delay(1, function()
+    ToggleMenu(isOpen)
+end)
 -- Nút ẩn menu (-)
 local MinBtn = Instance.new("TextButton")
 MinBtn.Parent = MainFrame
