@@ -1,0 +1,477 @@
+-- Kiểm tra chống spam menu
+if game.CoreGui:FindFirstChild("DeadRailsMasterGui") or game.CoreGui:FindFirstChild("DeadRailsToggleGui") or game.CoreGui:FindFirstChild("DeadRailsConfirmGui") then
+    return
+end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+
+-- Trạng thái cấu hình script
+local Config = {
+    AutoAttack = false,
+    AttackSpeed = "Bình thường",
+    WeaponChoice = "Mặc định",
+    EspBoxMonster = false,
+    EspLineMonster = false,
+    EspInfoMonster = false,
+    EspBoxPlayer = false,
+    EspLinePlayer = false,
+    EspInfoPlayer = false,
+    AutoPickup = {},
+    Fly = false,
+    ZoomEnabled = false,
+    AutoHealthItem = "Băng gạc",
+    AutoHealthPercent = 50,
+    BringItemChoice = "ammo",
+    FixLagLevel = "Không",
+    WalkSpeed = 16,
+    JumpPower = 50,
+    JumpDistance = 0,
+    ThemeColor = Color3.fromRGB(30, 30, 30)
+}
+
+-- 1. GIAO DIỆN CHÍNH (3 TAB)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "DeadRailsMasterGui"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Config.ThemeColor
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -165)
+MainFrame.Size = UDim2.new(0, 400, 0, 330)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+-- Thanh tiêu đề
+local Title = Instance.new("TextLabel")
+Title.Parent = MainFrame
+Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "  🚂 Dead Rails - Admin Tienphat Menu"
+Title.TextColor3 = Color3.fromRGB(255, 200, 50)
+Title.TextSize = 15
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Nút Ẩn menu
+local HideBtn = Instance.new("TextButton")
+HideBtn.Parent = MainFrame
+HideBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+HideBtn.Position = UDim2.new(1, -55, 0, 5)
+HideBtn.Size = UDim2.new(0, 24, 0, 24)
+HideBtn.Font = Enum.Font.SourceSansBold
+HideBtn.Text = "-"
+HideBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+HideBtn.TextSize = 14
+
+-- Nút Đóng script
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Parent = MainFrame
+CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+CloseBtn.Position = UDim2.new(1, -27, 0, 5)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+
+-- Thanh Tab chọn
+local TabBar = Instance.new("Frame")
+TabBar.Parent = MainFrame
+TabBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+TabBar.Position = UDim2.new(0, 0, 0, 35)
+TabBar.Size = UDim2.new(1, 0, 0, 30)
+
+local TabMainBtn = Instance.new("TextButton")
+TabMainBtn.Parent = TabBar
+TabMainBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+TabMainBtn.Size = UDim2.new(0.33, 0, 1, 0)
+TabMainBtn.Font = Enum.Font.SourceSansBold
+TabMainBtn.Text = "Main"
+TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TabMainBtn.TextSize = 14
+
+local TabVisualBtn = Instance.new("TextButton")
+TabVisualBtn.Parent = TabBar
+TabVisualBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TabVisualBtn.Position = UDim2.new(0.33, 0, 0, 0)
+TabVisualBtn.Size = UDim2.new(0.33, 0, 1, 0)
+TabVisualBtn.Font = Enum.Font.SourceSansBold
+TabVisualBtn.Text = "Visual"
+TabVisualBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+TabVisualBtn.TextSize = 14
+
+local TabSettingsBtn = Instance.new("TextButton")
+TabSettingsBtn.Parent = TabBar
+TabSettingsBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TabSettingsBtn.Position = UDim2.new(0.66, 0, 0, 0)
+TabSettingsBtn.Size = UDim2.new(0.34, 0, 1, 0)
+TabSettingsBtn.Font = Enum.Font.SourceSansBold
+TabSettingsBtn.Text = "Settings"
+TabSettingsBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+TabSettingsBtn.TextSize = 14
+
+-- Các Container cho từng Tab
+local MainContainer = Instance.new("ScrollingFrame")
+MainContainer.Parent = MainFrame
+MainContainer.Position = UDim2.new(0, 0, 0, 70)
+MainContainer.Size = UDim2.new(1, 0, 1, -70)
+MainContainer.BackgroundTransparency = 1
+MainContainer.CanvasSize = UDim2.new(0, 0, 0, 650)
+MainContainer.Visible = true
+
+local VisualContainer = Instance.new("ScrollingFrame")
+VisualContainer.Parent = MainFrame
+VisualContainer.Position = UDim2.new(0, 0, 0, 70)
+VisualContainer.Size = UDim2.new(1, 0, 1, -70)
+VisualContainer.BackgroundTransparency = 1
+VisualContainer.CanvasSize = UDim2.new(0, 0, 0, 300)
+VisualContainer.Visible = false
+
+local SettingsContainer = Instance.new("ScrollingFrame")
+SettingsContainer.Parent = MainFrame
+SettingsContainer.Position = UDim2.new(0, 0, 0, 70)
+SettingsContainer.Size = UDim2.new(1, 0, 1, -70)
+SettingsContainer.BackgroundTransparency = 1
+SettingsContainer.CanvasSize = UDim2.new(0, 0, 0, 450)
+SettingsContainer.Visible = false
+
+-- Chuyển Tab
+TabMainBtn.MouseButton1Click:Connect(function()
+    MainContainer.Visible = true; VisualContainer.Visible = false; SettingsContainer.Visible = false
+    TabMainBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabVisualBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); TabVisualBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    TabSettingsBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); TabSettingsBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+TabVisualBtn.MouseButton1Click:Connect(function()
+    MainContainer.Visible = false; VisualContainer.Visible = true; SettingsContainer.Visible = false
+    TabVisualBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); TabVisualBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabMainBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); TabMainBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    TabSettingsBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); TabSettingsBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+TabSettingsBtn.MouseButton1Click:Connect(function()
+    MainContainer.Visible = false; VisualContainer.Visible = false; SettingsContainer.Visible = true
+    TabSettingsBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); TabSettingsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabMainBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); TabMainBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    TabVisualBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); TabVisualBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+-- ================= TAB MAIN =================
+local yPos = 10
+local function createToggle(parent, text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Parent = parent
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.Position = UDim2.new(0.05, 0, 0, yPos)
+    btn.Size = UDim2.new(0.9, 0, 0, 30)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Text = text .. ": Off"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 13
+    
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = text .. (state and ": On" or ": Off")
+        btn.BackgroundColor3 = state and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(50, 50, 50)
+        callback(state)
+    end)
+    yPos = yPos + 38
+    return btn
+end
+
+createToggle(MainContainer, "Tự động tấn công", function(v) Config.AutoAttack = v end)
+createToggle(MainContainer, "ESP Box Monster", function(v) Config.EspBoxMonster = v end)
+createToggle(MainContainer, "ESP Line Monster", function(v) Config.EspLineMonster = v end)
+createToggle(MainContainer, "ESP Info Monster", function(v) Config.EspInfoMonster = v end)
+createToggle(MainContainer, "ESP Box Player", function(v) Config.EspBoxPlayer = v end)
+createToggle(MainContainer, "ESP Line Player", function(v) Config.EspLinePlayer = v end)
+createToggle(MainContainer, "ESP Info Player", function(v) Config.EspInfoPlayer = v end)
+createToggle(MainContainer, "Fly (Theo Joystick)", function(v) Config.Fly = v end)
+createToggle(MainContainer, "Mở Khóa Góc Nhìn (Zoom)", function(v) Config.ZoomEnabled = v end)
+
+-- Dropdown Tốc độ đánh
+local atkSpeedLabel = Instance.new("TextLabel", MainContainer)
+atkSpeedLabel.Position = UDim2.new(0.05, 0, 0, yPos)
+atkSpeedLabel.Size = UDim2.new(0.9, 0, 0, 20)
+atkSpeedLabel.Font = Enum.Font.SourceSansBold
+atkSpeedLabel.Text = "Tốc độ đánh: Bình thường"
+atkSpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+atkSpeedLabel.TextSize = 13
+yPos = yPos + 22
+
+local atkBtn1 = Instance.new("TextButton", MainContainer)
+atkBtn1.Position = UDim2.new(0.05, 0, 0, yPos)
+atkBtn1.Size = UDim2.new(0.43, 0, 0, 28)
+atkBtn1.Text = "Bình thường"
+atkBtn1.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+atkBtn1.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+local atkBtn2 = Instance.new("TextButton", MainContainer)
+atkBtn2.Position = UDim2.new(0.52, 0, 0, yPos)
+atkBtn2.Size = UDim2.new(0.43, 0, 0, 28)
+atkBtn2.Text = "Siêu nhanh"
+atkBtn2.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+atkBtn2.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+atkBtn1.MouseButton1Click:Connect(function() Config.AttackSpeed = "Bình thường" atkBtn1.BackgroundColor3 = Color3.fromRGB(0, 170, 0) atkBtn2.BackgroundColor3 = Color3.fromRGB(60, 60, 60) atkSpeedLabel.Text = "Tốc độ đánh: Bình thường" end)
+atkBtn2.MouseButton1Click:Connect(function() Config.AttackSpeed = "Siêu nhanh" atkBtn2.BackgroundColor3 = Color3.fromRGB(0, 170, 0) atkBtn1.BackgroundColor3 = Color3.fromRGB(60, 60, 60) atkSpeedLabel.Text = "Tốc độ đánh: Siêu nhanh" end)
+yPos = yPos + 35
+
+-- Lựa chọn vũ khí
+local wpnLabel = Instance.new("TextLabel", MainContainer)
+wpnLabel.Position = UDim2.new(0.05, 0, 0, yPos)
+wpnLabel.Size = UDim2.new(0.9, 0, 0, 20)
+wpnLabel.Font = Enum.Font.SourceSansBold
+wpnLabel.Text = "Vũ khí ưu tiên: Mặc định"
+wpnLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+wpnLabel.TextSize = 13
+yPos = yPos + 22
+
+local weapons = {"Mặc định", "Rìu (Axe)", "Giáo (Spear)", "Cúp", "Xẻng (Shovel)"}
+for i, w in ipairs(weapons) do
+    local btn = Instance.new("TextButton", MainContainer)
+    btn.Position = UDim2.new(0.05 + ((i-1)%2)*0.45, 0, 0, yPos + math.floor((i-1)/2)*32)
+    btn.Size = UDim2.new(0.43, 0, 0, 28)
+    btn.Text = w
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.MouseButton1Click:Connect(function()
+        Config.WeaponChoice = w
+        wpnLabel.Text = "Vũ khí ưu tiên: " .. w
+    end)
+end
+yPos = yPos + 75
+
+MainContainer.CanvasSize = UDim2.new(0, 0, 0, yPos + 20)
+
+-- ================= TAB VISUAL =================
+local vYPos = 15
+local fixLagLabel = Instance.new("TextLabel", VisualContainer)
+fixLagLabel.Position = UDim2.new(0.05, 0, 0, vYPos)
+fixLagLabel.Size = UDim2.new(0.9, 0, 0, 20)
+fixLagLabel.Font = Enum.Font.SourceSansBold
+fixLagLabel.Text = "Cấp độ Fix Lag:"
+fixLagLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+vYPos = vYPos + 25
+
+local lagBtn1 = Instance.new("TextButton", VisualContainer)
+lagBtn1.Position = UDim2.new(0.05, 0, 0, vYPos)
+lagBtn1.Size = UDim2.new(0.28, 0, 0, 32)
+lagBtn1.Text = "Không"
+lagBtn1.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+lagBtn1.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+local lagBtn2 = Instance.new("TextButton", VisualContainer)
+lagBtn2.Position = UDim2.new(0.36, 0, 0, vYPos)
+lagBtn2.Size = UDim2.new(0.28, 0, 0, 32)
+lagBtn2.Text = "Nhẹ"
+lagBtn2.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+lagBtn2.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+local lagBtn3 = Instance.new("TextButton", VisualContainer)
+lagBtn3.Position = UDim2.new(0.67, 0, 0, vYPos)
+lagBtn3.Size = UDim2.new(0.28, 0, 0, 32)
+lagBtn3.Text = "Trung Bình"
+lagBtn3.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+lagBtn3.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+lagBtn1.MouseButton1Click:Connect(function() Config.FixLagLevel = "Không" lagBtn1.BackgroundColor3 = Color3.fromRGB(0, 170, 0) lagBtn2.BackgroundColor3 = Color3.fromRGB(60, 60, 60) lagBtn3.BackgroundColor3 = Color3.fromRGB(60, 60, 60) end)
+lagBtn2.MouseButton1Click:Connect(function()
+    Config.FixLagLevel = "Nhẹ"
+    lagBtn2.BackgroundColor3 = Color3.fromRGB(0, 170, 0); lagBtn1.BackgroundColor3 = Color3.fromRGB(60, 60, 60); lagBtn3.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    Lighting.FogEnd = 999999
+    for _, v in pairs(workspace:GetDescendants()) do if v:IsA("Decal") or v:IsA("Texture") then v:Destroy() end end
+end)
+lagBtn3.MouseButton1Click:Connect(function()
+    Config.FixLagLevel = "Trung Bình"
+    lagBtn3.BackgroundColor3 = Color3.fromRGB(0, 170, 0); lagBtn1.BackgroundColor3 = Color3.fromRGB(60, 60, 60); lagBtn2.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    Lighting.FogEnd = 999999
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("Decal") or v:IsA("Texture") or v:IsA("ParticleEmitter") or v:IsA("Trail") then v:Destroy() end
+    end
+end)
+
+-- ================= TAB SETTINGS =================
+local sYPos = 15
+local speedLabel = Instance.new("TextLabel", SettingsContainer)
+speedLabel.Position = UDim2.new(0.05, 0, 0, sYPos)
+speedLabel.Size = UDim2.new(0.9, 0, 0, 20)
+speedLabel.Font = Enum.Font.SourceSansBold
+speedLabel.Text = "Tốc độ di chuyển:"
+speedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+sYPos = sYPos + 25
+
+local speeds = {10, 20, 40, 60}
+for i, spd in ipairs(speeds) do
+    local btn = Instance.new("TextButton", SettingsContainer)
+    btn.Position = UDim2.new(0.05 + (i-1)*0.22, 0, 0, sYPos)
+    btn.Size = UDim2.new(0.2, 0, 0, 28)
+    btn.Text = tostring(spd)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.MouseButton1Click:Connect(function()
+        Config.WalkSpeed = spd
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = spd
+        end
+    end)
+end
+sYPos = sYPos + 40
+
+-- Đổi màu nền menu
+local themeLabel = Instance.new("TextLabel", SettingsContainer)
+themeLabel.Position = UDim2.new(0.05, 0, 0, sYPos)
+themeLabel.Size = UDim2.new(0.9, 0, 0, 20)
+themeLabel.Font = Enum.Font.SourceSansBold
+themeLabel.Text = "Thay đổi màu nền Menu:"
+themeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+sYPos = sYPos + 25
+
+local themes = {
+    {"Đen", Color3.fromRGB(25, 25, 25)},
+    {"Xanh lá", Color3.fromRGB(20, 50, 30)},
+    {"Đỏ", Color3.fromRGB(50, 20, 20)},
+    {"Hồng", Color3.fromRGB(50, 25, 45)}
+}
+for i, th in ipairs(themes) do
+    local btn = Instance.new("TextButton", SettingsContainer)
+    btn.Position = UDim2.new(0.05 + (i-1)*0.22, 0, 0, sYPos)
+    btn.Size = UDim2.new(0.2, 0, 0, 28)
+    btn.Text = th[1]
+    btn.BackgroundColor3 = th[2]
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.MouseButton1Click:Connect(function()
+        MainFrame.BackgroundColor3 = th[2]
+    end)
+end
+
+-- 2. NÚT NỔI THÔNG MINH (2 GIÂY SAU ĐỔI THÀNH ON/OFF ĐỒNG BỘ)
+local ToggleGui = Instance.new("ScreenGui")
+ToggleGui.Name = "DeadRailsToggleGui"
+ToggleGui.Parent = game.CoreGui
+
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Parent = ToggleGui
+OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
+OpenBtn.Position = UDim2.new(0, 20, 0.5, -20)
+OpenBtn.Size = UDim2.new(0, 65, 0, 40)
+OpenBtn.Font = Enum.Font.SourceSansBold
+OpenBtn.Text = "Dead Rails Cheat"
+OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenBtn.TextSize = 11
+OpenBtn.Draggable = true
+
+-- Sau 2 giây đổi thành On/Off đồng bộ
+task.delay(2, function()
+    OpenBtn.Text = MainFrame.Visible and "On" or "Off"
+    OpenBtn.BackgroundColor3 = MainFrame.Visible and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(60, 60, 60)
+end)
+
+local isOpen = true
+OpenBtn.MouseButton1Click:Connect(function()
+    isOpen = not isOpen
+    MainFrame.Visible = isOpen
+    OpenBtn.Text = isOpen and "On" or "Off"
+    OpenBtn.BackgroundColor3 = isOpen and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(60, 60, 60)
+end)
+
+HideBtn.MouseButton1Click:Connect(function()
+    isOpen = false
+    MainFrame.Visible = false
+    OpenBtn.Text = "Off"
+    OpenBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end)
+
+-- 3. BẢNG XÁC NHẬN ĐÓNG SCRIPT / QUAY LẠI
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    
+    local ConfirmGui = Instance.new("ScreenGui")
+    ConfirmGui.Name = "DeadRailsConfirmGui"
+    ConfirmGui.Parent = game.CoreGui
+    
+    local ConfirmFrame = Instance.new("Frame", ConfirmGui)
+    ConfirmFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    ConfirmFrame.Position = UDim2.new(0.5, -130, 0.5, -65)
+    ConfirmFrame.Size = UDim2.new(0, 260, 0, 130)
+    ConfirmFrame.Active = true
+    ConfirmFrame.Draggable = true
+    
+    local cTitle = Instance.new("TextLabel", ConfirmFrame)
+    cTitle.Size = UDim2.new(1, 0, 0, 35)
+    cTitle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    cTitle.Font = Enum.Font.SourceSansBold
+    cTitle.Text = "Xác nhận đóng script?"
+    cTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    cTitle.TextSize = 14
+    
+    local YesBtn = Instance.new("TextButton", ConfirmFrame)
+    YesBtn.Position = UDim2.new(0.1, 0, 0.45, 0)
+    YesBtn.Size = UDim2.new(0.38, 0, 0, 35)
+    YesBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+    YesBtn.Font = Enum.Font.SourceSansBold
+    YesBtn.Text = "Đóng script"
+    YesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    YesBtn.TextSize = 13
+    
+    local BackBtn = Instance.new("TextButton", ConfirmFrame)
+    BackBtn.Position = UDim2.new(0.52, 0, 0.45, 0)
+    BackBtn.Size = UDim2.new(0.38, 0, 0, 35)
+    BackBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    BackBtn.Font = Enum.Font.SourceSansBold
+    BackBtn.Text = "Quay lại"
+    BackBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BackBtn.TextSize = 13
+    
+    YesBtn.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+        ToggleGui:Destroy()
+        ConfirmGui:Destroy()
+    end)
+    
+    BackBtn.MouseButton1Click:Connect(function()
+        ConfirmGui:Destroy()
+        MainFrame.Visible = true
+        isOpen = true
+        OpenBtn.Text = "On"
+        OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    end)
+end)
+
+-- 4. XỬ LÝ LOGIC CHẠY NGẦM (FLY, ZOOM, ESP, AUTO)
+local monsterDrawings = {}
+local playerDrawings = {}
+
+RunService.RenderStepped:Connect(function()
+    -- Xử lý mở khóa góc nhìn Zoom
+    if Config.ZoomEnabled then
+        LocalPlayer.CameraMaxZoomDistance = 500
+        LocalPlayer.CameraMinZoomDistance = 0.5
+    end
+    
+    -- Xử lý Fly chuẩn theo hướng camera / tâm ngắm
+    if Config.Fly and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = LocalPlayer.Character.HumanoidRootPart
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.PlatformStand = true end
+        
+        local camVec = Camera.CFrame.LookVector
+        local moveDir = Vector3.new(0, 0, 0)
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) or UserInputService:IsKeyDown(Enum.KeyCode.Up) then moveDir = moveDir + camVec end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) or UserInputService:IsKeyDown(Enum.KeyCode.Down) then moveDir = moveDir - camVec end
+        
+        hrp.Velocity = Vector3.new(moveDir.X * 50, 2, moveDir.Z * 50)
+    elseif LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        LocalPlayer.Character.Humanoid.PlatformStand = false
+    end
+end)
