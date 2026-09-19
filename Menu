@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Ultimate Fix: Stable Tele-Pull & Super Fast Attack)
+-- Blox Fruit Master Hub - Admin Tienphat (Ultimate Final Fix: Zero Desync & Real Damage)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -123,7 +123,7 @@ local function createToggle(parent, text, defaultVal, callback)
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Fix Chống Giật & Siêu Đánh Nhanh)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "Auto Farm (Fix Dame Thật & Không Giật)", false, function(v) Config.AutoFarm = v end)
 createToggle(MainContainer, "ESP Box Nhỏ Gọn & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
 createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
@@ -357,7 +357,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 4. AUTO FARM ỔN ĐỊNH: ĐỨNG YÊN TẠI CHỖ, GOM NHIỀU QUÁI VÀ ĐÁNH LIÊN TỤC
+    -- 4. AUTO FARM ĐỈNH CAO: KHÔNG TELE PLAYER, GOM QUÁI XUỐNG DƯỚI ĐÁNH TRÚNG 100%
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
@@ -388,7 +388,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Tìm quái gần nhất để đứng trên đầu nó một khoảng cố định (không bị giật lò xo)
+                -- Tìm và bay đến đúng vị trí cụm quái (chỉ tele 1 lần đến gần, sau đó đứng yên dưới đất chém)
                 local targetMob = nil
                 local shortestDist = math.huge
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
@@ -400,9 +400,9 @@ RunService.RenderStepped:Connect(function()
                         if mobHrp and mobHum and mobHum.Health > 0 then
                             local d = (mobHrp.Position - hrp.Position).Magnitude
                             
-                            -- Gom toàn bộ quái trong phạm vi 150m bay chụm lại đúng vị trí đầu nhân vật (cách 4 stud)
-                            if d < 150 then
-                                mobHrp.CFrame = hrp.CFrame + Vector3.new(0, 4, 0)
+                            -- Gom quái bọc xung quanh chân nhân vật (cách 2 stud) để đánh trúng thật 100%
+                            if d < 200 then
+                                mobHrp.CFrame = hrp.CFrame + Vector3.new(0, -2, 0)
                                 mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                                 mobHrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                                 if mobHum:FindFirstChild("Animator") then
@@ -419,11 +419,13 @@ RunService.RenderStepped:Connect(function()
                 end
 
                 if targetMob then
-                    -- Cố định vị trí player lơ lửng phía trên bầy quái, không tele lung tung gây giật
                     local mHrp = targetMob.HumanoidRootPart
-                    hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 5, 0)) * (hrp.CFrame - hrp.CFrame.Position)
+                    -- Chỉ dịch chuyển player lại gần quái nếu quái ở xa (> 15 stud), tránh bị rung lắc khung hình
+                    if shortestDist > 15 then
+                        hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 3, 0)) * (hrp.CFrame - hrp.CFrame.Position)
+                    end
 
-                    -- Auto click siêu tốc đánh liên tục không ngừng nghỉ
+                    -- Auto click siêu tốc đánh liên tục ghi nhận sát thương thật
                     pcall(function()
                         local activeTool = char:FindFirstChildOfClass("Tool")
                         if activeTool then
