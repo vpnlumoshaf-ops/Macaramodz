@@ -21,16 +21,11 @@ local Config = {
     EspBoxPlayer = false,
     EspLinePlayer = false,
     EspInfoPlayer = false,
-    AutoPickup = {},
     Fly = false,
     ZoomEnabled = false,
-    AutoHealthItem = "Băng gạc",
-    AutoHealthPercent = 50,
-    BringItemChoice = "ammo",
-    FixLagLevel = "Không",
     WalkSpeed = 16,
-    JumpPower = 50,
-    JumpDistance = 0,
+    BringItem = false,
+    BringItemChoice = "ammo",
     ThemeColor = Color3.fromRGB(30, 30, 30)
 }
 
@@ -124,7 +119,7 @@ MainContainer.Parent = MainFrame
 MainContainer.Position = UDim2.new(0, 0, 0, 70)
 MainContainer.Size = UDim2.new(1, 0, 1, -70)
 MainContainer.BackgroundTransparency = 1
-MainContainer.CanvasSize = UDim2.new(0, 0, 0, 650)
+MainContainer.CanvasSize = UDim2.new(0, 0, 0, 750)
 MainContainer.Visible = true
 
 local VisualContainer = Instance.new("ScrollingFrame")
@@ -198,6 +193,7 @@ createToggle(MainContainer, "ESP Line Player", function(v) Config.EspLinePlayer 
 createToggle(MainContainer, "ESP Info Player", function(v) Config.EspInfoPlayer = v end)
 createToggle(MainContainer, "Fly (Theo Joystick)", function(v) Config.Fly = v end)
 createToggle(MainContainer, "Mở Khóa Góc Nhìn (Zoom)", function(v) Config.ZoomEnabled = v end)
+createToggle(MainContainer, "Gôm Vật Phẩm (Bring Item 300m)", function(v) Config.BringItem = v end)
 
 -- Dropdown Tốc độ đánh
 local atkSpeedLabel = Instance.new("TextLabel", MainContainer)
@@ -251,7 +247,6 @@ for i, w in ipairs(weapons) do
     end)
 end
 yPos = yPos + 75
-
 MainContainer.CanvasSize = UDim2.new(0, 0, 0, yPos + 20)
 
 -- ================= TAB VISUAL =================
@@ -285,15 +280,13 @@ lagBtn3.Text = "Trung Bình"
 lagBtn3.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 lagBtn3.TextColor3 = Color3.fromRGB(255, 255, 255)
 
-lagBtn1.MouseButton1Click:Connect(function() Config.FixLagLevel = "Không" lagBtn1.BackgroundColor3 = Color3.fromRGB(0, 170, 0) lagBtn2.BackgroundColor3 = Color3.fromRGB(60, 60, 60) lagBtn3.BackgroundColor3 = Color3.fromRGB(60, 60, 60) end)
+lagBtn1.MouseButton1Click:Connect(function() lagBtn1.BackgroundColor3 = Color3.fromRGB(0, 170, 0) lagBtn2.BackgroundColor3 = Color3.fromRGB(60, 60, 60) lagBtn3.BackgroundColor3 = Color3.fromRGB(60, 60, 60) end)
 lagBtn2.MouseButton1Click:Connect(function()
-    Config.FixLagLevel = "Nhẹ"
     lagBtn2.BackgroundColor3 = Color3.fromRGB(0, 170, 0); lagBtn1.BackgroundColor3 = Color3.fromRGB(60, 60, 60); lagBtn3.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     Lighting.FogEnd = 999999
     for _, v in pairs(workspace:GetDescendants()) do if v:IsA("Decal") or v:IsA("Texture") then v:Destroy() end end
 end)
 lagBtn3.MouseButton1Click:Connect(function()
-    Config.FixLagLevel = "Trung Bình"
     lagBtn3.BackgroundColor3 = Color3.fromRGB(0, 170, 0); lagBtn1.BackgroundColor3 = Color3.fromRGB(60, 60, 60); lagBtn2.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     Lighting.FogEnd = 999999
     for _, v in pairs(workspace:GetDescendants()) do
@@ -321,9 +314,6 @@ for i, spd in ipairs(speeds) do
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.MouseButton1Click:Connect(function()
         Config.WalkSpeed = spd
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = spd
-        end
     end)
 end
 sYPos = sYPos + 40
@@ -355,7 +345,7 @@ for i, th in ipairs(themes) do
     end)
 end
 
--- 2. NÚT NỔI THÔNG MINH (2 GIÂY SAU ĐỔI THÀNH ON/OFF ĐỒNG BỘ)
+-- 2. NÚT NỔI THÔNG MINH
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "DeadRailsToggleGui"
 ToggleGui.Parent = game.CoreGui
@@ -371,7 +361,6 @@ OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 OpenBtn.TextSize = 11
 OpenBtn.Draggable = true
 
--- Sau 2 giây đổi thành On/Off đồng bộ
 task.delay(2, function()
     OpenBtn.Text = MainFrame.Visible and "On" or "Off"
     OpenBtn.BackgroundColor3 = MainFrame.Visible and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(60, 60, 60)
@@ -392,13 +381,11 @@ HideBtn.MouseButton1Click:Connect(function()
     OpenBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 end)
 
--- 3. BẢNG XÁC NHẬN ĐÓNG SCRIPT / QUAY LẠI
+-- 3. BẢNG XÁC NHẬN ĐÓNG SCRIPT
 CloseBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
-    
-    local ConfirmGui = Instance.new("ScreenGui")
+    local ConfirmGui = Instance.new("ScreenGui", game.CoreGui)
     ConfirmGui.Name = "DeadRailsConfirmGui"
-    ConfirmGui.Parent = game.CoreGui
     
     local ConfirmFrame = Instance.new("Frame", ConfirmGui)
     ConfirmFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -448,30 +435,110 @@ CloseBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- 4. XỬ LÝ LOGIC CHẠY NGẦM (FLY, ZOOM, ESP, AUTO)
-local monsterDrawings = {}
-local playerDrawings = {}
+-- 4. HỆ THỐNG ESP (QUÁI VẬT & NGƯỜI CHƠI)
+local activeDrawings = {}
 
+local function clearEsp()
+    for _, d in pairs(activeDrawings) do
+        if d then d:Remove() end
+    end
+    activeDrawings = {}
+end
+
+local function createEsp(obj, textStr, color)
+    local box = Drawing.new("Square")
+    box.Visible = false
+    box.Color = color
+    box.Thickness = 1.5
+    box.Filled = false
+    table.insert(activeDrawings, box)
+
+    local line = Drawing.new("Line")
+    line.Visible = false
+    line.Color = color
+    line.Thickness = 1
+    table.insert(activeDrawings, line)
+
+    local info = Drawing.new("Text")
+    info.Visible = false
+    info.Color = color
+    info.Size = 13
+    info.Center = true
+    info.Outline = true
+    table.insert(activeDrawings, info)
+
+    return {box = box, line = line, info = info}
+end
+
+-- 5. XỬ LÝ LOGIC CHẠY NGẦM (FIX LỖI TỐC ĐỘ, FLY, ATTACK, BRING ITEM & ESP)
 RunService.RenderStepped:Connect(function()
-    -- Xử lý mở khóa góc nhìn Zoom
+    -- Mở khóa Zoom
     if Config.ZoomEnabled then
         LocalPlayer.CameraMaxZoomDistance = 500
         LocalPlayer.CameraMinZoomDistance = 0.5
     end
-    
-    -- Xử lý Fly chuẩn theo hướng camera / tâm ngắm
-    if Config.Fly and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = LocalPlayer.Character.HumanoidRootPart
-        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.PlatformStand = true end
-        
-        local camVec = Camera.CFrame.LookVector
-        local moveDir = Vector3.new(0, 0, 0)
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) or UserInputService:IsKeyDown(Enum.KeyCode.Up) then moveDir = moveDir + camVec end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) or UserInputService:IsKeyDown(Enum.KeyCode.Down) then moveDir = moveDir - camVec end
-        
-        hrp.Velocity = Vector3.new(moveDir.X * 50, 2, moveDir.Z * 50)
-    elseif LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character.Humanoid.PlatformStand = false
+
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
+        local hrp = char.HumanoidRootPart
+        local hum = char:FindFirstChildOfClass("Humanoid")
+
+        -- Fix lỗi tốc độ chạy bị giật lùi / reset
+        if hum.WalkSpeed ~= Config.WalkSpeed then
+            hum.WalkSpeed = Config.WalkSpeed
+        end
+
+        -- Fix lỗi Fly bị đứng im / kẹt
+        if Config.Fly then
+            hum.PlatformStand = true
+            local camVec = Camera.CFrame.LookVector
+            local moveDir = Vector3.new(0, 0, 0)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) or UserInputService:IsKeyDown(Enum.KeyCode.Up) then moveDir = moveDir + camVec end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) or UserInputService:IsKeyDown(Enum.KeyCode.Down) then moveDir = moveDir - camVec end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) or UserInputService:IsKeyDown(Enum.KeyCode.Left) then moveDir = moveDir - Camera.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) or UserInputService:IsKeyDown(Enum.KeyCode.Right) then moveDir = moveDir + Camera.CFrame.RightVector end
+            
+            hrp.Velocity = Vector3.new(moveDir.X * 60, moveDir.Y * 60, moveDir.Z * 60)
+        else
+            if hum.PlatformStand then
+                hum.PlatformStand = false
+            end
+        end
+
+        -- Tự động tấn công theo tâm ngắm & Tốc độ đánh
+        if Config.AutoAttack then
+            pcall(function()
+                -- Kích hoạt công cụ đang cầm hoặc đánh liên tục
+                local tool = char:FindFirstChildOfClass("Tool")
+                if tool then
+                    if Config.AttackSpeed == "Siêu nhanh" then
+                        tool:Activate()
+                    else
+                        task.wait(0.2)
+                        tool:Activate()
+                    end
+                end
+            end)
+        end
+
+        -- Gôm vật phẩm trong phạm vi 300 mét lại gần người chơi
+        if Config.BringItem then
+            pcall(function()
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("Model") or obj:IsA("Part") then
+                        -- Kiểm tra nếu là vật phẩm rơi (có thể dựa vào tên hoặc thư mục chứa đồ trong game)
+                        if obj.Name:lower():find("ammo") or obj.Name:lower():find("shotgun") or obj.Name:lower():find("axe") or obj.Name:lower():find("snake_oil") or obj.Name:lower():find("knife") then
+                            if obj:FindFirstChild("PrimaryPart") or obj:IsA("Part") then
+                                local targetPart = obj.PrimaryPart or obj
+                                if (targetPart.Position - hrp.Position).Magnitude <= 300 then
+                                    targetPart.CFrame = hrp.CFrame + Vector3.new(math.random(-3,3), 0, math.random(-3,3))
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
     end
 end)
+
