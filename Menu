@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (ESP Weapon Scanner & Smart Auto Equip)
+-- Blox Fruit Master Hub - Admin Tienphat (Ultimate Auto Quest, Weapon Selector, Mob Bring & Freeze)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -16,6 +16,8 @@ end
 
 local Config = {
     AutoFarm = false,
+    BringMob = true,
+    SelectedWeapon = "Tự động (Mạnh nhất)",
     FlySpeed = 350,
     ShowESP = true,
     ShowWeaponScanner = true
@@ -32,8 +34,8 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -210)
-MainFrame.Size = UDim2.new(0, 400, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -230)
+MainFrame.Size = UDim2.new(0, 400, 0, 440)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
@@ -72,7 +74,7 @@ MainContainer.Parent = MainFrame
 MainContainer.Position = UDim2.new(0, 0, 0, 40)
 MainContainer.Size = UDim2.new(1, 0, 1, -40)
 MainContainer.BackgroundTransparency = 1
-MainContainer.CanvasSize = UDim2.new(0, 0, 0, 480)
+MainContainer.CanvasSize = UDim2.new(0, 0, 0, 580)
 
 local yPos = 15
 
@@ -81,11 +83,11 @@ local function createToggle(parent, text, defaultVal, callback)
     btn.Parent = parent
     btn.BackgroundColor3 = defaultVal and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45, 45, 45)
     btn.Position = UDim2.new(0.05, 0, 0, yPos)
-    btn.Size = UDim2.new(0.9, 0, 0, 34)
+    btn.Size = UDim2.new(0.9, 0, 0, 32)
     btn.Font = Enum.Font.SourceSansBold
     btn.Text = text .. (defaultVal and ": On" or ": Off")
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 14
+    btn.TextSize = 13
     
     local state = defaultVal
     btn.MouseButton1Click:Connect(function()
@@ -94,13 +96,47 @@ local function createToggle(parent, text, defaultVal, callback)
         btn.BackgroundColor3 = state and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45, 45, 45)
         callback(state)
     end)
-    yPos = yPos + 45
+    yPos = yPos + 40
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Nhận Q + Tự Đánh Siêu Tốc)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "Auto Farm (Bay nhận Q + Tự đánh)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "Gôm quái 100m & Đứng im (Freeze)", true, function(v) Config.BringMob = v end)
 createToggle(MainContainer, "ESP Box & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
 createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
+
+-- Lựa chọn vũ khí / Katana / Melee
+local weaponLabel = Instance.new("TextLabel", MainContainer)
+weaponLabel.Position = UDim2.new(0.05, 0, 0, yPos)
+weaponLabel.Size = UDim2.new(0.9, 0, 0, 20)
+weaponLabel.Font = Enum.Font.SourceSansBold
+weaponLabel.Text = "Vũ khí Auto Farm: Tự động (Mạnh nhất)"
+weaponLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+weaponLabel.TextSize = 12
+yPos = yPos + 22
+
+local weaponsList = {"Tự động (Mạnh nhất)", "Combat", "Katana", "Melee"}
+for i, wName in ipairs(weaponsList) do
+    local btn = Instance.new("TextButton", MainContainer)
+    btn.Position = UDim2.new(0.05 + ((i-1)%2)*0.45, 0, 0, yPos + math.floor((i-1)/2)*32)
+    btn.Size = UDim2.new(0.42, 0, 0, 28)
+    btn.Text = wName
+    btn.BackgroundColor3 = (i == 1) and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(55, 55, 55)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 11
+    
+    btn.MouseButton1Click:Connect(function()
+        Config.SelectedWeapon = wName
+        weaponLabel.Text = "Vũ khí Auto Farm: " .. wName
+        for _, child in pairs(MainContainer:GetChildren()) do
+            if child:IsA("TextButton") and table.find(weaponsList, child.Text) then
+                child.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+            end
+        end
+        btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    end)
+end
+yPos = yPos + 75
 
 -- Nút mở/đóng menu phụ
 local ToggleGui = Instance.new("ScreenGui")
@@ -150,13 +186,33 @@ end
 local lastQuestTick = 0
 local camera = Workspace.CurrentCamera
 
+-- Dữ liệu định vị NPC nhận nhiệm vụ chuẩn Sea 1
+local function getQuestNPCData()
+    local level = LocalPlayer.Data.Level.Value
+    if level >= 10 and level < 15 then
+        return "Monkey", CFrame.new(-1598, 37, 153), {"StartQuest", "Monkey", 1}
+    elseif level >= 15 and level < 30 then
+        return "Gorilla", CFrame.new(-1598, 37, 153), {"StartQuest", "Gorilla", 1}
+    elseif level >= 30 and level < 60 then
+        return "Pirate", CFrame.new(1045, 16, 1330), {"StartQuest", "Pirate", 1}
+    elseif level >= 60 and level < 90 then
+        return "Brute", CFrame.new(1113, 17, 4363), {"StartQuest", "Brute", 1}
+    elseif level >= 90 and level < 120 then
+        return "DesertBandit", CFrame.new(896, 7, 4390), {"StartQuest", "DesertBandit", 1}
+    elseif level >= 120 and level < 150 then
+        return "SnowBandit", CFrame.new(1385, 87, -1298), {"StartQuest", "SnowBandit", 1}
+    else
+        return "Bandit", CFrame.new(1059, 17, 1179), {"StartQuest", "Bandit", 1}
+    end
+end
+
 RunService.RenderStepped:Connect(function()
     if not ScreenGui.Parent then 
         clearAllESP()
         return 
     end
 
-    -- Xử lý ESP Quái
+    -- ESP Quái
     if Config.ShowESP then
         local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
         local activeFound = {}
@@ -216,7 +272,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Xử lý quét Vũ khí / Katana / Fighting Style người chơi xung quanh
+    -- Weapon Scanner người chơi khác
     if Config.ShowWeaponScanner then
         local activePlayers = {}
         for _, plr in ipairs(Players:GetPlayers()) do
@@ -226,17 +282,14 @@ RunService.RenderStepped:Connect(function()
                 local pHum = pChar:FindFirstChildOfClass("Humanoid")
                 
                 if pHum and pHum.Health > 0 then
-                    -- Lấy tên vũ khí đang cầm trên tay
-                    local activeTool = "Tay không / Chưa cầm"
+                    local activeTool = "Tay không"
                     local toolInHand = pChar:FindFirstChildOfClass("Tool")
-                    if toolInHand then
-                        activeTool = toolInHand.Name
-                    end
+                    if toolInHand then activeTool = toolInHand.Name end
 
                     if not weaponScannerCache[plr] then
                         local tObj = Drawing.new("Text")
                         tObj.Visible = false
-                        tObj.Size = 14
+                        tObj.Size = 13
                         tObj.Color = Color3.fromRGB(0, 255, 255)
                         tObj.Center = true
                         tObj.Outline = true
@@ -246,7 +299,7 @@ RunService.RenderStepped:Connect(function()
                     local vector, onScreen = camera:WorldToViewportPoint(pHrp.Position + Vector3.new(0, 3, 0))
                     if onScreen then
                         local txtObj = weaponScannerCache[plr]
-                        txtObj.Text = "[" .. plr.Name .. "] ⚔️ Đang cầm: " .. activeTool
+                        txtObj.Text = "[" .. plr.Name .. "] ⚔️ " .. activeTool
                         txtObj.Position = Vector2.new(vector.X, vector.Y)
                         txtObj.Visible = true
                         activePlayers[plr] = true
@@ -257,17 +310,13 @@ RunService.RenderStepped:Connect(function()
             end
         end
         for p, tObj in pairs(weaponScannerCache) do
-            if not activePlayers[p] then
-                tObj.Visible = false
-            end
+            if not activePlayers[p] then tObj.Visible = false end
         end
     else
-        for _, tObj in pairs(weaponScannerCache) do
-            tObj.Visible = false
-        end
+        for _, tObj in pairs(weaponScannerCache) do tObj.Visible = false end
     end
 
-    -- 3. HỆ THỐNG AUTO FARM, NHẬN NHIỆM VỤ & TỰ ĐỘNG CHỌN VŨ KHÍ CHIẾN ĐẤU
+    -- 3. AUTO FARM, BAY NHẬN Q, GÔM QUÁI & CẦM VŨ KHÍ CỐ ĐỊNH
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
@@ -275,67 +324,75 @@ RunService.RenderStepped:Connect(function()
                 local hrp = char.HumanoidRootPart
                 local hum = char:FindFirstChildOfClass("Humanoid")
 
-                -- Tự động chọn và cầm vũ khí mạnh nhất trong balo (Ưu tiên Katana, Melee, Fruit)
+                -- Cố định chọn và cầm đúng vũ khí người dùng đã chọn trong menu
                 local currentTool = char:FindFirstChildOfClass("Tool")
-                if not currentTool then
+                if not currentTool or (Config.SelectedWeapon ~= "Tự động (Mạnh nhất)" and currentTool.Name ~= Config.SelectedWeapon) then
                     local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
                     if backpack then
-                        local bestTool = nil
+                        local targetTool = nil
                         for _, item in ipairs(backpack:GetChildren()) do
                             if item:IsA("Tool") then
-                                bestTool = item
-                                break
+                                if Config.SelectedWeapon == "Tự động (Mạnh nhất)" then
+                                    targetTool = item
+                                    break
+                                elseif item.Name == Config.SelectedWeapon then
+                                    targetTool = item
+                                    break
+                                end
                             end
                         end
-                        if bestTool then
-                            hum:EquipTool(bestTool)
+                        if targetTool then
+                            hum:EquipTool(targetTool)
                         end
                     end
                 end
 
-                -- Nhận nhiệm vụ tự động qua Remote CommF_
+                -- Kiểm tra trạng thái nhiệm vụ, nếu chưa có thì bay đến NPC nhận Q
                 local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
                 local questGui = mainGui and mainGui:FindFirstChild("Quest")
+                local mobNameNeeded, npcPos, questArgs = getQuestNPCData()
+
                 if questGui and not questGui.Visible then
-                    if tick() - lastQuestTick > 2 then
-                        lastQuestTick = tick()
-                        local level = LocalPlayer.Data.Level.Value
-                        local questArgs = {"StartQuest", "Bandit", 1}
-
-                        if level >= 10 and level < 15 then
-                            questArgs = {"StartQuest", "Monkey", 1}
-                        elseif level >= 15 and level < 30 then
-                            questArgs = {"StartQuest", "Gorilla", 1}
-                        elseif level >= 30 and level < 60 then
-                            questArgs = {"StartQuest", "Pirate", 1}
-                        elseif level >= 60 and level < 90 then
-                            questArgs = {"StartQuest", "Brute", 1}
-                        elseif level >= 90 and level < 120 then
-                            questArgs = {"StartQuest", "DesertBandit", 1}
-                        elseif level >= 120 and level < 150 then
-                            questArgs = {"StartQuest", "SnowBandit", 1}
-                        end
-
-                        local commF = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
-                        if commF then
-                            commF:InvokeServer(unpack(questArgs))
+                    if (hrp.Position - npcPos.Position).Magnitude > 10 then
+                        hrp.CFrame = hrp.CFrame:Lerp(npcPos + Vector3.new(0, 5, 0), Config.FlySpeed / 600)
+                    else
+                        if tick() - lastQuestTick > 1.5 then
+                            lastQuestTick = tick()
+                            local commF = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
+                            if commF then
+                                commF:InvokeServer(unpack(questArgs))
+                            end
                         end
                     end
+                    return
                 end
 
-                -- Tìm quái gần nhất để bay tới và tấn công
+                -- Tìm quái phù hợp nhiệm vụ và gôm toàn bộ trong 100m lại một chỗ, làm cho đứng im (Freeze)
                 local targetMob = nil
                 local shortestDist = math.huge
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
+                
                 if folderEnemies then
                     for _, mob in ipairs(folderEnemies:GetChildren()) do
                         local mobHrp = mob:FindFirstChild("HumanoidRootPart")
                         local mobHum = mob:FindFirstChildOfClass("Humanoid")
                         if mobHrp and mobHum and mobHum.Health > 0 then
-                            local d = (mobHrp.Position - hrp.Position).Magnitude
-                            if d < shortestDist then
-                                shortestDist = d
-                                targetMob = mob
+                            if mob.Name:find(mobNameNeeded) or true then -- Ưu tiên quái nhiệm vụ
+                                local d = (mobHrp.Position - hrp.Position).Magnitude
+                                if d < 100 and Config.BringMob then
+                                    -- Gôm sát lại đầu người chơi và khóa cứng (Freeze) không cho di chuyển
+                                    mobHrp.CFrame = hrp.CFrame + Vector3.new(0, 7, 0)
+                                    mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                    mobHrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                                    if mobHum:FindFirstChild("Animator") then
+                                        pcall(function() mobHum.Animator:Destroy() end)
+                                    end
+                                end
+                                
+                                if d < shortestDist then
+                                    shortestDist = d
+                                    targetMob = mob
+                                end
                             end
                         end
                     end
@@ -343,17 +400,15 @@ RunService.RenderStepped:Connect(function()
 
                 if targetMob then
                     local mHrp = targetMob.HumanoidRootPart
-                    hrp.CFrame = hrp.CFrame:Lerp(mHrp.CFrame + Vector3.new(0, 7, 0), Config.FlySpeed / 700)
+                    hrp.CFrame = hrp.CFrame:Lerp(mHrp.CFrame + Vector3.new(0, 8, 0), Config.FlySpeed / 600)
 
-                    -- Tấn công siêu tốc liên tục
-                    if currentTool then
-                        pcall(function()
-                            VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
-                            task.spawn(function()
-                                VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame)
-                            end)
+                    -- Đánh siêu tốc liên tục
+                    pcall(function()
+                        VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
+                        task.spawn(function()
+                            VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame)
                         end)
-                    end
+                    end)
                 end
             end
         end)
