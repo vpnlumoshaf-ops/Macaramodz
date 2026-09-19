@@ -103,7 +103,6 @@ local function createToggle(parent, text, callback)
     return btn
 end
 
--- Bật tính năng Auto Farm
 createToggle(MainContainer, "Auto Farm (Nhận Q + Bay trên đầu quái)", function(v) Config.AutoFarm = v end)
 
 -- Lựa chọn Tốc độ đánh
@@ -139,7 +138,7 @@ for i, spdName in ipairs(speedsAtk) do
 end
 yPos = yPos + 40
 
--- Lựa chọn Tốc độ bay (300, 600, 1200)
+-- Lựa chọn Tốc độ bay
 local flyLabel = Instance.new("TextLabel", MainContainer)
 flyLabel.Position = UDim2.new(0.05, 0, 0, yPos)
 flyLabel.Size = UDim2.new(0.9, 0, 0, 20)
@@ -172,7 +171,7 @@ for i, fSpd in ipairs(flySpeeds) do
 end
 yPos = yPos + 50
 
--- Nút mở/đóng menu phụ bên ngoài màn hình
+-- Nút mở/đóng menu phụ
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "BloxFruitToggleGui"
 ToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -200,16 +199,15 @@ MinimizeBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
 end)
 
--- Nút X: Tắt hẳn script và xóa toàn bộ UI
 CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
     ToggleGui:Destroy()
 end)
 
--- 2. HỆ THỐNG TỰ ĐỘNG NHẬN NHIỆM VỤ & AUTO FARM FIX ĐÁNH
+-- 2. HỆ THỐNG TỰ ĐỘNG NHẬN NHIỆM VỤ & ĐÁNH QUÁI THÔNG MINH
+local lastQuestCheck = 0
 local connection
 connection = RunService.RenderStepped:Connect(function()
-    -- Nếu GUI bị xóa (bấm nút X) thì tự động ngắt kết nối vòng lặp
     if not ScreenGui.Parent then
         connection:Disconnect()
         return
@@ -218,38 +216,54 @@ connection = RunService.RenderStepped:Connect(function()
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
+            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
                 local hrp = char.HumanoidRootPart
+                local hum = char:FindFirstChildOfClass("Humanoid")
                 
-                -- Nhận nhiệm vụ
-                local dataFolder = LocalPlayer:FindFirstChild("Data")
-                if dataFolder and dataFolder:FindFirstChild("Level") then
+                -- Kiểm tra nhận nhiệm vụ định kỳ mỗi 3 giây để tránh spam server
+                if tick() - lastQuestCheck > 3 then
+                    lastQuestCheck = tick()
                     local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
-                    local questVisible = mainGui and mainGui:FindFirstChild("Quest") and mainGui.Quest.Visible
+                    local questFrame = mainGui and mainGui:FindFirstChild("Quest")
                     
-                    if not questVisible then
-                        local args = {"StartQuest", "Bandit", 1}
+                    if questFrame and not questFrame.Visible then
+                        -- Lấy cấp độ hiện tại để chọn đúng loại quái/nhiệm vụ tương ứng
+                        local levelVal = LocalPlayer.Data.Level.Value
+                        local questData = {"StartQuest", "Bandit", 1} -- Mặc định Sea 1 đầu game
+                        
+                        if levelVal >= 10 and levelVal < 15 then
+                            questData = {"StartQuest", "Monkey", 1}
+                        elseif levelVal >= 15 and levelVal < 30 then
+                            questData = {"StartQuest", "Gorilla", 1}
+                        elseif levelVal >= 30 and levelVal < 60 then
+                            questData = {"StartQuest", "Pirate", 1}
+                        elseif levelVal >= 60 then
+                            questData = {"StartQuest", "Brute", 1}
+                        end
+                        
                         local remotes = ReplicatedStorage:FindFirstChild("Remotes")
                         if remotes and remotes:FindFirstChild("CommF_") then
-                            remotes.CommF_:InvokeServer(unpack(args))
+                            remotes.CommF_:InvokeServer(unpack(questData))
                         end
                     end
                 end
                 
-                -- Tìm quái gần nhất
+                -- Tìm quái gần nhất trong Workspace
                 local targetMonster = nil
                 local shortestDistance = math.huge
                 
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 if folderEnemies then
-                    for _, obj in pairs(folderEnemies:GetChildren()) do
-                        if obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChildOfClass("Humanoid") then
-                            if obj.Humanoid.Health > 0 then
-                                local dist = (obj.HumanoidRootPart.Position - hrp.Position).Magnitude
-                                if dist < shortestDistance then
-                                    shortestDistance = dist
-                                    targetMonster = obj
-                                end
+                    local enemiesList = folderEnemies:GetChildren()
+                    for i = 1, #enemiesList do
+                        local obj = enemiesList[i]
+                        local mHrp = obj:FindFirstChild("HumanoidRootPart")
+                        local mHum = obj:FindFirstChildOfClass("Humanoid")
+                        if mHrp and mHum and mHum.Health > 0 then
+                            local dist = (mHrp.Position - hrp.Position).Magnitude
+                            if dist < shortestDistance then
+                                shortestDistance = dist
+                                targetMonster = obj
                             end
                         end
                     end
@@ -257,35 +271,32 @@ connection = RunService.RenderStepped:Connect(function()
                 
                 if targetMonster then
                     local mHrp = targetMonster.HumanoidRootPart
-                    -- Bay lên đầu quái
+                    -- Bay lên đầu quái cự ly an toàn 7 đơn vị
                     local targetCFrame = mHrp.CFrame + Vector3.new(0, 7, 0)
                     hrp.CFrame = hrp.CFrame:Lerp(targetCFrame, Config.FlySpeed / 1000)
                     
-                    -- Fix tự động tấn công mượt mà
+                    -- Kích hoạt tấn công mượt mà bằng task.spawn
                     local tool = char:FindFirstChildOfClass("Tool")
                     if tool then
-                        if Config.AttackSpeed == "Siêu nhanh" then
-                            tool:Activate()
-                        elseif Config.AttackSpeed == "Tối thượng" then
-                            tool:Activate()
-                            task.spawn(function()
+                        task.spawn(function()
+                            if Config.AttackSpeed == "Siêu nhanh" then
+                                tool:Activate()
+                            elseif Config.AttackSpeed == "Tối thượng" then
+                                tool:Activate()
                                 task.wait(0.02)
                                 tool:Activate()
-                            end)
-                        else
-                            tool:Activate()
-                            task.wait(0.1)
-                        end
+                            else
+                                tool:Activate()
+                                task.wait(0.12)
+                            end
+                        end)
                     else
-                        -- Nếu chưa cầm vũ khí, tự động cầm item đầu tiên trong balo lên để đánh
+                        -- Tự động cầm vũ khí trong balo lên nếu chưa cầm
                         local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
                         if backpack then
                             local firstTool = backpack:FindFirstChildOfClass("Tool")
                             if firstTool then
-                                hum = char:FindFirstChildOfClass("Humanoid")
-                                if hum then
-                                    hum:EquipTool(firstTool)
-                                end
+                                hum:EquipTool(firstTool)
                             end
                         end
                     end
