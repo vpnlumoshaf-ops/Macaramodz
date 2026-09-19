@@ -1,12 +1,10 @@
 -- Kiểm tra chống spam menu Blox Fruit
-local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Xóa menu cũ nếu bật đè
 if LocalPlayer.PlayerGui:FindFirstChild("BloxFruitMasterGui") then
     LocalPlayer.PlayerGui.BloxFruitMasterGui:Destroy()
 end
@@ -22,7 +20,7 @@ local Config = {
     ThemeColor = Color3.fromRGB(30, 30, 30)
 }
 
--- 1. GIAO DIỆN CHÍNH (Đưa vào PlayerGui để Delta X render chắc chắn 100%)
+-- 1. GIAO DIỆN CHÍNH
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BloxFruitMasterGui"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -49,16 +47,27 @@ Title.TextColor3 = Color3.fromRGB(255, 200, 50)
 Title.TextSize = 15
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Nút Đóng / Ẩn menu
-local HideBtn = Instance.new("TextButton")
-HideBtn.Parent = MainFrame
-HideBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-HideBtn.Position = UDim2.new(1, -30, 0, 5)
-HideBtn.Size = UDim2.new(0, 24, 0, 24)
-HideBtn.Font = Enum.Font.SourceSansBold
-HideBtn.Text = "X"
-HideBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-HideBtn.TextSize = 14
+-- Nút Thu nhỏ / Ẩn menu (-)
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Parent = MainFrame
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+MinimizeBtn.Position = UDim2.new(1, -60, 0, 5)
+MinimizeBtn.Size = UDim2.new(0, 24, 0, 24)
+MinimizeBtn.Font = Enum.Font.SourceSansBold
+MinimizeBtn.Text = "-"
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.TextSize = 16
+
+-- Nút Tắt hẳn script (X)
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Parent = MainFrame
+CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+CloseBtn.Position = UDim2.new(1, -30, 0, 5)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
 
 -- Container Tab Main
 local MainContainer = Instance.new("ScrollingFrame")
@@ -184,27 +193,37 @@ local isOpen = true
 OpenBtn.MouseButton1Click:Connect(function()
     isOpen = not isOpen
     MainFrame.Visible = isOpen
-    OpenBtn.Text = isOpen and "Tienphat Hub" or "Open"
 end)
 
-HideBtn.MouseButton1Click:Connect(function()
+MinimizeBtn.MouseButton1Click:Connect(function()
     isOpen = false
     MainFrame.Visible = false
-    OpenBtn.Text = "Open"
 end)
 
--- 2. HỆ THỐNG TỰ ĐỘNG NHẬN NHIỆM VỤ & AUTO FARM BAY TRÊN ĐẦU QUÁI
-RunService.RenderStepped:Connect(function()
+-- Nút X: Tắt hẳn script và xóa toàn bộ UI
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+    ToggleGui:Destroy()
+end)
+
+-- 2. HỆ THỐNG TỰ ĐỘNG NHẬN NHIỆM VỤ & AUTO FARM FIX ĐÁNH
+local connection
+connection = RunService.RenderStepped:Connect(function()
+    -- Nếu GUI bị xóa (bấm nút X) thì tự động ngắt kết nối vòng lặp
+    if not ScreenGui.Parent then
+        connection:Disconnect()
+        return
+    end
+
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
+            if char and char:FindFirstChild("HumanoidRootPart") then
                 local hrp = char.HumanoidRootPart
                 
-                -- An toàn check dữ liệu level để tránh lỗi đỏ nếu chưa load xong data
+                -- Nhận nhiệm vụ
                 local dataFolder = LocalPlayer:FindFirstChild("Data")
                 if dataFolder and dataFolder:FindFirstChild("Level") then
-                    local playerLevel = dataFolder.Level.Value
                     local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
                     local questVisible = mainGui and mainGui:FindFirstChild("Quest") and mainGui.Quest.Visible
                     
@@ -217,7 +236,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
                 
-                -- Tìm quái trong Workspace
+                -- Tìm quái gần nhất
                 local targetMonster = nil
                 local shortestDistance = math.huge
                 
@@ -238,10 +257,11 @@ RunService.RenderStepped:Connect(function()
                 
                 if targetMonster then
                     local mHrp = targetMonster.HumanoidRootPart
+                    -- Bay lên đầu quái
                     local targetCFrame = mHrp.CFrame + Vector3.new(0, 7, 0)
-                    
                     hrp.CFrame = hrp.CFrame:Lerp(targetCFrame, Config.FlySpeed / 1000)
                     
+                    -- Fix tự động tấn công mượt mà
                     local tool = char:FindFirstChildOfClass("Tool")
                     if tool then
                         if Config.AttackSpeed == "Siêu nhanh" then
@@ -249,12 +269,24 @@ RunService.RenderStepped:Connect(function()
                         elseif Config.AttackSpeed == "Tối thượng" then
                             tool:Activate()
                             task.spawn(function()
-                                task.wait(0.03)
+                                task.wait(0.02)
                                 tool:Activate()
                             end)
                         else
-                            task.wait(0.15)
                             tool:Activate()
+                            task.wait(0.1)
+                        end
+                    else
+                        -- Nếu chưa cầm vũ khí, tự động cầm item đầu tiên trong balo lên để đánh
+                        local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+                        if backpack then
+                            local firstTool = backpack:FindFirstChildOfClass("Tool")
+                            if firstTool then
+                                hum = char:FindFirstChildOfClass("Humanoid")
+                                if hum then
+                                    hum:EquipTool(firstTool)
+                                end
+                            end
                         end
                     end
                 end
