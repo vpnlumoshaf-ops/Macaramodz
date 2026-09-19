@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Ultimate VIP Edition: Ultra Optimized No-Lag & Fast Farm)
+-- Blox Fruit Master Hub - Admin Tienphat (Ultimate Fix: Stable Tele-Pull & Super Fast Attack)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -123,7 +123,7 @@ local function createToggle(parent, text, defaultVal, callback)
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Fixed Tele & Đánh Nhanh)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "Auto Farm (Fix Chống Giật & Siêu Đánh Nhanh)", false, function(v) Config.AutoFarm = v end)
 createToggle(MainContainer, "ESP Box Nhỏ Gọn & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
 createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
@@ -239,15 +239,6 @@ local function clearAllESP()
 end
 
 local camera = Workspace.CurrentCamera
-
--- Lấy Level an toàn tuyệt đối
-local function getPlayerLevel()
-    local success, lvl = pcall(function() return LocalPlayer.Data.Level.Value end)
-    if success and lvl then return lvl end
-    local success2, lvl2 = pcall(function() return LocalPlayer.leaderstats.Level.Value end)
-    if success2 and lvl2 then return lvl2 end
-    return 1
-end
 
 RunService.RenderStepped:Connect(function()
     if not ScreenGui.Parent then 
@@ -366,7 +357,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 4. AUTO FARM ĐƯỢC TỐI ƯU SIÊU MƯỢT (BỎ Q HOẶC TỰ ĐỘNG TÌM QUÁI GẦN NHẤT ĐÁNH LUÔN KHÔNG BỊ KẸT)
+    -- 4. AUTO FARM ỔN ĐỊNH: ĐỨNG YÊN TẠI CHỖ, GOM NHIỀU QUÁI VÀ ĐÁNH LIÊN TỤC
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
@@ -397,7 +388,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Tìm quái gần nhất trên map để đánh trực tiếp, gom và khóa cứng quái
+                -- Tìm quái gần nhất để đứng trên đầu nó một khoảng cố định (không bị giật lò xo)
                 local targetMob = nil
                 local shortestDist = math.huge
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
@@ -409,9 +400,9 @@ RunService.RenderStepped:Connect(function()
                         if mobHrp and mobHum and mobHum.Health > 0 then
                             local d = (mobHrp.Position - hrp.Position).Magnitude
                             
-                            -- Gom quái lại gần
-                            if d < 120 then
-                                mobHrp.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
+                            -- Gom toàn bộ quái trong phạm vi 150m bay chụm lại đúng vị trí đầu nhân vật (cách 4 stud)
+                            if d < 150 then
+                                mobHrp.CFrame = hrp.CFrame + Vector3.new(0, 4, 0)
                                 mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                                 mobHrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                                 if mobHum:FindFirstChild("Animator") then
@@ -428,10 +419,11 @@ RunService.RenderStepped:Connect(function()
                 end
 
                 if targetMob then
+                    -- Cố định vị trí player lơ lửng phía trên bầy quái, không tele lung tung gây giật
                     local mHrp = targetMob.HumanoidRootPart
-                    hrp.CFrame = mHrp.CFrame + Vector3.new(0, 3.5, 0)
+                    hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 5, 0)) * (hrp.CFrame - hrp.CFrame.Position)
 
-                    -- Auto đánh liên tục
+                    -- Auto click siêu tốc đánh liên tục không ngừng nghỉ
                     pcall(function()
                         local activeTool = char:FindFirstChildOfClass("Tool")
                         if activeTool then
