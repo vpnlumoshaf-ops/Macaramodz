@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Ultimate VIP Edition + Live Debug Panel)
+-- Blox Fruit Master Hub - Admin Tienphat (Ultimate VIP Edition: Ultra Optimized No-Lag & Fast Farm)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -13,9 +13,6 @@ if CoreGui:FindFirstChild("AdminTienphatBloxFruit") then
 end
 if CoreGui:FindFirstChild("AdminTienphatToggle") then
     CoreGui.AdminTienphatToggle:Destroy()
-end
-if CoreGui:FindFirstChild("AdminTienphatDebug") then
-    CoreGui.AdminTienphatDebug:Destroy()
 end
 
 local Config = {
@@ -126,7 +123,7 @@ local function createToggle(parent, text, defaultVal, callback)
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Có Màn Hình Debug Live)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "Auto Farm (Fixed Tele & Đánh Nhanh)", false, function(v) Config.AutoFarm = v end)
 createToggle(MainContainer, "ESP Box Nhỏ Gọn & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
 createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
@@ -211,25 +208,6 @@ OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 OpenBtn.TextSize = 12
 OpenBtn.Draggable = true
 
--- KHUNG HIỂN THỊ DEBUG LIVE TRÊN MÀN HÌNH
-local DebugGui = Instance.new("ScreenGui")
-DebugGui.Name = "AdminTienphatDebug"
-DebugGui.Parent = CoreGui
-DebugGui.ResetOnSpawn = false
-
-local DebugBox = Instance.new("TextLabel")
-DebugBox.Parent = DebugGui
-DebugBox.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-DebugBox.BackgroundTransparency = 0.3
-DebugBox.Position = UDim2.new(0, 15, 0, 15)
-DebugBox.Size = UDim2.new(0, 340, 0, 130)
-DebugBox.Font = Enum.Font.Code
-DebugBox.TextColor3 = Color3.fromRGB(0, 255, 0)
-DebugBox.TextSize = 12
-DebugBox.TextXAlignment = Enum.TextXAlignment.Left
-DebugBox.TextYAlignment = Enum.TextYAlignment.Top
-DebugBox.Text = "[ADMIN TIENPHAT DEBUG]: Đang khởi động..."
-
 local isOpen = true
 OpenBtn.MouseButton1Click:Connect(function()
     isOpen = not isOpen
@@ -242,7 +220,6 @@ end)
 CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
     ToggleGui:Destroy()
-    DebugGui:Destroy()
 end)
 
 applyFixLag(true)
@@ -261,34 +238,15 @@ local function clearAllESP()
     end
 end
 
-local lastQuestTick = 0
 local camera = Workspace.CurrentCamera
 
+-- Lấy Level an toàn tuyệt đối
 local function getPlayerLevel()
     local success, lvl = pcall(function() return LocalPlayer.Data.Level.Value end)
     if success and lvl then return lvl end
     local success2, lvl2 = pcall(function() return LocalPlayer.leaderstats.Level.Value end)
     if success2 and lvl2 then return lvl2 end
     return 1
-end
-
-local function getQuestNPCData()
-    local level = getPlayerLevel()
-    if level >= 10 and level < 15 then
-        return "Monkey", CFrame.new(-1601, 37, 153), {"StartQuest", "Monkey", 1}
-    elseif level >= 15 and level < 30 then
-        return "Gorilla", CFrame.new(-1601, 37, 153), {"StartQuest", "Gorilla", 1}
-    elseif level >= 30 and level < 60 then
-        return "Pirate", CFrame.new(1137, 17, 1630), {"StartQuest", "Pirate", 1}
-    elseif level >= 60 and level < 90 then
-        return "Brute", CFrame.new(1137, 17, 1630), {"StartQuest", "Brute", 1}
-    elseif level >= 90 and level < 120 then
-        return "DesertBandit", CFrame.new(896, 7, 4390), {"StartQuest", "DesertBandit", 1}
-    elseif level >= 120 and level < 150 then
-        return "SnowBandit", CFrame.new(1385, 87, -1298), {"StartQuest", "SnowBandit", 1}
-    else
-        return "Bandit", CFrame.new(1059, 17, 1179), {"StartQuest", "Bandit", 1}
-    end
 end
 
 RunService.RenderStepped:Connect(function()
@@ -408,7 +366,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 4. AUTO FARM + DEBUG LIVE LOG
+    -- 4. AUTO FARM ĐƯỢC TỐI ƯU SIÊU MƯỢT (BỎ Q HOẶC TỰ ĐỘNG TÌM QUÁI GẦN NHẤT ĐÁNH LUÔN KHÔNG BỊ KẸT)
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
@@ -439,45 +397,20 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Kiểm tra trạng thái bảng nhiệm vụ
-                local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
-                local questGui = mainGui and mainGui:FindFirstChild("Quest")
-                local currentLevel = getPlayerLevel()
-                local mobNameNeeded, npcPos, questArgs = getQuestNPCData()
-
-                local isQuestVisible = (questGui and questGui.Visible) and "Đã có Q" or "Chưa có Q"
-                local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
-                local mobCount = folderEnemies and #folderEnemies:GetChildren() or 0
-
-                if questGui and not questGui.Visible then
-                    DebugBox.Text = string.format("[DEBUG LIVE]\n- Level: %d\n- Trạng thái: Đang bay nhận Q (%s)\n- Target NPC: %s\n- Số quái quanh map: %d", currentLevel, isQuestVisible, mobNameNeeded, mobCount)
-
-                    if (hrp.Position - npcPos.Position).Magnitude > 5 then
-                        hrp.CFrame = CFrame.new(npcPos.Position + Vector3.new(0, 3, 0))
-                    else
-                        if tick() - lastQuestTick > 1.2 then
-                            lastQuestTick = tick()
-                            local commF = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
-                            if commF then
-                                commF:InvokeServer(unpack(questArgs))
-                            end
-                        end
-                    end
-                    return
-                end
-
-                -- Tìm quái mục tiêu theo tên nhiệm vụ
+                -- Tìm quái gần nhất trên map để đánh trực tiếp, gom và khóa cứng quái
                 local targetMob = nil
                 local shortestDist = math.huge
+                local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 
                 if folderEnemies then
                     for _, mob in ipairs(folderEnemies:GetChildren()) do
                         local mobHrp = mob:FindFirstChild("HumanoidRootPart")
                         local mobHum = mob:FindFirstChildOfClass("Humanoid")
-                        -- Kiểm tra nếu đúng tên quái cần đánh hoặc lấy quái gần nhất
                         if mobHrp and mobHum and mobHum.Health > 0 then
                             local d = (mobHrp.Position - hrp.Position).Magnitude
-                            if d < 100 then
+                            
+                            -- Gom quái lại gần
+                            if d < 120 then
                                 mobHrp.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
                                 mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                                 mobHrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
@@ -496,9 +429,9 @@ RunService.RenderStepped:Connect(function()
 
                 if targetMob then
                     local mHrp = targetMob.HumanoidRootPart
-                    hrp.CFrame = mHrp.CFrame + Vector3.new(0, 4, 0)
-                    DebugBox.Text = string.format("[DEBUG LIVE]\n- Level: %d\n- Trạng thái: Đang đánh quái\n- Tên quái: %s\n- Khoảng cách: %.1f", currentLevel, targetMob.Name, shortestDist)
+                    hrp.CFrame = mHrp.CFrame + Vector3.new(0, 3.5, 0)
 
+                    -- Auto đánh liên tục
                     pcall(function()
                         local activeTool = char:FindFirstChildOfClass("Tool")
                         if activeTool then
@@ -509,8 +442,6 @@ RunService.RenderStepped:Connect(function()
                             VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame)
                         end)
                     end)
-                else
-                    DebugBox.Text = string.format("[DEBUG LIVE]\n- Level: %d\n- Trạng thái: Không tìm thấy quái nào trong Folder!", currentLevel)
                 end
             end
         end)
