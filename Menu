@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Ultimate Auto Quest, Weapon Selector, Mob Bring & Freeze)
+-- Blox Fruit Master Hub - Admin Tienphat (Ultimate VIP Edition: Weapon Selector, Auto Clicker, Quest NPC Fly & Full Fix Lag)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -6,6 +6,7 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
 local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
 
 if CoreGui:FindFirstChild("AdminTienphatBloxFruit") then
     CoreGui.AdminTienphatBloxFruit:Destroy()
@@ -17,13 +18,37 @@ end
 local Config = {
     AutoFarm = false,
     BringMob = true,
-    SelectedWeapon = "Tự động (Mạnh nhất)",
+    SelectedWeapon = "Tự động chọn",
     FlySpeed = 350,
     ShowESP = true,
-    ShowWeaponScanner = true
+    ShowWeaponScanner = true,
+    FixLag = true
 }
 
--- 1. GIAO DIỆN CHÍNH
+-- 1. HỆ THỐNG FIX LAG TOÀN DIỆN (Xóa sương mù, texture, vfx)
+local function applyFixLag(state)
+    if state then
+        pcall(function()
+            Lighting.FogEnd = 999999
+            Lighting.Brightness = 2
+            for _, v in pairs(Lighting:GetChildren()) do
+                if v:IsA("PostEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then
+                    v.Enabled = false
+                end
+            end
+            for _, v in pairs(Workspace:GetDescendants()) do
+                if v:IsA("Part") or v:IsA("MeshPart") then
+                    v.Material = Enum.Material.SmoothPlastic
+                    v.Reflectance = 0
+                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") then
+                    v.Enabled = false
+                end
+            end
+        end)
+    end
+end
+
+-- 2. GIAO DIỆN CHÍNH
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AdminTienphatBloxFruit"
 ScreenGui.Parent = CoreGui
@@ -33,9 +58,9 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -230)
-MainFrame.Size = UDim2.new(0, 400, 0, 440)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -240)
+MainFrame.Size = UDim2.new(0, 400, 0, 460)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
@@ -74,7 +99,7 @@ MainContainer.Parent = MainFrame
 MainContainer.Position = UDim2.new(0, 0, 0, 40)
 MainContainer.Size = UDim2.new(1, 0, 1, -40)
 MainContainer.BackgroundTransparency = 1
-MainContainer.CanvasSize = UDim2.new(0, 0, 0, 580)
+MainContainer.CanvasSize = UDim2.new(0, 0, 0, 620)
 
 local yPos = 15
 
@@ -100,43 +125,74 @@ local function createToggle(parent, text, defaultVal, callback)
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Bay nhận Q + Tự đánh)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "Auto Farm (Bay nhận Q + Auto Click Siêu Tốc)", false, function(v) Config.AutoFarm = v end)
 createToggle(MainContainer, "Gôm quái 100m & Đứng im (Freeze)", true, function(v) Config.BringMob = v end)
 createToggle(MainContainer, "ESP Box & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
 createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
+createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
+    Config.FixLag = v 
+    applyFixLag(v)
+end)
 
--- Lựa chọn vũ khí / Katana / Melee
-local weaponLabel = Instance.new("TextLabel", MainContainer)
-weaponLabel.Position = UDim2.new(0.05, 0, 0, yPos)
-weaponLabel.Size = UDim2.new(0.9, 0, 0, 20)
-weaponLabel.Font = Enum.Font.SourceSansBold
-weaponLabel.Text = "Vũ khí Auto Farm: Tự động (Mạnh nhất)"
-weaponLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-weaponLabel.TextSize = 12
+-- Khu vực chọn Vũ khí / Kiếm / Võ đang có trong người
+local weaponHeader = Instance.new("TextLabel", MainContainer)
+weaponHeader.Position = UDim2.new(0.05, 0, 0, yPos)
+weaponHeader.Size = UDim2.new(0.9, 0, 0, 20)
+weaponHeader.Font = Enum.Font.SourceSansBold
+weaponHeader.Text = "Chọn Vũ Khí / Kiếm / Võ để Auto Farm:"
+weaponHeader.TextColor3 = Color3.fromRGB(255, 220, 100)
+weaponHeader.TextSize = 13
 yPos = yPos + 22
 
-local weaponsList = {"Tự động (Mạnh nhất)", "Combat", "Katana", "Melee"}
-for i, wName in ipairs(weaponsList) do
-    local btn = Instance.new("TextButton", MainContainer)
-    btn.Position = UDim2.new(0.05 + ((i-1)%2)*0.45, 0, 0, yPos + math.floor((i-1)/2)*32)
-    btn.Size = UDim2.new(0.42, 0, 0, 28)
-    btn.Text = wName
-    btn.BackgroundColor3 = (i == 1) and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(55, 55, 55)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 11
+local weaponContainer = Instance.new("ScrollingFrame", MainContainer)
+weaponContainer.Position = UDim2.new(0.05, 0, 0, yPos)
+weaponContainer.Size = UDim2.new(0.9, 0, 0, 90)
+weaponContainer.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+weaponContainer.CanvasSize = UDim2.new(0, 0, 0, 150)
+
+local function updateWeaponButtons()
+    for _, child in pairs(weaponContainer:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
     
-    btn.MouseButton1Click:Connect(function()
-        Config.SelectedWeapon = wName
-        weaponLabel.Text = "Vũ khí Auto Farm: " .. wName
-        for _, child in pairs(MainContainer:GetChildren()) do
-            if child:IsA("TextButton") and table.find(weaponsList, child.Text) then
-                child.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+    local weaponsList = {"Tự động chọn"}
+    pcall(function()
+        for _, item in ipairs(LocalPlayer.Backpack:GetChildren()) do
+            if item:IsA("Tool") and not table.find(weaponsList, item.Name) then
+                table.insert(weaponsList, item.Name)
             end
         end
-        btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        if LocalPlayer.Character then
+            for _, item in ipairs(LocalPlayer.Character:GetChildren()) do
+                if item:IsA("Tool") and not table.find(weaponsList, item.Name) then
+                    table.insert(weaponsList, item.Name)
+                end
+            end
+        end
     end)
+
+    local wPosY = 5
+    for _, wName in ipairs(weaponsList) do
+        local btn = Instance.new("TextButton", weaponContainer)
+        btn.Position = UDim2.new(0.02, 0, 0, wPosY)
+        btn.Size = UDim2.new(0.96, 0, 0, 28)
+        btn.Text = wName
+        btn.Font = Enum.Font.SourceSansBold
+        btn.TextSize = 12
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.BackgroundColor3 = (Config.SelectedWeapon == wName) and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(55, 55, 55)
+        
+        btn.MouseButton1Click:Connect(function()
+            Config.SelectedWeapon = wName
+            updateWeaponButtons()
+        end)
+        wPosY = wPosY + 32
+    end
+    weaponContainer.CanvasSize = UDim2.new(0, 0, 0, wPosY)
 end
-yPos = yPos + 75
+
+updateWeaponButtons()
+yPos = yPos + 100
 
 -- Nút mở/đóng menu phụ
 local ToggleGui = Instance.new("ScreenGui")
@@ -169,7 +225,10 @@ CloseBtn.MouseButton1Click:Connect(function()
     ToggleGui:Destroy()
 end)
 
--- 2. HỆ THỐNG ESP & WEAPON SCANNER
+-- Áp dụng fix lag mặc định
+applyFixLag(true)
+
+-- 3. HỆ THỐNG XỬ LÝ CHÍNH
 local espCache = {}
 local weaponScannerCache = {}
 
@@ -186,7 +245,6 @@ end
 local lastQuestTick = 0
 local camera = Workspace.CurrentCamera
 
--- Dữ liệu định vị NPC nhận nhiệm vụ chuẩn Sea 1
 local function getQuestNPCData()
     local level = LocalPlayer.Data.Level.Value
     if level >= 10 and level < 15 then
@@ -210,6 +268,11 @@ RunService.RenderStepped:Connect(function()
     if not ScreenGui.Parent then 
         clearAllESP()
         return 
+    end
+
+    -- Cập nhật danh sách vũ khí định kỳ khi mở menu
+    if tick() % 3 < 0.1 then
+        updateWeaponButtons()
     end
 
     -- ESP Quái
@@ -316,7 +379,7 @@ RunService.RenderStepped:Connect(function()
         for _, tObj in pairs(weaponScannerCache) do tObj.Visible = false end
     end
 
-    -- 3. AUTO FARM, BAY NHẬN Q, GÔM QUÁI & CẦM VŨ KHÍ CỐ ĐỊNH
+    -- 4. AUTO FARM & AUTO CLICK & BAY NHẬN NHIỆM VỤ
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
@@ -324,15 +387,15 @@ RunService.RenderStepped:Connect(function()
                 local hrp = char.HumanoidRootPart
                 local hum = char:FindFirstChildOfClass("Humanoid")
 
-                -- Cố định chọn và cầm đúng vũ khí người dùng đã chọn trong menu
+                -- Trang bị vũ khí đã chọn
                 local currentTool = char:FindFirstChildOfClass("Tool")
-                if not currentTool or (Config.SelectedWeapon ~= "Tự động (Mạnh nhất)" and currentTool.Name ~= Config.SelectedWeapon) then
+                if not currentTool or (Config.SelectedWeapon ~= "Tự động chọn" and currentTool.Name ~= Config.SelectedWeapon) then
                     local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
                     if backpack then
                         local targetTool = nil
                         for _, item in ipairs(backpack:GetChildren()) do
                             if item:IsA("Tool") then
-                                if Config.SelectedWeapon == "Tự động (Mạnh nhất)" then
+                                if Config.SelectedWeapon == "Tự động chọn" then
                                     targetTool = item
                                     break
                                 elseif item.Name == Config.SelectedWeapon then
@@ -347,16 +410,16 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Kiểm tra trạng thái nhiệm vụ, nếu chưa có thì bay đến NPC nhận Q
+                -- Kiểm tra bảng nhiệm vụ, nếu chưa có thì bay đến NPC nhận Q
                 local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
                 local questGui = mainGui and mainGui:FindFirstChild("Quest")
                 local mobNameNeeded, npcPos, questArgs = getQuestNPCData()
 
                 if questGui and not questGui.Visible then
-                    if (hrp.Position - npcPos.Position).Magnitude > 10 then
-                        hrp.CFrame = hrp.CFrame:Lerp(npcPos + Vector3.new(0, 5, 0), Config.FlySpeed / 600)
+                    if (hrp.Position - npcPos.Position).Magnitude > 8 then
+                        hrp.CFrame = hrp.CFrame:Lerp(npcPos + Vector3.new(0, 4, 0), Config.FlySpeed / 600)
                     else
-                        if tick() - lastQuestTick > 1.5 then
+                        if tick() - lastQuestTick > 1.2 then
                             lastQuestTick = tick()
                             local commF = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
                             if commF then
@@ -367,7 +430,7 @@ RunService.RenderStepped:Connect(function()
                     return
                 end
 
-                -- Tìm quái phù hợp nhiệm vụ và gôm toàn bộ trong 100m lại một chỗ, làm cho đứng im (Freeze)
+                -- Tìm quái, gôm lại 100m và đóng băng (Freeze)
                 local targetMob = nil
                 local shortestDist = math.huge
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
@@ -377,22 +440,19 @@ RunService.RenderStepped:Connect(function()
                         local mobHrp = mob:FindFirstChild("HumanoidRootPart")
                         local mobHum = mob:FindFirstChildOfClass("Humanoid")
                         if mobHrp and mobHum and mobHum.Health > 0 then
-                            if mob.Name:find(mobNameNeeded) or true then -- Ưu tiên quái nhiệm vụ
-                                local d = (mobHrp.Position - hrp.Position).Magnitude
-                                if d < 100 and Config.BringMob then
-                                    -- Gôm sát lại đầu người chơi và khóa cứng (Freeze) không cho di chuyển
-                                    mobHrp.CFrame = hrp.CFrame + Vector3.new(0, 7, 0)
-                                    mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                                    mobHrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-                                    if mobHum:FindFirstChild("Animator") then
-                                        pcall(function() mobHum.Animator:Destroy() end)
-                                    end
+                            local d = (mobHrp.Position - hrp.Position).Magnitude
+                            if d < 100 and Config.BringMob then
+                                mobHrp.CFrame = hrp.CFrame + Vector3.new(0, 6, 0)
+                                mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                mobHrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                                if mobHum:FindFirstChild("Animator") then
+                                    pcall(function() mobHum.Animator:Destroy() end)
                                 end
-                                
-                                if d < shortestDist then
-                                    shortestDist = d
-                                    targetMob = mob
-                                end
+                            end
+                            
+                            if d < shortestDist then
+                                shortestDist = d
+                                targetMob = mob
                             end
                         end
                     end
@@ -400,10 +460,14 @@ RunService.RenderStepped:Connect(function()
 
                 if targetMob then
                     local mHrp = targetMob.HumanoidRootPart
-                    hrp.CFrame = hrp.CFrame:Lerp(mHrp.CFrame + Vector3.new(0, 8, 0), Config.FlySpeed / 600)
+                    hrp.CFrame = hrp.CFrame:Lerp(mHrp.CFrame + Vector3.new(0, 7, 0), Config.FlySpeed / 600)
 
-                    -- Đánh siêu tốc liên tục
+                    -- Cơ chế Auto Click siêu tốc cực mạnh
                     pcall(function()
+                        local tool = char:FindFirstChildOfClass("Tool")
+                        if tool then
+                            tool:Activate()
+                        end
                         VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
                         task.spawn(function()
                             VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame)
