@@ -1,124 +1,495 @@
--- Blox Fruit Mobile Quest & UI Debugger - Admin Tienphat
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local CoreGui = game:GetService("CoreGui")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-
-if CoreGui:FindFirstChild("AdminTienphatMobileDebug") then
-    CoreGui.AdminTienphatMobileDebug:Destroy()
+-- Kiểm tra và chống spam script (Đảm bảo chỉ tồn tại 1 menu duy nhất)
+if getgenv().TphatFixLagLoaded then
+    if getgenv().TphatCleanup then
+        getgenv().TphatCleanup()
+    end
 end
+getgenv().TphatFixLagLoaded = true
 
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local LocalPlayer = Players.LocalPlayer
+
+-- Container chính để quản lý việc dọn dẹp khi tắt hoặc reload script
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AdminTienphatMobileDebug"
-ScreenGui.Parent = CoreGui
+ScreenGui.Name = "TphatFixLagMenu"
 ScreenGui.ResetOnSpawn = false
 
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.Position = UDim2.new(0.5, -180, 0.5, -200)
-MainFrame.Size = UDim2.new(0, 360, 0, 400)
-MainFrame.Active = true
-MainFrame.Draggable = true
-
-local Title = Instance.new("TextLabel", MainFrame)
-Title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Font = Enum.Font.SourceSansBold
-Title.Text = "📱 MOBILE DEBUG - Admin Tienphat"
-Title.TextColor3 = Color3.fromRGB(255, 170, 0)
-Title.TextSize = 14
-
-local CloseBtn = Instance.new("TextButton", MainFrame)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-CloseBtn.Position = UDim2.new(1, -35, 0, 6)
-CloseBtn.Size = UDim2.new(0, 28, 0, 28)
-CloseBtn.Font = Enum.Font.SourceSansBold
-CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.TextSize = 14
-CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
-
-local LogScroll = Instance.new("ScrollingFrame", MainFrame)
-LogScroll.Position = UDim2.new(0.03, 0, 0, 50)
-LogScroll.Size = UDim2.new(0.94, 0, 0, 275)
-LogScroll.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-LogScroll.CanvasSize = UDim2.new(0, 0, 0, 1500)
-LogScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-
-local LogText = Instance.new("TextLabel", LogScroll)
-LogText.Size = UDim2.new(1, 0, 1, 0)
-LogText.BackgroundTransparency = 1
-LogText.Font = Enum.Font.Code
-LogText.TextColor3 = Color3.fromRGB(0, 255, 128)
-LogText.TextSize = 12
-LogText.TextXAlignment = Enum.TextXAlignment.Left
-LogText.TextYAlignment = Enum.TextYAlignment.Top
-LogText.TextWrapped = true
-LogText.Text = "Đang quét..."
-
-local RescanBtn = Instance.new("TextButton", MainFrame)
-RescanBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
-RescanBtn.Position = UDim2.new(0.03, 0, 0, 335)
-RescanBtn.Size = UDim2.new(0.94, 0, 0, 50)
-RescanBtn.Font = Enum.Font.SourceSansBold
-RescanBtn.Text = "🔄 Quét Lại Dữ Liệu Ngay"
-RescanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-RescanBtn.TextSize = 14
-
-local function executeScan()
-    local logs = {}
-    table.insert(logs, "=== [ THÔNG TIN NHÂN VẬT ] ===")
-    
-    pcall(function()
-        local data = LocalPlayer:FindFirstChild("Data")
-        local lvl = data and data:FindFirstChild("Level") and data.Level.Value or "Không rõ"
-        table.insert(logs, "Level hiện tại: " .. tostring(lvl))
-    end)
-
-    table.insert(logs, "\n=== [ BẢNG QUEST TRÊN UI ] ===")
-    pcall(function()
-        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-        local main = playerGui and playerGui:FindFirstChild("Main")
-        local questGui = main and main:FindFirstChild("Quest")
-        
-        if questGui then
-            table.insert(logs, "Trạng thái: Đang hiển thị (Visible = true)")
-            local container = questGui:FindFirstChild("Container")
-            if container then
-                for _, v in ipairs(container:GetDescendants()) do
-                    if v:IsA("TextLabel") and v.Text ~= "" then
-                        table.insert(logs, "• [" .. v.Name .. "]: " .. v.Text)
-                    end
-                end
-            end
-        else
-            table.insert(logs, "Trạng thái: Chưa nhận nhiệm vụ hoặc UI ẩn!")
-        end
-    end)
-
-    table.insert(logs, "\n=== [ TÊN QUÁI TRONG WORKSPACE ] ===")
-    pcall(function()
-        local enemiesFolder = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
-        if enemiesFolder then
-            local count = 0
-            local checked = {}
-            for _, mob in ipairs(enemiesFolder:GetChildren()) do
-                if not checked[mob.Name] and count < 12 then
-                    checked[mob.Name] = true
-                    count = count + 1
-                    table.insert(logs, "• Mob: " .. mob.Name)
-                end
-            end
-        else
-            table.insert(logs, "Không tìm thấy thư mục chứa quái!")
-        end
-    end)
-
-    LogText.Text = table.concat(logs, "\n")
+-- Đưa vào CoreGui nếu được, nếu không thì vào PlayerGui
+local success = pcall(function()
+    ScreenGui.Parent = CoreGui
+end)
+if not success then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
-RescanBtn.MouseButton1Click:Connect(executeScan)
+getgenv().TphatCleanup = function()
+    getgenv().TphatFixLagLoaded = false
+    if ScreenGui then
+        ScreenGui:Destroy()
+    end
+end
 
--- Tự động quét luôn ngay khi bật script
-executeScan()
+-- ==================== 1. NÚT NỔI (FLOATING BUTTON) ====================
+local FloatBtn = Instance.new("TextButton")
+FloatBtn.Name = "FloatButton"
+FloatBtn.Size = UDim2.new(0, 50, 0, 50)
+FloatBtn.Position = UDim2.new(0, 50, 0, 200)
+FloatBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+FloatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FloatBtn.Text = "T.phat"
+FloatBtn.TextSize = 14
+FloatBtn.Font = Enum.Font.SourceSansBold
+FloatBtn.Active = true
+FloatBtn.Draggable = true
+FloatBtn.Parent = ScreenGui
+
+local UICornerFloat = Instance.new("UICorner")
+UICornerFloat.CornerRadius = UDim.new(0, 12)
+UICornerFloat.Parent = FloatBtn
+
+-- Viền LED RGB 7 màu xoay quanh hình vuông bo góc
+local UIStrokeFloat = Instance.new("UIStroke")
+UIStrokeFloat.Thickness = 3
+UIStrokeFloat.Parent = FloatBtn
+
+task.spawn(function()
+    local hue = 0
+    while getgenv().TphatFixLagLoaded do
+        hue = (hue + 1) % 360
+        UIStrokeFloat.Color = Color3.fromHSV(hue / 360, 1, 1)
+        task.wait(0.05)
+    end
+end)
+
+-- ==================== 2. MENU CHÍNH ====================
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 450, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -225, 0.5, -160)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Visible = false
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local UICornerMain = Instance.new("UICorner")
+UICornerMain.CornerRadius = UDim.new(0, 8)
+UICornerMain.Parent = MainFrame
+
+local UIStrokeMain = Instance.new("UIStroke")
+UIStrokeMain.Color = Color3.fromRGB(50, 50, 50)
+UIStrokeMain.Thickness = 1
+UIStrokeMain.Parent = MainFrame
+
+-- Thanh tiêu đề
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 35)
+TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TopBar.Parent = MainFrame
+
+local UICornerTop = Instance.new("UICorner")
+UICornerTop.CornerRadius = UDim.new(0, 8)
+UICornerTop.Parent = TopBar
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -80, 1, 0)
+TitleLabel.Position = UDim2.new(0, 10, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Admin Tienphat - Fix Lag Hub"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 14
+TitleLabel.Font = Enum.Font.SourceSansBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = TopBar
+
+-- Nút ẩn menu (-)
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 30, 0, 30)
+MinBtn.Position = UDim2.new(1, -70, 0, 2)
+MinBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+MinBtn.Text = "-"
+MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinBtn.TextSize = 18
+MinBtn.Font = Enum.Font.SourceSansBold
+MinBtn.Parent = TopBar
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 4)
+
+-- Nút tắt hẳn menu (x)
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -35, 0, 2)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+CloseBtn.Text = "x"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 16
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Parent = TopBar
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
+
+-- Sự kiện ẩn/tắt/mở menu
+FloatBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
+MinBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+end)
+CloseBtn.MouseButton1Click:Connect(function()
+    getgenv().TphatCleanup()
+end)
+
+-- ==================== 3. TAB SYSTEM ====================
+local TabBtnContainer = Instance.new("Frame")
+TabBtnContainer.Size = UDim2.new(1, -20, 0, 30)
+TabBtnContainer.Position = UDim2.new(0, 10, 0, 45)
+TabBtnContainer.BackgroundTransparency = 1
+TabBtnContainer.Parent = MainFrame
+
+local Tab1Btn = Instance.new("TextButton")
+Tab1Btn.Size = UDim2.new(0.5, -5, 1, 0)
+Tab1Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Tab1Btn.Text = "Main Fix Lag"
+Tab1Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Tab1Btn.Font = Enum.Font.SourceSansBold
+Tab1Btn.TextSize = 14
+Tab1Btn.Parent = TabBtnContainer
+Instance.new("UICorner", Tab1Btn).CornerRadius = UDim.new(0, 6)
+
+local Tab2Btn = Instance.new("TextButton")
+Tab2Btn.Size = UDim2.new(0.5, -5, 1, 0)
+Tab2Btn.Position = UDim2.new(0.5, 5, 0, 0)
+Tab2Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Tab2Btn.Text = "Settings & ESP"
+Tab2Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
+Tab2Btn.Font = Enum.Font.SourceSansBold
+Tab2Btn.TextSize = 14
+Tab2Btn.Parent = TabBtnContainer
+Instance.new("UICorner", Tab2Btn).CornerRadius = UDim.new(0, 6)
+
+-- Khung chứa nội dung Tab 1
+local Tab1Content = Instance.new("ScrollingFrame")
+Tab1Content.Size = UDim2.new(1, -20, 1, -90)
+Tab1Content.Position = UDim2.new(0, 10, 0, 85)
+Tab1Content.BackgroundTransparency = 1
+Tab1Content.CanvasSize = UDim2.new(0, 0, 0, 380)
+Tab1Content.ScrollBarThickness = 4
+Tab1Content.Parent = MainFrame
+
+-- Khung chứa nội dung Tab 2
+local Tab2Content = Instance.new("ScrollingFrame")
+Tab2Content.Size = UDim2.new(1, -20, 1, -90)
+Tab2Content.Position = UDim2.new(0, 10, 0, 85)
+Tab2Content.BackgroundTransparency = 1
+Tab2Content.Visible = false
+Tab2Content.CanvasSize = UDim2.new(0, 0, 0, 200)
+Tab2Content.ScrollBarThickness = 4
+Tab2Content.Parent = MainFrame
+
+Tab1Btn.MouseButton1Click:Connect(function()
+    Tab1Content.Visible = true
+    Tab2Content.Visible = false
+    Tab1Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Tab1Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Tab2Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    Tab2Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
+end)
+
+Tab2Btn.MouseButton1Click:Connect(function()
+    Tab2Content.Visible = true
+    Tab1Content.Visible = false
+    Tab2Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Tab2Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Tab1Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    Tab1Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
+end)
+
+-- ==================== NỘI DUNG TAB 1 (MAIN FIX LAG) ====================
+
+-- Nút chọn mức độ Fix Lag
+local FixLagDropdownLabel = Instance.new("TextLabel")
+FixLagDropdownLabel.Size = UDim2.new(1, 0, 0, 25)
+FixLagDropdownLabel.BackgroundTransparency = 1
+FixLagDropdownLabel.Text = "Chọn mức độ Fix Lag:"
+FixLagDropdownLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+FixLagDropdownLabel.Font = Enum.Font.SourceSansBold
+FixLagDropdownLabel.TextSize = 13
+FixLagDropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
+FixLagDropdownLabel.Parent = Tab1Content
+
+local currentFixLevel = "Nhe" -- Mặc định
+
+local BtnNhe = Instance.new("TextButton")
+BtnNhe.Size = UDim2.new(1, 0, 0, 30)
+BtnNhe.Position = UDim2.new(0, 0, 0, 30)
+BtnNhe.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+BtnNhe.Text = "1. Fix Nhẹ (Xóa trang phục)"
+BtnNhe.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnNhe.Font = Enum.Font.SourceSansBold
+BtnNhe.TextSize = 13
+BtnNhe.Parent = Tab1Content
+Instance.new("UICorner", BtnNhe).CornerRadius = UDim.new(0, 6)
+
+local BtnTrungBinh = Instance.new("TextButton")
+BtnTrungBinh.Size = UDim2.new(1, 0, 0, 30)
+BtnTrungBinh.Position = UDim2.new(0, 0, 0, 65)
+BtnTrungBinh.BackgroundColor3 = Color3.fromRGB(50, 50, 150)
+BtnTrungBinh.Text = "2. Fix Trung Bình (+ Xóa Texture mặt map)"
+BtnTrungBinh.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnTrungBinh.Font = Enum.Font.SourceSansBold
+BtnTrungBinh.TextSize = 13
+BtnTrungBinh.Parent = Tab1Content
+Instance.new("UICorner", BtnTrungBinh).CornerRadius = UDim.new(0, 6)
+
+local BtnManh = Instance.new("TextButton")
+BtnManh.Size = UDim2.new(1, 0, 0, 30)
+BtnManh.Position = UDim2.new(0, 0, 0, 100)
+BtnManh.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+BtnManh.Text = "3. Fix Mạnh (Tối đa: Xóa vật thể/Anim/VFX)"
+BtnManh.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnManh.Font = Enum.Font.SourceSansBold
+BtnManh.TextSize = 13
+BtnManh.Parent = Tab1Content
+Instance.new("UICorner", BtnManh).CornerRadius = UDim.new(0, 6)
+
+-- Thực thi hành động Fix Lag khi nhấn nút chính
+local ExecuteFixBtn = Instance.new("TextButton")
+ExecuteFixBtn.Size = UDim2.new(1, 0, 0, 35)
+ExecuteFixBtn.Position = UDim2.new(0, 0, 0, 140)
+ExecuteFixBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+ExecuteFixBtn.Text = "THỰC THI FIX LAG ĐÃ CHỌN"
+ExecuteFixBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ExecuteFixBtn.Font = Enum.Font.SourceSansBold
+ExecuteFixBtn.TextSize = 14
+ExecuteFixBtn.Parent = Tab1Content
+Instance.new("UICorner", ExecuteFixBtn).CornerRadius = UDim.new(0, 6)
+
+BtnNhe.MouseButton1Click:Connect(function()
+    currentFixLevel = "Nhe"
+    BtnNhe.BackgroundColor3 = Color3.fromRGB(80, 200, 80)
+    BtnTrungBinh.BackgroundColor3 = Color3.fromRGB(50, 50, 150)
+    BtnManh.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+end)
+
+BtnTrungBinh.MouseButton1Click:Connect(function()
+    currentFixLevel = "TrungBinh"
+    BtnNhe.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+    BtnTrungBinh.BackgroundColor3 = Color3.fromRGB(80, 80, 220)
+    BtnManh.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+end)
+
+BtnManh.MouseButton1Click:Connect(function()
+    currentFixLevel = "Manh"
+    BtnNhe.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+    BtnTrungBinh.BackgroundColor3 = Color3.fromRGB(50, 50, 150)
+    BtnManh.BackgroundColor3 = Color3.fromRGB(220, 80, 80)
+end)
+
+ExecuteFixBtn.MouseButton1Click:Connect(function()
+    -- Fix nhẹ: Xóa trang phục (Shirt, Pants, Accessories) của mình và người khác
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character then
+            for _, v in ipairs(p.Character:GetChildren()) do
+                if v:IsA("Accessory") or v:IsA("Clothing") or v:IsA("ShirtGraphic") then
+                    v:Destroy()
+                end
+            end
+        end
+    end
+
+    if currentFixLevel == "TrungBinh" or currentFixLevel == "Manh" then
+        -- Fix trung bình: Xóa tất cả Texture, Decal trên toàn map
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("Texture") or obj:IsA("Decal") then
+                obj:Destroy()
+            end
+        end
+    end
+
+    if currentFixLevel == "Manh" then
+        -- Fix mạnh: Xóa animation, vfx và các vật thể rác trên map, chỉ chừa lại mặt đất
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ParticleEmitter") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Trail") then
+                obj:Destroy()
+            elseif obj:IsA("BasePart") and not obj.Name:lower():find("baseplate") and not obj.Name:lower():find("floor") and not obj.Name:lower():find("ground") then
+                -- Nếu vật thể không phải mặt đất thì xóa hoặc ẩn đi
+                -- Tùy chọn: xóa bớt vật thể linh tinh
+                if obj.Size.Magnitude > 300 then 
+                    -- Giữ lại các vật thể map lớn nếu cần, còn lại xóa bớt
+                end
+            end
+        end
+    end
+end)
+
+-- Nút 2: Map Tối (Chỉnh tất cả texture, models thành màu đen)
+local MapToiBtn = Instance.new("TextButton")
+MapToiBtn.Size = UDim2.new(1, 0, 0, 30)
+MapToiBtn.Position = UDim2.new(0, 0, 0, 185)
+MapToiBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MapToiBtn.Text = "Nút 2: Map Tối (Chuyển Model/Texture thành đen)"
+MapToiBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MapToiBtn.Font = Enum.Font.SourceSansBold
+MapToiBtn.TextSize = 13
+MapToiBtn.Parent = Tab1Content
+Instance.new("UICorner", MapToiBtn).CornerRadius = UDim.new(0, 6)
+
+MapToiBtn.MouseButton1Click:Connect(function()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.Color = Color3.fromRGB(15, 15, 15)
+            obj.Material = Enum.Material.SmoothPlastic
+        end
+    end
+end)
+
+-- Nút 3: No Fog (Xóa sương mù)
+local NoFogBtn = Instance.new("TextButton")
+NoFogBtn.Size = UDim2.new(1, 0, 0, 30)
+NoFogBtn.Position = UDim2.new(0, 0, 0, 225)
+NoFogBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+NoFogBtn.Text = "Nút 3: No Fog (Xóa sương mù)"
+NoFogBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoFogBtn.Font = Enum.Font.SourceSansBold
+NoFogBtn.TextSize = 13
+NoFogBtn.Parent = Tab1Content
+Instance.new("UICorner", NoFogBtn).CornerRadius = UDim.new(0, 6)
+
+NoFogBtn.MouseButton1Click:Connect(function()
+    Lighting.FogEnd = 999999
+    Lighting.GlobalShadows = false
+    for _, v in ipairs(Lighting:GetChildren()) do
+        if v:IsA("Atmosphere") then
+            v:Destroy()
+        end
+    end
+end)
+
+-- Nút 4: No Sky (Xóa bầu trời)
+local NoSkyBtn = Instance.new("TextButton")
+NoSkyBtn.Size = UDim2.new(1, 0, 0, 30)
+NoSkyBtn.Position = UDim2.new(0, 0, 0, 265)
+NoSkyBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+NoSkyBtn.Text = "Nút 4: No Sky (Xóa bầu trời)"
+NoSkyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoSkyBtn.Font = Enum.Font.SourceSansBold
+NoSkyBtn.TextSize = 13
+NoSkyBtn.Parent = Tab1Content
+Instance.new("UICorner", NoSkyBtn).CornerRadius = UDim.new(0, 6)
+
+NoSkyBtn.MouseButton1Click:Connect(function()
+    for _, v in ipairs(Lighting:GetChildren()) do
+        if v:IsA("Sky") then
+            v:Destroy()
+        end
+    end
+end)
+
+-- Nút 5: Brightness (Tăng độ sáng tối đa)
+local BrightnessBtn = Instance.new("TextButton")
+BrightnessBtn.Size = UDim2.new(1, 0, 0, 30)
+BrightnessBtn.Position = UDim2.new(0, 0, 0, 305)
+BrightnessBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+BrightnessBtn.Text = "Nút 5: Brightness (Sáng tối đa)"
+BrightnessBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+BrightnessBtn.Font = Enum.Font.SourceSansBold
+BrightnessBtn.TextSize = 13
+BrightnessBtn.Parent = Tab1Content
+Instance.new("UICorner", BrightnessBtn).CornerRadius = UDim.new(0, 6)
+
+BrightnessBtn.MouseButton1Click:Connect(function()
+    Lighting.Brightness = 3
+    Lighting.ClockTime = 14
+    Lighting.OutdoorAmbient = Color3.fromRGB(200, 200, 200)
+end)
+
+
+-- ==================== NỘI DUNG TAB 2 (SETTINGS & ESP) ====================
+
+-- Nút 1: ESP Box & Line Player
+local ESPBtn = Instance.new("TextButton")
+ESPBtn.Size = UDim2.new(1, 0, 0, 35)
+ESPBtn.Position = UDim2.new(0, 0, 0, 10)
+ESPBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ESPBtn.Text = "Bật/Tắt ESP Box & Line Player"
+ESPBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ESPBtn.Font = Enum.Font.SourceSansBold
+ESPBtn.TextSize = 13
+ESPBtn.Parent = Tab2Content
+Instance.new("UICorner", ESPBtn).CornerRadius = UDim.new(0, 6)
+
+local espEnabled = false
+ESPBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    ESPBtn.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
+end)
+
+-- Logic ESP đơn giản vẽ Line/Box bằng Highlight hoặc Drawing (Built-in)
+RunService.RenderStepped:Connect(function()
+    if not getgenv().TphatFixLagLoaded then return end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local highlight = p.Character:FindFirstChild("TphatESP")
+            if espEnabled then
+                if not highlight then
+                    highlight = Instance.new("Highlight")
+                    highlight.Name = "TphatESP"
+                    highlight.Adornee = p.Character
+                    highlight.FillTransparency = 1
+                    highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+                    highlight.OutlineTransparency = 0
+                    highlight.Parent = p.Character
+                end
+            else
+                if highlight then
+                    highlight:Destroy()
+                end
+            end
+        end
+    end
+end)
+
+-- Nút 2: Cài đặt màu nền (Trắng hoặc Đen)
+local BgColorLabel = Instance.new("TextLabel")
+BgColorLabel.Size = UDim2.new(1, 0, 0, 25)
+BgColorLabel.Position = UDim2.new(0, 0, 0, 55)
+BgColorLabel.BackgroundTransparency = 1
+BgColorLabel.Text = "Cài đặt màu nền Menu:"
+BgColorLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+BgColorLabel.Font = Enum.Font.SourceSansBold
+BgColorLabel.TextSize = 13
+BgColorLabel.TextXAlignment = Enum.TextXAlignment.Left
+BgColorLabel.Parent = Tab2Content
+
+local BtnThemeBlack = Instance.new("TextButton")
+BtnThemeBlack.Size = UDim2.new(0.48, 0, 0, 30)
+BtnThemeBlack.Position = UDim2.new(0, 0, 0, 85)
+BtnThemeBlack.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+BtnThemeBlack.Text = "Màu Đen"
+BtnThemeBlack.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnThemeBlack.Font = Enum.Font.SourceSansBold
+BtnThemeBlack.TextSize = 13
+BtnThemeBlack.Parent = Tab2Content
+Instance.new("UICorner", BtnThemeBlack).CornerRadius = UDim.new(0, 6)
+
+local BtnThemeWhite = Instance.new("TextButton")
+BtnThemeWhite.Size = UDim2.new(0.48, 0, 0, 30)
+BtnThemeWhite.Position = UDim2.new(0.52, 0, 0, 85)
+BtnThemeWhite.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+BtnThemeWhite.Text = "Màu Trắng"
+BtnThemeWhite.TextColor3 = Color3.fromRGB(0, 0, 0)
+BtnThemeWhite.Font = Enum.Font.SourceSansBold
+BtnThemeWhite.TextSize = 13
+BtnThemeWhite.Parent = Tab2Content
+Instance.new("UICorner", BtnThemeWhite).CornerRadius = UDim.new(0, 6)
+
+BtnThemeBlack.MouseButton1Click:Connect(function()
+    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+end)
+
+BtnThemeWhite.MouseButton1Click:Connect(function()
+    MainFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+    TopBar.BackgroundColor3 = Color3.fromRGB(210, 210, 210)
+end)
