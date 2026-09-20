@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Fixed Damage & Smooth Vacuum Farm)
+-- Blox Fruit Master Hub - Admin Tienphat (Target Hop & Clean Kill Farm)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -123,7 +123,7 @@ local function createToggle(parent, text, defaultVal, callback)
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Fix Dame & Gom 150m)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "Auto Farm (Bay Lên Đầu Từng Con & Đánh)", false, function(v) Config.AutoFarm = v end)
 createToggle(MainContainer, "ESP Box Nhỏ Gọn & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
 createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
@@ -239,6 +239,7 @@ end
 
 local camera = Workspace.CurrentCamera
 
+-- Hàm check và nhận nhiệm vụ cấp 1-10 (Bandit) tự động
 local function checkAndGetQuest()
     pcall(function()
         local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
@@ -384,7 +385,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 4. AUTO FARM: FIX LỖI GÂY SÁT THƯƠNG & BAY TRÊN ĐẦU
+    -- 4. AUTO FARM: BAY LÊN ĐẦU TỪNG CON QUÁI DƯỚI ĐẤT -> ĐÁNH CHẾT -> CHUYỂN CON TIẾP THEO
     if Config.AutoFarm then
         pcall(function()
             checkAndGetQuest()
@@ -417,7 +418,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Tìm quái gần nhất làm tâm điểm
+                -- Tìm con quái gần nhất đang sống để xử lý
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 local targetMob = nil
                 local shortestDist = math.huge
@@ -438,45 +439,25 @@ RunService.RenderStepped:Connect(function()
 
                 if targetMob and targetMob:FindFirstChild("HumanoidRootPart") then
                     local mHrp = targetMob.HumanoidRootPart
-                    local clusterCenter = mHrp.Position
+                    local mHum = targetMob:FindFirstChildOfClass("Humanoid")
 
-                    -- Gom quái trong 150m nhưng KHÔNG đè bẹp hoàn toàn vào 1 điểm (tách nhẹ cách nhau 0.5 stud để game nhận diện sát thương chuẩn)
-                    local count = 0
-                    for _, mob in ipairs(folderEnemies:GetChildren()) do
-                        local mobHrp = mob:FindFirstChild("HumanoidRootPart")
-                        local mobHum = mob:FindFirstChildOfClass("Humanoid")
-                        if mobHrp and mobHum and mobHum.Health > 0 then
-                            local d = (mobHrp.Position - clusterCenter).Magnitude
-                            if d <= 150 then
-                                count = count + 1
-                                -- Trải quái thành một vòng tròn nhỏ hoặc cụm sát nhau để không bị lỗi anti-cheat mất máu
-                                local offsetX = (count % 3) * 0.8
-                                local offsetZ = math.floor(count / 3) * 0.8
-                                mobHrp.CFrame = CFrame.new(clusterCenter + Vector3.new(offsetX, 0, offsetZ))
-                                mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                                mobHrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-                                if mobHum:FindFirstChild("Animator") then
-                                    pcall(function() mobHum.Animator:Destroy() end)
-                                end
-                            end
-                        end
-                    end
-
-                    -- Nhân vật bay lơ lửng trên đầu cụm quái
-                    hrp.CFrame = CFrame.new(clusterCenter + Vector3.new(0, 7, 0)) * (hrp.CFrame - hrp.CFrame.Position)
+                    -- Bay thẳng lên lơ lửng ngay TRÊN ĐẦU con quái (cách 5 stud)
+                    hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 5, 0)) * (hrp.CFrame - hrp.CFrame.Position)
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                    -- Tự động kích hoạt tấn công liên tục kết hợp gửi lệnh đánh
-                    pcall(function()
-                        local activeTool = char:FindFirstChildOfClass("Tool")
-                        if activeTool then
-                            activeTool:Activate()
-                        end
-                        VirtualUser:Button1Down(Vector2.new(500, 500), camera.CFrame)
-                        task.spawn(function()
-                            VirtualUser:Button1Up(Vector2.new(500, 500), camera.CFrame)
+                    -- Nếu quái chưa chết thì auto chém liên tục
+                    if mHum and mHum.Health > 0 then
+                        pcall(function()
+                            local activeTool = char:FindFirstChildOfClass("Tool")
+                            if activeTool then
+                                activeTool:Activate()
+                            end
+                            VirtualUser:Button1Down(Vector2.new(500, 500), camera.CFrame)
+                            task.spawn(function()
+                                VirtualUser:Button1Up(Vector2.new(500, 500), camera.CFrame)
+                            end)
                         end)
-                    end)
+                    end
                 end
             end
         end)
