@@ -77,7 +77,6 @@ StatsLabel.Text = "FPS: -- | MS: --"
 StatsLabel.Parent = FloatBtn
 
 -- Cập nhật FPS và Ping (MS) liên tục
-local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 task.spawn(function()
     local lastUpdate = 0
@@ -153,7 +152,7 @@ end)
 
 -- ==================== HỆ THỐNG TAB BÊN TRÁI & NỘI DUNG BÊN PHẢI ====================
 
--- Cột Tab bên trái (X: 10, Y: 45, W: 130, H: 285)
+-- Cột Tab bên trái
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(0, 130, 1, -55)
 TabContainer.Position = UDim2.new(0, 10, 0, 45)
@@ -161,7 +160,7 @@ TabContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 TabContainer.Parent = MainFrame
 Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 0)
 
--- Khung chứa nội dung các Tab bên phải (X: 150, Y: 45, W: 360, H: 285)
+-- Khung chứa nội dung các Tab bên phải
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Size = UDim2.new(1, -160, 1, -55)
 ContentContainer.Position = UDim2.new(0, 150, 0, 45)
@@ -270,10 +269,8 @@ local function showToast(message)
     end)
 end
 
-
 -- ==================== NỘI DUNG TAB 1: MAIN ====================
 
--- Nút 1: Fix Lag Nhẹ
 local BtnFixNhe = Instance.new("TextButton")
 BtnFixNhe.Size = UDim2.new(1, -10, 0, 38)
 BtnFixNhe.Position = UDim2.new(0, 0, 0, 10)
@@ -286,7 +283,6 @@ BtnFixNhe.Parent = TabMainContent
 Instance.new("UICorner", BtnFixNhe).CornerRadius = UDim.new(0, 0)
 
 BtnFixNhe.MouseButton1Click:Connect(function()
-    -- Xóa trang phục
     for _, p in ipairs(Players:GetPlayers()) do
         if p.Character then
             for _, v in ipairs(p.Character:GetChildren()) do
@@ -296,14 +292,12 @@ BtnFixNhe.MouseButton1Click:Connect(function()
             end
         end
     end
-    -- Tăng sáng Lighting
     Lighting.Brightness = 3
     Lighting.ClockTime = 14
     Lighting.OutdoorAmbient = Color3.fromRGB(200, 200, 200)
     showToast("Đã kích hoạt Fix Lag Nhẹ!")
 end)
 
--- Nút 2: Fix Lag Trung Bình
 local BtnFixTrung = Instance.new("TextButton")
 BtnFixTrung.Size = UDim2.new(1, -10, 0, 38)
 BtnFixTrung.Position = UDim2.new(0, 0, 0, 55)
@@ -316,7 +310,6 @@ BtnFixTrung.Parent = TabMainContent
 Instance.new("UICorner", BtnFixTrung).CornerRadius = UDim.new(0, 0)
 
 BtnFixTrung.MouseButton1Click:Connect(function()
-    -- Thực hiện fix nhẹ trước
     for _, p in ipairs(Players:GetPlayers()) do
         if p.Character then
             for _, v in ipairs(p.Character:GetChildren()) do
@@ -324,7 +317,6 @@ BtnFixTrung.MouseButton1Click:Connect(function()
             end
         end
     end
-    -- Xóa texture 2D, Decal, hiệu ứng ánh sáng, vfx, sfx, âm thanh
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("Texture") or obj:IsA("Decal") or obj:IsA("ParticleEmitter") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Sound") then
             obj:Destroy()
@@ -336,7 +328,6 @@ BtnFixTrung.MouseButton1Click:Connect(function()
     showToast("Đã kích hoạt Fix Lag Trung Bình!")
 end)
 
--- Nút 3: Fix Lag Tối Đa (Cơ chế chạm đúp / Double Tap)
 local lastTapTick = 0
 local BtnFixMax = Instance.new("TextButton")
 BtnFixMax.Size = UDim2.new(1, -10, 0, 38)
@@ -352,15 +343,11 @@ Instance.new("UICorner", BtnFixMax).CornerRadius = UDim.new(0, 0)
 BtnFixMax.MouseButton1Click:Connect(function()
     local currentTick = tick()
     if currentTick - lastTapTick > 1.5 then
-        -- Lần chạm đầu tiên
         lastTapTick = currentTick
-        showToast("chạm 1 lần nữa để tiếp tục!")
+        showToast("Chạm 1 lần nữa để tiếp tục!")
     else
-        -- Lần chạm thứ hai trong vòng 1.5 giây
         lastTapTick = 0
         showToast("Đang thực thi Fix Lag Tối Đa...")
-        
-        -- Dừng toàn bộ Animation trên người chơi (xóa anim chạy, vỗ cánh của pet/rồng)
         for _, p in ipairs(Players:GetPlayers()) do
             if p.Character then
                 local hum = p.Character:FindFirstChildOfClass("Humanoid")
@@ -373,7 +360,6 @@ BtnFixMax.MouseButton1Click:Connect(function()
                         end
                     end
                 end
-                -- Xóa pet hoặc model phụ trên người
                 for _, child in ipairs(p.Character:GetChildren()) do
                     if child:IsA("Model") or (child:IsA("BasePart") and child.Name ~= "HumanoidRootPart" and child.Name ~= "Head") then
                         if child.Name:lower():find("pet") or child.Name:lower():find("dragon") or child.Name:lower():find("egg") then
@@ -383,13 +369,10 @@ BtnFixMax.MouseButton1Click:Connect(function()
                 end
             end
         end
-
-        -- Xóa vật thể rác, mesh, tường phụ trên map (giữ lại baseplate/mặt đất đứng)
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("BasePart") then
                 local name = obj.Name:lower()
                 if not name:find("baseplate") and not name:find("floor") and not name:find("ground") and not name:find("terrain") then
-                    -- Nếu là mesh hoặc vật thể phụ ngoài map thì xóa
                     if obj.Size.Magnitude < 400 then
                         obj:Destroy()
                     end
@@ -402,7 +385,6 @@ BtnFixMax.MouseButton1Click:Connect(function()
     end
 end)
 
--- Nút: Map Tối
 local MapToiBtn = Instance.new("TextButton")
 MapToiBtn.Size = UDim2.new(1, -10, 0, 35)
 MapToiBtn.Position = UDim2.new(0, 0, 0, 145)
@@ -424,7 +406,6 @@ MapToiBtn.MouseButton1Click:Connect(function()
     showToast("Đã chuyển Map sang màu Tối!")
 end)
 
--- Nút: Map Trắng
 local MapTrangBtn = Instance.new("TextButton")
 MapTrangBtn.Size = UDim2.new(1, -10, 0, 35)
 MapTrangBtn.Position = UDim2.new(0, 0, 0, 190)
@@ -436,7 +417,8 @@ MapTrangBtn.TextSize = 12
 MapTrangBtn.Parent = TabMainContent
 Instance.new("UICorner", MapTrangBtn).CornerRadius = UDim.new(0, 0)
 
-MapTrangBtn.MouseButton1Listick or MapTrangBtn.MouseButton1Click:Connect(function()
+-- Đã sửa lỗi chính tả đoạn này từ MouseButton1Listick thành MouseButton1Click chuẩn
+MapTrangBtn.MouseButton1Click:Connect(function()
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
             obj.Color = Color3.fromRGB(245, 245, 245)
@@ -446,14 +428,10 @@ MapTrangBtn.MouseButton1Listick or MapTrangBtn.MouseButton1Click:Connect(functio
     showToast("Đã chuyển Map sang màu Trắng!")
 end)
 
-
 -- ==================== NỘI DUNG TAB 2: VISUAL ====================
 
 local espBoxEnabled = false
-local espLineEnabled = false
-local espInfoEnabled = false
 
--- Nút 1: ESP Box (màu xanh lá)
 local EspBoxBtn = Instance.new("TextButton")
 EspBoxBtn.Size = UDim2.new(1, -10, 0, 38)
 EspBoxBtn.Position = UDim2.new(0, 0, 0, 10)
@@ -471,48 +449,10 @@ EspBoxBtn.MouseButton1Click:Connect(function()
     EspBoxBtn.BackgroundColor3 = espBoxEnabled and Color3.fromRGB(0, 80, 0) or Color3.fromRGB(30, 30, 30)
 end)
 
--- Nút 2: ESP Line (màu xanh lá)
-local EspLineBtn = Instance.new("TextButton")
-EspLineBtn.Size = UDim2.new(1, -10, 0, 38)
-EspLineBtn.Position = UDim2.new(0, 0, 0, 55)
-EspLineBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-EspLineBtn.Text = "ESP Line: Tắt"
-EspLineBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
-EspLineBtn.Font = Enum.Font.SourceSansBold
-EspLineBtn.TextSize = 12
-EspLineBtn.Parent = TabVisualContent
-Instance.new("UICorner", EspLineBtn).CornerRadius = UDim.new(0, 0)
-
-EspLineBtn.MouseButton1Click:Connect(function()
-    espLineEnabled = not espLineEnabled
-    EspLineBtn.Text = espLineEnabled and "ESP Line: Bật" or "ESP Line: Tắt"
-    EspLineBtn.BackgroundColor3 = espLineEnabled and Color3.fromRGB(0, 80, 0) or Color3.fromRGB(30, 30, 30)
-end)
-
--- Nút 3: ESP Info (trắng)
-local EspInfoBtn = Instance.new("TextButton")
-EspInfoBtn.Size = UDim2.new(1, -10, 0, 38)
-EspInfoBtn.Position = UDim2.new(0, 0, 0, 100)
-EspInfoBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-EspInfoBtn.Text = "ESP Info: Tắt"
-EspInfoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-EspInfoBtn.Font = Enum.Font.SourceSansBold
-EspInfoBtn.TextSize = 12
-EspInfoBtn.Parent = TabVisualContent
-Instance.new("UICorner", EspInfoBtn).CornerRadius = UDim.new(0, 0)
-
-EspInfoBtn.MouseButton1Click:Connect(function()
-    espInfoEnabled = not espInfoEnabled
-    EspInfoBtn.Text = espInfoEnabled and "ESP Info: Bật" or "ESP Info: Tắt"
-    EspInfoBtn.BackgroundColor3 = espInfoEnabled and Color3.fromRGB(80, 80, 80) or Color3.fromRGB(30, 30, 30)
-end)
-
--- Vòng lặp Render xử lý ESP Box & Line màu xanh lá
 RunService.RenderStepped:Connect(function()
     if not getgenv().TphatBoosterLoaded then return end
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
-            -- Xử lý Highlight (Box) màu xanh lá
             local highlight = p.Character:FindFirstChild("TphatGreenBox")
             if espBoxEnabled then
                 if not highlight then
@@ -531,10 +471,8 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-
 -- ==================== NỘI DUNG TAB 3: SETTINGS ====================
 
--- Nút Telegram (Chuyển hướng link)
 local TeleBtn = Instance.new("TextButton")
 TeleBtn.Size = UDim2.new(1, -10, 0, 38)
 TeleBtn.Position = UDim2.new(0, 0, 0, 10)
@@ -550,10 +488,9 @@ TeleBtn.MouseButton1Click:Connect(function()
     pcall(function()
         setclipboard("https://t.me/macaramodzyt")
     end)
-    showToast("Đã mở/sao chép link Telegram vào bộ nhớ tạm!")
+    showToast("Đã sao chép link Telegram vào bộ nhớ tạm!")
 end)
 
--- Nút Copy Telegram Link
 local CopyTeleBtn = Instance.new("TextButton")
 CopyTeleBtn.Size = UDim2.new(1, -10, 0, 38)
 CopyTeleBtn.Position = UDim2.new(0, 0, 0, 55)
