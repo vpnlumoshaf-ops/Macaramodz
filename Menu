@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Optimized Quest, Smooth Flight & Green ESP Box)
+-- Blox Fruit Master Hub - Admin Tienphat (Optimized Quest, Smooth Flight, Green ESP Box & Fruit Notifier)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -19,6 +19,7 @@ local Config = {
     AutoFarm = false,
     SelectedWeapon = "Tự động chọn",
     ShowESP = true,
+    ShowFruitESP = true,
     ShowWeaponScanner = true,
     FixLag = true,
     AutoStatMelee = false,
@@ -124,7 +125,7 @@ local MainContainer = Instance.new("ScrollingFrame", MainFrame)
 MainContainer.Position = UDim2.new(0, 0, 0, 72)
 MainContainer.Size = UDim2.new(1, 0, 1, -72)
 MainContainer.BackgroundTransparency = 1
-MainContainer.CanvasSize = UDim2.new(0, 0, 0, 580)
+MainContainer.CanvasSize = UDim2.new(0, 0, 0, 620)
 MainContainer.Visible = true
 
 local StatsContainer = Instance.new("ScrollingFrame", MainFrame)
@@ -176,7 +177,8 @@ local function createToggle(parent, text, defaultVal, callback)
 end
 
 createToggle(MainContainer, "Auto Farm (Bay Trên Đầu & Auto Click)", false, function(v) Config.AutoFarm = v end)
-createToggle(MainContainer, "ESP Box Xanh Lá & Line Trắng", true, function(v) Config.ShowESP = v end)
+createToggle(MainContainer, "ESP Quái Xanh Lá & Line Trắng", true, function(v) Config.ShowESP = v end)
+createToggle(MainContainer, "ESP Trái Ác Quỷ Dưới Đất", true, function(v) Config.ShowFruitESP = v end)
 createToggle(MainContainer, "Hiện Tên & Vũ Khí Người Chơi", true, function(v) Config.ShowWeaponScanner = v end)
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
     Config.FixLag = v 
@@ -314,6 +316,18 @@ OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 OpenBtn.TextSize = 12
 OpenBtn.Draggable = true
 
+-- Fruit Notifier UI Label trên màn hình
+local FruitNotifLabel = Instance.new("TextLabel", ToggleGui)
+FruitNotifLabel.Name = "FruitNotifier"
+FruitNotifLabel.BackgroundTransparency = 0.5
+FruitNotifLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+FruitNotifLabel.Position = UDim2.new(0.5, -175, 0, 10)
+FruitNotifLabel.Size = UDim2.new(0, 350, 0, 30)
+FruitNotifLabel.Font = Enum.Font.SourceSansBold
+FruitNotifLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+FruitNotifLabel.TextSize = 14
+FruitNotifLabel.Text = "Đang có trái ác quỷ: Không có"
+
 local isOpen = true
 OpenBtn.MouseButton1Click:Connect(function()
     isOpen = not isOpen
@@ -331,6 +345,7 @@ end)
 applyFixLag(true)
 
 local espCache = {}
+local fruitEspCache = {}
 local weaponScannerCache = {}
 local camera = Workspace.CurrentCamera
 
@@ -339,21 +354,39 @@ local function clearAllESP()
         if elements.Box then elements.Box.Visible = false end
         if elements.Line then elements.Line.Visible = false end
     end
+    for _, elements in pairs(fruitEspCache) do
+        if elements.Text then elements.Text.Visible = false end
+    end
     for _, textObj in pairs(weaponScannerCache) do
         if textObj then textObj.Visible = false end
     end
 end
 
--- HÀM KIỂM TRA & NHẬN NHIỆM VỤ AN TOÀN (CÓ CHỐNG SPAM)
+-- HÀM KIỂM TRA & NHẬN NHIỆM VỤ AN TOÀN (ĐÃ FIX KHÔNG BỊ SPAM / CHECK CHUẨN GUI)
 local lastQuestAttempt = 0
 local function checkAndGetQuestClean()
-    if tick() - lastQuestAttempt < 3 then return end -- Chờ ít nhất 3 giây mới kiểm tra lại tránh spam
+    if tick() - lastQuestAttempt < 3 then return end
     lastQuestAttempt = tick()
 
     pcall(function()
-        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
-        local hasActiveQuest = questGui and questGui.Visible and questGui:FindFirstChild("Container") and questGui.Container:FindFirstChild("QuestTitle") and questGui.Container.QuestTitle.Text ~= ""
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        local mainGui = playerGui and playerGui:FindFirstChild("Main")
+        local questFrame = mainGui and mainGui:FindFirstChild("Quest")
         
+        -- Kiểm tra xem bảng nhiệm vụ trên màn hình có đang hiển thị nội dung hay không
+        local hasActiveQuest = false
+        if questFrame and questFrame.Visible then
+            local container = questFrame:FindFirstChild("Container")
+            local questTitle = container and container:FindFirstChild("QuestTitle")
+            if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Defeat") == false then -- Tùy biến kiểm tra chuỗi title
+                hasActiveQuest = true
+            end
+            -- Cách kiểm tra an toàn khác dựa trên hiển thị trực tiếp của Quest Container
+            if container and container.Visible and #container:GetChildren() > 0 then
+                hasActiveQuest = true
+            end
+        end
+
         if not hasActiveQuest then
             local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
             local level = stats and stats.Value or 1
@@ -441,13 +474,13 @@ RunService.RenderStepped:Connect(function()
                     if not espCache[mob] then
                         local box = Drawing.new("Square")
                         box.Visible = false
-                        box.Color = Color3.fromRGB(0, 255, 0) -- Xanh lá
+                        box.Color = Color3.fromRGB(0, 255, 0)
                         box.Thickness = 1
                         box.Filled = false
 
                         local line = Drawing.new("Line")
                         line.Visible = false
-                        line.Color = Color3.fromRGB(255, 255, 255) -- Trắng
+                        line.Color = Color3.fromRGB(255, 255, 255)
                         line.Thickness = 1
 
                         espCache[mob] = {Box = box, Line = line}
@@ -488,6 +521,59 @@ RunService.RenderStepped:Connect(function()
             if elements.Box then elements.Box.Visible = false end
             if elements.Line then elements.Line.Visible = false end
         end
+    end
+
+    -- ESP TRÁI ÁC QUỶ (DEVIL FRUIT ESP & NOTIFIER)
+    local foundFruitsNames = {}
+    if Config.ShowFruitESP then
+        local activeFruits = {}
+        for _, obj in ipairs(Workspace:GetChildren()) do
+            if obj:IsA("Tool") and (string.find(obj.Name, "Fruit") or obj:FindFirstChild("Handle")) then
+                local handle = obj:FindFirstChild("Handle") or obj
+                if handle then
+                    if not fruitEspCache[obj] then
+                        local tObj = Drawing.new("Text")
+                        tObj.Visible = false
+                        tObj.Size = 14
+                        tObj.Color = Color3.fromRGB(255, 0, 0)
+                        tObj.Center = true
+                        tObj.Outline = true
+                        fruitEspCache[obj] = {Text = tObj}
+                    end
+
+                    local vector, onScreen = camera:WorldToViewportPoint(handle.Position)
+                    if onScreen then
+                        local dist = math.floor((camera.CFrame.Position - handle.Position).Magnitude)
+                        local txtObj = fruitEspCache[obj].Text
+                        txtObj.Text = "🍎 [" .. obj.Name .. "] (" .. dist .. "m)"
+                        txtObj.Position = Vector2.new(vector.X, vector.Y)
+                        txtObj.Visible = true
+                        activeFruits[obj] = true
+                    else
+                        fruitEspCache[obj].Text.Visible = false
+                    end
+                    table.insert(foundFruitsNames, obj.Name)
+                end
+            end
+        end
+        for obj, elements in pairs(fruitEspCache) do
+            if not activeFruits[obj] then
+                if elements.Text then elements.Text.Visible = false end
+            end
+        end
+    else
+        for _, elements in pairs(fruitEspCache) do
+            if elements.Text then elements.Text.Visible = false end
+        end
+    end
+
+    -- Cập nhật Fruit Notifier trên màn hình
+    if #foundFruitsNames > 0 then
+        FruitNotifLabel.Text = "Đang có trái ác quỷ: " .. table.concat(foundFruitsNames, ", ")
+        FruitNotifLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    else
+        FruitNotifLabel.Text = "Đang có trái ác quỷ: Không có"
+        FruitNotifLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
     end
 
     -- WEAPON SCANNER
@@ -536,7 +622,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- AUTO FARM: BAY ĐỈNH ĐẦU TỪNG CON QUÁI + ĐÁNH MƯỢT KHÔNG GIẬT
+    -- AUTO FARM: BAY ĐỈNH ĐẦU TỪNG CON QUÁI + TỰ ĐỘNG ĐÁNH
     if Config.AutoFarm then
         pcall(function()
             checkAndGetQuestClean()
@@ -569,7 +655,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Tìm quái gần nhất để bay lên đầu từng con đánh
+                -- Tìm quái gần nhất để bay lên đầu đánh
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 local targetMob = nil
                 local shortestDist = math.huge
@@ -592,11 +678,11 @@ RunService.RenderStepped:Connect(function()
                     local mHrp = targetMob.HumanoidRootPart
                     local mHum = targetMob:FindFirstChildOfClass("Humanoid")
 
-                    -- Bám sát ngay đỉnh đầu quái mượt mà, triệt tiêu gia tốc trượt gây giật
+                    -- Ghim vị trí mượt mà ở đỉnh đầu quái, triệt tiêu vận tốc thừa
                     hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 4, 0))
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                    -- Đánh liên tục không bị khựng
+                    -- Kích hoạt đánh tự động liên tục
                     if mHum and mHum.Health > 0 then
                         pcall(function()
                             local activeTool = char:FindFirstChildOfClass("Tool")
