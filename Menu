@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Fixed Hover & Working Auto Attack)
+-- Blox Fruit Master Hub - Admin Tienphat (Clean & Fixed Menu GUI)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -338,7 +338,6 @@ RunService.RenderStepped:Connect(function()
                     local vector, onScreen = camera:WorldToViewportPoint(pHrp.Position + Vector3.new(0, 3, 0))
                     if onScreen then
                         local txtObj = weaponScannerCache[plr]
-                        txtObj.Text = "[" .. plr.Name .. "] ⚔️ " << activeTool -- safe replace
                         txtObj.Text = "[" .. plr.Name .. "] ⚔️ " .. activeTool
                         txtObj.Position = Vector2.new(vector.X, vector.Y)
                         txtObj.Visible = true
@@ -405,7 +404,7 @@ RunService.RenderStepped:Connect(function()
                                 -- Gom quái dồn sát vào vị trí thấp hơn nhân vật 4 stud để nhân vật đứng trên đầu đánh xuống trúng 100%
                                 mobHrp.CFrame = hrp.CFrame + Vector3.new(0, -4, 0)
                                 mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                                mobHrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                                mobHrip.AssemblyAngularVelocity = Vector3.new(0, 0, 0) -- fixed spelling
                                 if mobHum:FindFirstChild("Animator") then
                                     pcall(function() mobHum.Animator:Destroy() end)
                                 end
