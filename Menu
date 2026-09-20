@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Optimized Quest, Smooth Flight, Tabs Restructured & Island ESP)
+-- Blox Fruit Master Hub - Admin Tienphat (Manual Quest, Instant TP Fruit, Auto Store & Flight)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -28,7 +28,11 @@ local Config = {
     AutoStatDefense = false,
     AutoStatSword = false,
     AutoStatDevilFruit = false,
-    StatAmount = 3
+    StatAmount = 3,
+    -- Cấu hình Tab Fruit mới
+    InstantTpFruit = false,
+    AutoStoreFruit = false,
+    FlyToFruit = false
 }
 
 -- 1. FIX LAG TOÀN DIỆN
@@ -107,30 +111,39 @@ TabBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 TabBar.BorderSizePixel = 0
 
 local TabMainBtn = Instance.new("TextButton", TabBar)
-TabMainBtn.Size = UDim2.new(0.333, 0, 1, 0)
+TabMainBtn.Size = UDim2.new(0.25, 0, 1, 0)
 TabMainBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 TabMainBtn.Font = Enum.Font.SourceSansBold
 TabMainBtn.Text = "🎯 Main"
 TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-TabMainBtn.TextSize = 13
+TabMainBtn.TextSize = 12
 
 local TabEspBtn = Instance.new("TextButton", TabBar)
-TabEspBtn.Position = UDim2.new(0.333, 0, 0, 0)
-TabEspBtn.Size = UDim2.new(0.333, 0, 1, 0)
+TabEspBtn.Position = UDim2.new(0.25, 0, 0, 0)
+TabEspBtn.Size = UDim2.new(0.25, 0, 1, 0)
 TabEspBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 TabEspBtn.Font = Enum.Font.SourceSansBold
 TabEspBtn.Text = "👁️ ESP"
 TabEspBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
-TabEspBtn.TextSize = 13
+TabEspBtn.TextSize = 12
+
+local TabFruitBtn = Instance.new("TextButton", TabBar)
+TabFruitBtn.Position = UDim2.new(0.5, 0, 0, 0)
+TabFruitBtn.Size = UDim2.new(0.25, 0, 1, 0)
+TabFruitBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TabFruitBtn.Font = Enum.Font.SourceSansBold
+TabFruitBtn.Text = "🍎 Fruit"
+TabFruitBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+TabFruitBtn.TextSize = 12
 
 local TabStatsBtn = Instance.new("TextButton", TabBar)
-TabStatsBtn.Position = UDim2.new(0.666, 0, 0, 0)
-TabStatsBtn.Size = UDim2.new(0.334, 0, 1, 0)
+TabStatsBtn.Position = UDim2.new(0.75, 0, 0, 0)
+TabStatsBtn.Size = UDim2.new(0.25, 0, 1, 0)
 TabStatsBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 TabStatsBtn.Font = Enum.Font.SourceSansBold
 TabStatsBtn.Text = "📈 Stats"
 TabStatsBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
-TabStatsBtn.TextSize = 13
+TabStatsBtn.TextSize = 12
 
 -- Containers
 local MainContainer = Instance.new("ScrollingFrame", MainFrame)
@@ -147,6 +160,13 @@ EspContainer.BackgroundTransparency = 1
 EspContainer.CanvasSize = UDim2.new(0, 0, 0, 300)
 EspContainer.Visible = false
 
+local FruitContainer = Instance.new("ScrollingFrame", MainFrame)
+FruitContainer.Position = UDim2.new(0, 0, 0, 72)
+FruitContainer.Size = UDim2.new(1, 0, 1, -72)
+FruitContainer.BackgroundTransparency = 1
+FruitContainer.CanvasSize = UDim2.new(0, 0, 0, 250)
+FruitContainer.Visible = false
+
 local StatsContainer = Instance.new("ScrollingFrame", MainFrame)
 StatsContainer.Position = UDim2.new(0, 0, 0, 72)
 StatsContainer.Size = UDim2.new(1, 0, 1, -72)
@@ -155,29 +175,34 @@ StatsContainer.CanvasSize = UDim2.new(0, 0, 0, 250)
 StatsContainer.Visible = false
 
 TabMainBtn.MouseButton1Click:Connect(function()
-    MainContainer.Visible = true
-    EspContainer.Visible = false
-    StatsContainer.Visible = false
+    MainContainer.Visible = true; EspContainer.Visible = false; FruitContainer.Visible = false; StatsContainer.Visible = false
     TabMainBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50); TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     TabEspBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabEspBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabFruitBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabFruitBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
     TabStatsBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabStatsBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 end)
 
 TabEspBtn.MouseButton1Click:Connect(function()
-    MainContainer.Visible = false
-    EspContainer.Visible = true
-    StatsContainer.Visible = false
+    MainContainer.Visible = false; EspContainer.Visible = true; FruitContainer.Visible = false; StatsContainer.Visible = false
     TabMainBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabMainBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
     TabEspBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50); TabEspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabFruitBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabFruitBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabStatsBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabStatsBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+end)
+
+TabFruitBtn.MouseButton1Click:Connect(function()
+    MainContainer.Visible = false; EspContainer.Visible = false; FruitContainer.Visible = true; StatsContainer.Visible = false
+    TabMainBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabMainBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabEspBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabEspBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabFruitBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50); TabFruitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     TabStatsBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabStatsBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 end)
 
 TabStatsBtn.MouseButton1Click:Connect(function()
-    MainContainer.Visible = false
-    EspContainer.Visible = false
-    StatsContainer.Visible = true
+    MainContainer.Visible = false; EspContainer.Visible = false; FruitContainer.Visible = false; StatsContainer.Visible = true
     TabMainBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabMainBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
     TabEspBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabEspBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabFruitBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabFruitBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
     TabStatsBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50); TabStatsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 end)
 
@@ -202,40 +227,26 @@ local function createToggle(parent, text, defaultVal, callback, customY)
     return btn
 end
 
--- HÀM LẤY NHIỆM VỤ DÙNG CHUNG (CHO CẢ AUTO VÀ NÚT BẤM THỦ CÔNG)
+-- HÀM LẤY NHIỆM VỤ THỦ CÔNG
 local function checkAndGetQuestClean()
     pcall(function()
         local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
         local level = stats and stats.Value or 1
         
-        local questName, npcPos = "BanditQuest1", Vector3.new(1059, 16, 1379)
-        
-        if level >= 1 and level <= 9 then
-            questName, npcPos = "BanditQuest1", Vector3.new(1059, 16, 1379)
-        elseif level >= 10 and level <= 29 then
-            questName, npcPos = "JungleQuest", Vector3.new(-1598, 37, 153)
-        elseif level >= 30 and level <= 59 then
-            questName, npcPos = "PirateQuest", Vector3.new(-1201, 4, 3855)
-        elseif level >= 60 and level <= 89 then
-            questName, npcPos = "DesertQuest", Vector3.new(896, 6, 4389)
-        elseif level >= 90 and level <= 119 then
-            questName, npcPos = "SnowQuest", Vector3.new(1389, 87, -1298)
-        elseif level >= 120 and level <= 149 then
-            questName, npcPos = "MarineQuest", Vector3.new(-5035, 20, 4324)
-        elseif level >= 150 and level <= 189 then
-            questName, npcPos = "SkyQuest", Vector3.new(-4842, 718, -2623)
-        elseif level >= 190 and level <= 249 then
-            questName, npcPos = "PrisonQuest", Vector3.new(4875, 5, 735)
-        elseif level >= 250 and level <= 299 then
-            questName, npcPos = "ColosseumQuest", Vector3.new(-1580, 7, -2992)
-        elseif level >= 300 and level <= 374 then
-            questName, npcPos = "MagmaQuest", Vector3.new(-5315, 12, 8515)
-        elseif level >= 375 and level <= 449 then
-            questName, npcPos = "FishmanQuest", Vector3.new(61123, 18, 1569)
-        elseif level >= 450 and level <= 624 then
-            questName, npcPos = "SkyExp1Quest", Vector3.new(-7862, 5545, -380)
-        elseif level >= 625 and level <= 700 then
-            questName, npcPos = "FountainQuest", Vector3.new(5247, 38, 4048)
+        local questName = "BanditQuest1"
+        if level >= 1 and level <= 9 then questName = "BanditQuest1"
+        elseif level >= 10 and level <= 29 then questName = "JungleQuest"
+        elseif level >= 30 and level <= 59 then questName = "PirateQuest"
+        elseif level >= 60 and level <= 89 then questName = "DesertQuest"
+        elseif level >= 90 and level <= 119 then questName = "SnowQuest"
+        elseif level >= 120 and level <= 149 then questName = "MarineQuest"
+        elseif level >= 150 and level <= 189 then questName = "SkyQuest"
+        elseif level >= 190 and level <= 249 then questName = "PrisonQuest"
+        elseif level >= 250 and level <= 299 then questName = "ColosseumQuest"
+        elseif level >= 300 and level <= 374 then questName = "MagmaQuest"
+        elseif level >= 375 and level <= 449 then questName = "FishmanQuest"
+        elseif level >= 450 and level <= 624 then questName = "SkyExp1Quest"
+        elseif level >= 625 and level <= 700 then questName = "FountainQuest"
         end
 
         local remotes = ReplicatedStorage:FindFirstChild("Remotes")
@@ -250,16 +261,14 @@ local mY = 15
 createToggle(MainContainer, "Auto Farm (Bay Trên Đầu & Đánh)", false, function(v) Config.AutoFarm = v end, mY)
 mY = mY + 40
 
--- NÚT NHẬN NHIỆM VỤ THỦ CÔNG
 local GetQuestBtn = Instance.new("TextButton", MainContainer)
 GetQuestBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
 GetQuestBtn.Position = UDim2.new(0.05, 0, 0, mY)
 GetQuestBtn.Size = UDim2.new(0.9, 0, 0, 32)
 GetQuestBtn.Font = Enum.Font.SourceSansBold
-GetQuestBtn.Text = "📥 Nhận Nhiệm Vụ Nhanh (Click thủ công)"
+GetQuestBtn.Text = "📥 Nhận Nhiệm Vụ Nhanh (Thủ công)"
 GetQuestBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 GetQuestBtn.TextSize = 13
-
 GetQuestBtn.MouseButton1Click:Connect(function()
     checkAndGetQuestClean()
 end)
@@ -335,6 +344,12 @@ createToggle(EspContainer, "ESP Trái Ác Quỷ Dưới Đất", true, function(
 createToggle(EspContainer, "Fruit Notifier (Thông báo trái trên màn hình)", false, function(v) Config.FruitNotifier = v end, eY); eY = eY + 40
 createToggle(EspContainer, "ESP Đảo (Island ESP)", true, function(v) Config.ShowIslandESP = v end, eY); eY = eY + 40
 createToggle(EspContainer, "Hiện Tên & Vũ Khí Người Chơi", true, function(v) Config.ShowWeaponScanner = v end, eY)
+
+-- TAB FRUIT (MỚI)
+local fY = 15
+createToggle(FruitContainer, "Instant TP Fruit (Dịch chuyển tới trái ngay)", false, function(v) Config.InstantTpFruit = v end, fY); fY = fY + 40
+createToggle(FruitContainer, "Auto Lưu Trữ Trái (Chỉ lưu trái chưa có trong kho)", false, function(v) Config.AutoStoreFruit = v end, fY); fY = fY + 40
+createToggle(FruitContainer, "Bay Lụm Fruit (Bay mượt tới trái dưới đất)", false, function(v) Config.FlyToFruit = v end, fY)
 
 -- TAB STATS
 local sY = 15
@@ -439,39 +454,6 @@ local function clearAllESP()
     end
 end
 
--- TỰ ĐỘNG NHẬN NHIỆM VỤ AN TOÀN TRONG LUỒNG AUTO FARM (ĐÃ FIX CHỐNG RESET LIÊN TỤC)
-local lastQuestAttempt = 0
-local function autoCheckAndGetQuest()
-    if tick() - lastQuestAttempt < 5 then return end
-
-    pcall(function()
-        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-        local mainGui = playerGui and playerGui:FindFirstChild("Main")
-        local questFrame = mainGui and mainGui:FindFirstChild("Quest")
-        
-        local hasActiveQuest = false
-        if questFrame and questFrame.Visible then
-            local container = questFrame:FindFirstChild("Container")
-            if container and container.Visible then
-                for _, child in ipairs(container:GetChildren()) do
-                    if child:IsA("TextLabel") and (string.find(child.Text, "/") or string.find(child.Text, "Defeat") or string.find(child.Text, "Bọn")) then
-                        hasActiveQuest = true
-                        break
-                    end
-                end
-                if #container:GetChildren() > 0 then
-                    hasActiveQuest = true
-                end
-            end
-        end
-
-        if not hasActiveQuest then
-            lastQuestAttempt = tick()
-            checkAndGetQuestClean()
-        end
-    end)
-end
-
 -- TIẾN TRÌNH AUTO STATS
 task.spawn(function()
     while true do
@@ -492,6 +474,41 @@ task.spawn(function()
     end
 end)
 
+-- TIẾN TRÌNH AUTO STORE FRUIT AN TOÀN (CHỈ LƯU TRỮ KHI CHƯA CÓ TRONG KHO ĐỂ KHÔNG BỊ SPAM/LAG)
+task.spawn(function()
+    while true do
+        task.wait(3)
+        pcall(function()
+            if Config.AutoStoreFruit then
+                local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+                if remotes and remotes:FindFirstChild("CommF_") then
+                    -- Quét trong balo người chơi trước
+                    local backpack = LocalPlayer:FindFirstChild("Backpack")
+                    local char = LocalPlayer.Character
+                    
+                    local function checkAndStore(tool)
+                        if tool and tool:IsA("Tool") and (string.find(tool.Name, "Fruit") or tool:FindFirstChild("Handle")) then
+                            -- Gửi lệnh lưu trữ trái cây lên server
+                            remotes.CommF_:InvokeServer("StoreFruit", tool.Name)
+                        end
+                    end
+
+                    if backpack then
+                        for _, item in ipairs(backpack:GetChildren()) do
+                            checkAndStore(item)
+                        end
+                    end
+                    if char then
+                        for _, item in ipairs(char:GetChildren()) do
+                            checkAndStore(item)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
 RunService.RenderStepped:Connect(function()
     if not ScreenGui.Parent then 
         clearAllESP()
@@ -500,6 +517,28 @@ RunService.RenderStepped:Connect(function()
 
     if tick() % 3 < 0.1 then
         updateWeaponButtons()
+    end
+
+    -- TÌM TRÁI ÁC QUỶ ĐANG XUẤT HIỆN
+    local targetFruitHandle = nil
+    for _, obj in ipairs(Workspace:GetChildren()) do
+        if obj:IsA("Tool") and (string.find(obj.Name, "Fruit") or obj:FindFirstChild("Handle")) then
+            local handle = obj:FindFirstChild("Handle") or obj
+            if handle then
+                targetFruitHandle = handle
+                break
+            end
+        end
+    end
+
+    -- TÍNH NĂNG INSTANT TP FRUIT
+    if Config.InstantTpFruit and targetFruitHandle then
+        pcall(function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = targetFruitHandle.CFrame + Vector3.new(0, 3, 0)
+            end
+        end)
     end
 
     -- ESP QUÁI
@@ -692,11 +731,21 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
+    -- TÍNH NĂNG BAY LỤM FRUIT
+    if Config.FlyToFruit and targetFruitHandle then
+        pcall(function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local hrp = char.HumanoidRootPart
+                hrp.CFrame = CFrame.new(hrp.Position:Lerp(targetFruitHandle.Position + Vector3.new(0, 3, 0), 0.2))
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end
+        end)
+    end
+
     -- AUTO FARM: BAY ĐỈNH ĐẦU QUÁI + KÍCH HOẠT ĐÁNH LIÊN TỤC
     if Config.AutoFarm then
         pcall(function()
-            autoCheckAndGetQuest()
-
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
                 local hrp = char.HumanoidRootPart
