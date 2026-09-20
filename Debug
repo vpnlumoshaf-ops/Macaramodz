@@ -1,0 +1,124 @@
+-- Blox Fruit Mobile Quest & UI Debugger - Admin Tienphat
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+
+if CoreGui:FindFirstChild("AdminTienphatMobileDebug") then
+    CoreGui.AdminTienphatMobileDebug:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AdminTienphatMobileDebug"
+ScreenGui.Parent = CoreGui
+ScreenGui.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Position = UDim2.new(0.5, -180, 0.5, -200)
+MainFrame.Size = UDim2.new(0, 360, 0, 400)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+local Title = Instance.new("TextLabel", MainFrame)
+Title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "📱 MOBILE DEBUG - Admin Tienphat"
+Title.TextColor3 = Color3.fromRGB(255, 170, 0)
+Title.TextSize = 14
+
+local CloseBtn = Instance.new("TextButton", MainFrame)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+CloseBtn.Position = UDim2.new(1, -35, 0, 6)
+CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+
+local LogScroll = Instance.new("ScrollingFrame", MainFrame)
+LogScroll.Position = UDim2.new(0.03, 0, 0, 50)
+LogScroll.Size = UDim2.new(0.94, 0, 0, 275)
+LogScroll.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+LogScroll.CanvasSize = UDim2.new(0, 0, 0, 1500)
+LogScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+local LogText = Instance.new("TextLabel", LogScroll)
+LogText.Size = UDim2.new(1, 0, 1, 0)
+LogText.BackgroundTransparency = 1
+LogText.Font = Enum.Font.Code
+LogText.TextColor3 = Color3.fromRGB(0, 255, 128)
+LogText.TextSize = 12
+LogText.TextXAlignment = Enum.TextXAlignment.Left
+LogText.TextYAlignment = Enum.TextYAlignment.Top
+LogText.TextWrapped = true
+LogText.Text = "Đang quét..."
+
+local RescanBtn = Instance.new("TextButton", MainFrame)
+RescanBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+RescanBtn.Position = UDim2.new(0.03, 0, 0, 335)
+RescanBtn.Size = UDim2.new(0.94, 0, 0, 50)
+RescanBtn.Font = Enum.Font.SourceSansBold
+RescanBtn.Text = "🔄 Quét Lại Dữ Liệu Ngay"
+RescanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RescanBtn.TextSize = 14
+
+local function executeScan()
+    local logs = {}
+    table.insert(logs, "=== [ THÔNG TIN NHÂN VẬT ] ===")
+    
+    pcall(function()
+        local data = LocalPlayer:FindFirstChild("Data")
+        local lvl = data and data:FindFirstChild("Level") and data.Level.Value or "Không rõ"
+        table.insert(logs, "Level hiện tại: " .. tostring(lvl))
+    end)
+
+    table.insert(logs, "\n=== [ BẢNG QUEST TRÊN UI ] ===")
+    pcall(function()
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        local main = playerGui and playerGui:FindFirstChild("Main")
+        local questGui = main and main:FindFirstChild("Quest")
+        
+        if questGui then
+            table.insert(logs, "Trạng thái: Đang hiển thị (Visible = true)")
+            local container = questGui:FindFirstChild("Container")
+            if container then
+                for _, v in ipairs(container:GetDescendants()) do
+                    if v:IsA("TextLabel") and v.Text ~= "" then
+                        table.insert(logs, "• [" .. v.Name .. "]: " .. v.Text)
+                    end
+                end
+            end
+        else
+            table.insert(logs, "Trạng thái: Chưa nhận nhiệm vụ hoặc UI ẩn!")
+        end
+    end)
+
+    table.insert(logs, "\n=== [ TÊN QUÁI TRONG WORKSPACE ] ===")
+    pcall(function()
+        local enemiesFolder = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
+        if enemiesFolder then
+            local count = 0
+            local checked = {}
+            for _, mob in ipairs(enemiesFolder:GetChildren()) do
+                if not checked[mob.Name] and count < 12 then
+                    checked[mob.Name] = true
+                    count = count + 1
+                    table.insert(logs, "• Mob: " .. mob.Name)
+                end
+            end
+        else
+            table.insert(logs, "Không tìm thấy thư mục chứa quái!")
+        end
+    end)
+
+    LogText.Text = table.concat(logs, "\n")
+end
+
+RescanBtn.MouseButton1Click:Connect(executeScan)
+
+-- Tự động quét luôn ngay khi bật script
+executeScan()
