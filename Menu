@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Fixed Position-Based Auto Quest & Auto Farm)
+-- Blox Fruit Master Hub - Admin Tienphat (Added Setting Tab with Custom Sliders)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
 local CoreGui = game:GetService("CoreGui")
 local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
 
 if CoreGui:FindFirstChild("AdminTienphatBloxFruit") then
     CoreGui.AdminTienphatBloxFruit:Destroy()
@@ -35,7 +36,11 @@ local Config = {
     SelectedIsland = nil,
     IslandPos = nil,
     FlySpeed = 350,
-    FlyToIslandState = false
+    FlyToIslandState = false,
+    -- Cấu hình mới trong Tab Setting
+    WalkSpeed = 16,
+    FarmHeight = 4,
+    FlyHeight = 50
 }
 
 local function applyFixLag(state)
@@ -115,7 +120,7 @@ local function createTabBtn(name, text, posX)
     local btn = Instance.new("TextButton", TabBar)
     btn.Name = name
     btn.Position = UDim2.new(posX, 0, 0, 0)
-    btn.Size = UDim2.new(0.2, 0, 1, 0)
+    btn.Size = UDim2.new(0.166, 0, 1, 0)
     btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     btn.Font = Enum.Font.SourceSansBold
     btn.Text = text
@@ -125,10 +130,11 @@ local function createTabBtn(name, text, posX)
 end
 
 local TabMainBtn = createTabBtn("TabMain", "🎯 Main", 0)
-local TabEspBtn = createTabBtn("TabEsp", "👁️ ESP", 0.2)
-local TabFruitBtn = createTabBtn("TabFruit", "🍎 Fruit", 0.4)
-local TabTpBtn = createTabBtn("TabTp", "🗺️ TP", 0.6)
-local TabStatsBtn = createTabBtn("TabStats", "📈 Stats", 0.8)
+local TabEspBtn = createTabBtn("TabEsp", "👁️ ESP", 0.166)
+local TabFruitBtn = createTabBtn("TabFruit", "🍎 Fruit", 0.332)
+local TabTpBtn = createTabBtn("TabTp", "🗺️ TP", 0.498)
+local TabStatsBtn = createTabBtn("TabStats", "📈 Stats", 0.664)
+local TabSettingBtn = createTabBtn("TabSetting", "⚙️ Setting", 0.830)
 
 TabMainBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -138,7 +144,7 @@ local function createContainer()
     c.Position = UDim2.new(0, 0, 0, 72)
     c.Size = UDim2.new(1, 0, 1, -72)
     c.BackgroundTransparency = 1
-    c.CanvasSize = UDim2.new(0, 0, 0, 380)
+    c.CanvasSize = UDim2.new(0, 0, 0, 420)
     c.Visible = false
     return c
 end
@@ -148,6 +154,7 @@ local EspContainer = createContainer()
 local FruitContainer = createContainer()
 local TpContainer = createContainer()
 local StatsContainer = createContainer()
+local SettingContainer = createContainer()
 
 local function switchTab(activeBtn, activeContainer)
     for _, btn in pairs(TabBar:GetChildren()) do
@@ -161,6 +168,7 @@ local function switchTab(activeBtn, activeContainer)
     FruitContainer.Visible = false
     TpContainer.Visible = false
     StatsContainer.Visible = false
+    SettingContainer.Visible = false
 
     activeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     activeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -172,6 +180,7 @@ TabEspBtn.MouseButton1Click:Connect(function() switchTab(TabEspBtn, EspContainer
 TabFruitBtn.MouseButton1Click:Connect(function() switchTab(TabFruitBtn, FruitContainer) end)
 TabTpBtn.MouseButton1Click:Connect(function() switchTab(TabTpBtn, TpContainer) end)
 TabStatsBtn.MouseButton1Click:Connect(function() switchTab(TabStatsBtn, StatsContainer) end)
+TabSettingBtn.MouseButton1Click:Connect(function() switchTab(TabSettingBtn, SettingContainer) end)
 
 local function createToggle(parent, text, defaultVal, callback, customY)
     local btn = Instance.new("TextButton")
@@ -194,6 +203,58 @@ local function createToggle(parent, text, defaultVal, callback, customY)
     return btn
 end
 
+-- HÀM TẠO SLIDER (THANH KÉO) CHO TAB SETTING
+local function createSlider(parent, text, minVal, maxVal, defaultVal, callback, customY)
+    local label = Instance.new("TextLabel", parent)
+    label.Position = UDim2.new(0.05, 0, 0, customY)
+    label.Size = UDim2.new(0.9, 0, 0, 18)
+    label.Font = Enum.Font.SourceSansBold
+    label.Text = text .. ": " .. defaultVal
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 12
+    label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local bgBar = Instance.new("Frame", parent)
+    bgBar.Position = UDim2.new(0.05, 0, 0, customY + 20)
+    bgBar.Size = UDim2.new(0.9, 0, 0, 18)
+    bgBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    bgBar.BorderSizePixel = 0
+
+    local fillBar = Instance.new("Frame", bgBar)
+    fillBar.Size = UDim2.new((defaultVal - minVal) / (maxVal - minVal), 0, 1, 0)
+    fillBar.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    fillBar.BorderSizePixel = 0
+
+    local dragging = false
+
+    local function updateValue(input)
+        local pos = math.clamp((input.Position.X - bgBar.AbsolutePosition.X) / bgBar.AbsoluteSize.X, 0, 1)
+        local val = math.floor(minVal + ((maxVal - minVal) * pos))
+        fillBar.Size = UDim2.new(pos, 0, 1, 0)
+        label.Text = text .. ": " .. val
+        callback(val)
+    end
+
+    bgBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            updateValue(input)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateValue(input)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
+
 -- HỆ THỐNG QUÉT TỌA ĐỘ VÀ KIỂM TRA ĐẢO ĐỂ NHẬN NHIỆM VỤ CHÍNH XÁC
 local function checkAndGetQuestClean()
     pcall(function()
@@ -204,25 +265,23 @@ local function checkAndGetQuestClean()
         local questName = "BanditQuest1"
         local questIndex = 1
 
-        -- Quét khoảng cách tọa độ (X, Z) để nhận diện đang ở đảo nào
         if pos.Z > 2000 and pos.Z < 5000 and pos.X > 500 and pos.X < 1500 then
-            questName = "DesertQuest"; questIndex = 1 -- Hoặc DesertQuest 2 tùy level
+            questName = "DesertQuest"; questIndex = 1
         elseif pos.Z > 3000 and pos.Z < 4500 and pos.X > -1500 and pos.X < -500 then
-            questName = "PirateQuest"; questIndex = 1 -- Đảo Cướp Biển (Mob: Pirate / Brute)
+            questName = "PirateQuest"; questIndex = 1
         elseif pos.Z > -200 and pos.Z < 800 and pos.X > -1800 and pos.X < -800 then
-            questName = "JungleQuest"; questIndex = 1 -- Đảo Khỉ
+            questName = "JungleQuest"; questIndex = 1
         elseif pos.Z > -1500 and pos.Z < -800 and pos.X > 800 and pos.X < 1800 then
-            questName = "SnowQuest"; questIndex = 1 -- Đảo Tuyết
+            questName = "SnowQuest"; questIndex = 1
         elseif pos.Z > 500 and pos.Z < 1200 and pos.X > 4000 and pos.X < 5500 then
-            questName = "PrisonQuest"; questIndex = 1 -- Nhà Tù
+            questName = "PrisonQuest"; questIndex = 1
         elseif pos.Z > -3500 and pos.Z < -2500 and pos.X > -1800 and pos.X < -1000 then
-            questName = "ColosseumQuest"; questIndex = 1 -- Đấu Trường
+            questName = "ColosseumQuest"; questIndex = 1
         elseif pos.Z > 7500 and pos.Z < 9500 and pos.X > -6000 and pos.X < -4500 then
-            questName = "MagmaQuest"; questIndex = 1 -- Đảo Dung Nham
+            questName = "MagmaQuest"; questIndex = 1
         elseif pos.Z > 1000 and pos.Z < 2500 and pos.X > 58000 and pos.X < 64000 then
-            questName = "FishmanQuest"; questIndex = 1 -- Đảo Người Cá
+            questName = "FishmanQuest"; questIndex = 1
         else
-            -- Dự phòng theo Level nếu đứng ở khoảng trống
             local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
             local level = stats and stats.Value or 1
             if level >= 30 and level <= 59 then
@@ -239,7 +298,6 @@ local function checkAndGetQuestClean()
     end)
 end
 
--- KIỂM TRA XEM ĐÃ CÓ NHIỆM VỤ CHƯA
 local function hasActiveQuest()
     local success, res = pcall(function()
         local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
@@ -257,7 +315,6 @@ local function hasActiveQuest()
     return success and res
 end
 
--- LẤY TÊN QUÁI TỪ BẢNG NHIỆM VỤ
 local function getCurrentQuestMobName()
     local success, mobName = pcall(function()
         local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
@@ -519,6 +576,22 @@ createToggle(StatsContainer, "Auto Nâng Điểm Máu (Defense)", false, functio
 createToggle(StatsContainer, "Auto Nâng Điểm Kiếm (Sword)", false, function(v) Config.AutoStatSword = v end, sY); sY = sY + 40
 createToggle(StatsContainer, "Auto Nâng Điểm Trái Ác Quỷ (DevilFruit)", false, function(v) Config.AutoStatDevilFruit = v end, sY)
 
+-- TAB SETTING (MỚI THEO YÊU CẦU)
+local setY = 15
+createSlider(SettingContainer, "🏃 Tốc độ chạy (WalkSpeed)", 50, 200, 16, function(v)
+    Config.WalkSpeed = v
+end, setY)
+
+setY = setY + 55
+createSlider(SettingContainer, "🎯 Độ cao farm quái (Farm Height)", 1, 50, 4, function(v)
+    Config.FarmHeight = v
+end, setY)
+
+setY = setY + 55
+createSlider(SettingContainer, "✈️ Độ cao bay (Fly Height)", 50, 200, 50, function(v)
+    Config.FlyHeight = v
+end, setY)
+
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "AdminTienphatToggle"
 ToggleGui.Parent = CoreGui
@@ -636,7 +709,7 @@ task.spawn(function()
     end
 end)
 
--- Vòng lặp Auto Farm và xử lý nhiệm vụ dựa trên tọa độ đảo hiện tại
+-- VÒNG LẶP RENDER CHÍNH (XỬ LÝ TỐC ĐỘ CHẠY, ĐỘ CAO FARM VÀ BAY)
 RunService.RenderStepped:Connect(function(dt)
     if not ScreenGui.Parent then 
         clearAllESP()
@@ -646,6 +719,14 @@ RunService.RenderStepped:Connect(function(dt)
     if tick() % 3 < 0.1 then
         updateWeaponButtons()
     end
+
+    -- Áp dụng tốc độ chạy từ Tab Setting
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChildOfClass("Humanoid") then
+            char:FindFirstChildOfClass("Humanoid").WalkSpeed = Config.WalkSpeed
+        end
+    end)
 
     local targetFruitHandle = nil
     for _, obj in ipairs(Workspace:GetChildren()) do
@@ -662,7 +743,7 @@ RunService.RenderStepped:Connect(function(dt)
         pcall(function()
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") then
-                char.HumanoidRootPart.CFrame = targetFruitHandle.CFrame + Vector3.new(0, 3, 0)
+                char.HumanoidRootPart.CFrame = targetFruitHandle.CFrame + Vector3.new(0, Config.FlyHeight, 0)
             end
         end)
     end
@@ -672,7 +753,7 @@ RunService.RenderStepped:Connect(function(dt)
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") then
                 local hrp = char.HumanoidRootPart
-                local targetPos = Config.IslandPos + Vector3.new(0, 50, 0)
+                local targetPos = Config.IslandPos + Vector3.new(0, Config.FlyHeight, 0)
                 local currentPos = hrp.Position
                 local distance = (targetPos - currentPos).Magnitude
                 
@@ -875,13 +956,13 @@ RunService.RenderStepped:Connect(function(dt)
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") then
                 local hrp = char.HumanoidRootPart
-                hrp.CFrame = CFrame.new(hrp.Position:Lerp(targetFruitHandle.Position + Vector3.new(0, 3, 0), 0.2))
+                hrp.CFrame = CFrame.new(hrp.Position:Lerp(targetFruitHandle.Position + Vector3.new(0, Config.FlyHeight, 0), 0.2))
                 hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             end
         end)
     end
 
-    -- LOGIC AUTO FARM KẾT HỢP KIỂM TRA NHIỆM VỤ DỰA TRÊN TỌA ĐỘ ĐẢO
+    -- LOGIC AUTO FARM KẾT HỢP ĐỘ CAO FARM TỪ TAB SETTING
     if Config.AutoFarm then
         pcall(function()
             if not hasActiveQuest() then
@@ -951,7 +1032,8 @@ RunService.RenderStepped:Connect(function(dt)
                     local mHrp = targetMob.HumanoidRootPart
                     local mHum = targetMob:FindFirstChildOfClass("Humanoid")
 
-                    hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 4, 0))
+                    -- Sử dụng chiều cao farm tùy chỉnh từ Tab Setting
+                    hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, Config.FarmHeight, 0))
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
                     if mHum and mHum.Health > 0 then
