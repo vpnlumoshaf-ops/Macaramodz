@@ -32,7 +32,7 @@ local Config = {
     InstantTpFruit = false,
     AutoStoreFruit = false,
     FlyToFruit = false,
-    -- Cấu hình Teleport Đảo & Tốc độ bay
+    -- Cấu hình Teleport Đảo và Tốc độ bay
     SelectedIsland = nil,
     IslandPos = nil,
     FlySpeed = 350,
