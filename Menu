@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Fixed Auto Farm, Quest & Color ESP)
+-- Blox Fruit Master Hub - Admin Tienphat (Optimized Quest, Smooth Flight & Green ESP Box)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -175,8 +175,8 @@ local function createToggle(parent, text, defaultVal, callback)
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Bay Lên Đầu & Auto Click)", false, function(v) Config.AutoFarm = v end)
-createToggle(MainContainer, "ESP Box Nhỏ Gọn & Line", true, function(v) Config.ShowESP = v end)
+createToggle(MainContainer, "Auto Farm (Bay Trên Đầu & Auto Click)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "ESP Box Xanh Lá & Line Trắng", true, function(v) Config.ShowESP = v end)
 createToggle(MainContainer, "Hiện Tên & Vũ Khí Người Chơi", true, function(v) Config.ShowWeaponScanner = v end)
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
     Config.FixLag = v 
@@ -344,8 +344,12 @@ local function clearAllESP()
     end
 end
 
--- HÀM KIỂM TRA & NHẬN NHIỆM VỤ CHUẨN XÁC 1-700 WIKI
+-- HÀM KIỂM TRA & NHẬN NHIỆM VỤ AN TOÀN (CÓ CHỐNG SPAM)
+local lastQuestAttempt = 0
 local function checkAndGetQuestClean()
+    if tick() - lastQuestAttempt < 3 then return end -- Chờ ít nhất 3 giây mới kiểm tra lại tránh spam
+    lastQuestAttempt = tick()
+
     pcall(function()
         local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
         local hasActiveQuest = questGui and questGui.Visible and questGui:FindFirstChild("Container") and questGui.Container:FindFirstChild("QuestTitle") and questGui.Container.QuestTitle.Text ~= ""
@@ -388,12 +392,10 @@ local function checkAndGetQuestClean()
 
                 if (hrp.Position - npcPos).Magnitude > 25 then
                     hrp.CFrame = CFrame.new(npcPos + Vector3.new(0, 10, 0))
-                    task.wait(0.5)
                 else
                     local remotes = ReplicatedStorage:FindFirstChild("Remotes")
                     if remotes and remotes:FindFirstChild("CommF_") then
                         remotes.CommF_:InvokeServer("StartQuest", questName, 1)
-                        task.wait(1)
                     end
                 end
             end
@@ -427,7 +429,7 @@ RunService.RenderStepped:Connect(function()
         updateWeaponButtons()
     end
 
-    -- ESP QUÁI (BOX XANH DƯƠNG - LINE TRẮNG)
+    -- ESP QUÁI (BOX XANH LÁ - LINE TRẮNG)
     if Config.ShowESP then
         local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
         local activeFound = {}
@@ -439,7 +441,7 @@ RunService.RenderStepped:Connect(function()
                     if not espCache[mob] then
                         local box = Drawing.new("Square")
                         box.Visible = false
-                        box.Color = Color3.fromRGB(0, 170, 255) -- Xanh dương
+                        box.Color = Color3.fromRGB(0, 255, 0) -- Xanh lá
                         box.Thickness = 1
                         box.Filled = false
 
@@ -534,7 +536,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- AUTO FARM: BAY ĐỈNH ĐẦU + AUTO CLICK ĐÁNH MƯỢT MÀ
+    -- AUTO FARM: BAY ĐỈNH ĐẦU TỪNG CON QUÁI + ĐÁNH MƯỢT KHÔNG GIẬT
     if Config.AutoFarm then
         pcall(function()
             checkAndGetQuestClean()
@@ -567,7 +569,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Tìm quái gần nhất
+                -- Tìm quái gần nhất để bay lên đầu từng con đánh
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 local targetMob = nil
                 local shortestDist = math.huge
@@ -590,11 +592,11 @@ RunService.RenderStepped:Connect(function()
                     local mHrp = targetMob.HumanoidRootPart
                     local mHum = targetMob:FindFirstChildOfClass("Humanoid")
 
-                    -- Ghim vị trí trên đỉnh đầu quái
-                    hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 4.5, 0))
+                    -- Bám sát ngay đỉnh đầu quái mượt mà, triệt tiêu gia tốc trượt gây giật
+                    hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 4, 0))
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                    -- Ép đánh liên tục bằng Tool Activate và VirtualUser
+                    -- Đánh liên tục không bị khựng
                     if mHum and mHum.Health > 0 then
                         pcall(function()
                             local activeTool = char:FindFirstChildOfClass("Tool")
@@ -602,9 +604,6 @@ RunService.RenderStepped:Connect(function()
                                 activeTool:Activate()
                             end
                             VirtualUser:Button1Down(Vector2.new(400, 300), camera.CFrame)
-                            task.spawn(function()
-                                VirtualUser:Button1Up(Vector2.new(400, 300), camera.CFrame)
-                            end)
                         end)
                     end
                 end
