@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Ultimate Mob Vacuum & Hover Farm)
+-- Blox Fruit Master Hub - Admin Tienphat (Fixed Damage & Smooth Vacuum Farm)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -123,7 +123,7 @@ local function createToggle(parent, text, defaultVal, callback)
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Gom 150m & Bay Trên Đầu Đánh)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "Auto Farm (Fix Dame & Gom 150m)", false, function(v) Config.AutoFarm = v end)
 createToggle(MainContainer, "ESP Box Nhỏ Gọn & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
 createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
@@ -224,7 +224,6 @@ end)
 
 applyFixLag(true)
 
--- 3. HỆ THỐNG XỬ LÝ CHÍNH
 local espCache = {}
 local weaponScannerCache = {}
 
@@ -240,7 +239,6 @@ end
 
 local camera = Workspace.CurrentCamera
 
--- Hàm check và nhận nhiệm vụ tự động Cấp 1-10 (Bandit)
 local function checkAndGetQuest()
     pcall(function()
         local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
@@ -279,7 +277,7 @@ RunService.RenderStepped:Connect(function()
         updateWeaponButtons()
     end
 
-    -- ESP Quái nhỏ gọn
+    -- ESP Quái
     if Config.ShowESP then
         local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
         local activeFound = {}
@@ -340,7 +338,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Weapon Scanner người chơi khác
+    -- Weapon Scanner
     if Config.ShowWeaponScanner then
         local activePlayers = {}
         for _, plr in ipairs(Players:GetPlayers()) do
@@ -386,7 +384,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 4. AUTO FARM: GOM TOÀN BỘ QUÁI 150M VỀ 1 ĐIỂM DƯỚI ĐẤT + PLAYER BAY LƠ LỬNG TRÊN ĐẦU
+    -- 4. AUTO FARM: FIX LỖI GÂY SÁT THƯƠNG & BAY TRÊN ĐẦU
     if Config.AutoFarm then
         pcall(function()
             checkAndGetQuest()
@@ -396,7 +394,7 @@ RunService.RenderStepped:Connect(function()
                 local hrp = char.HumanoidRootPart
                 local hum = char:FindFirstChildOfClass("Humanoid")
 
-                -- Trang bị vũ khí đã chọn
+                -- Trang bị vũ khí
                 local currentTool = char:FindFirstChildOfClass("Tool")
                 if not currentTool or (Config.SelectedWeapon ~= "Tự động chọn" and currentTool.Name ~= Config.SelectedWeapon) then
                     local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
@@ -419,7 +417,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Tìm quái đầu tiên làm tâm điểm tập kết
+                -- Tìm quái gần nhất làm tâm điểm
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 local targetMob = nil
                 local shortestDist = math.huge
@@ -440,16 +438,21 @@ RunService.RenderStepped:Connect(function()
 
                 if targetMob and targetMob:FindFirstChild("HumanoidRootPart") then
                     local mHrp = targetMob.HumanoidRootPart
-                    local clusterCenter = mHrp.Position -- Lấy vị trí quái đầu tiên làm tâm điểm
+                    local clusterCenter = mHrp.Position
 
-                    -- Gom toàn bộ quái trong bán kính 150m dồn chặt vào đúng tâm điểm dưới đất
+                    -- Gom quái trong 150m nhưng KHÔNG đè bẹp hoàn toàn vào 1 điểm (tách nhẹ cách nhau 0.5 stud để game nhận diện sát thương chuẩn)
+                    local count = 0
                     for _, mob in ipairs(folderEnemies:GetChildren()) do
                         local mobHrp = mob:FindFirstChild("HumanoidRootPart")
                         local mobHum = mob:FindFirstChildOfClass("Humanoid")
                         if mobHrp and mobHum and mobHum.Health > 0 then
                             local d = (mobHrp.Position - clusterCenter).Magnitude
                             if d <= 150 then
-                                mobHrp.CFrame = CFrame.new(clusterCenter)
+                                count = count + 1
+                                -- Trải quái thành một vòng tròn nhỏ hoặc cụm sát nhau để không bị lỗi anti-cheat mất máu
+                                local offsetX = (count % 3) * 0.8
+                                local offsetZ = math.floor(count / 3) * 0.8
+                                mobHrp.CFrame = CFrame.new(clusterCenter + Vector3.new(offsetX, 0, offsetZ))
                                 mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                                 mobHrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                                 if mobHum:FindFirstChild("Animator") then
@@ -459,19 +462,19 @@ RunService.RenderStepped:Connect(function()
                         end
                     end
 
-                    -- Nhân vật BAY LƠ LỬNG (cách tâm quái dưới đất đúng 6 stud) nhìn xuống và khóa chặt vị trí
-                    hrp.CFrame = CFrame.new(clusterCenter + Vector3.new(0, 6, 0)) * (hrp.CFrame - hrp.CFrame.Position)
+                    -- Nhân vật bay lơ lửng trên đầu cụm quái
+                    hrp.CFrame = CFrame.new(clusterCenter + Vector3.new(0, 7, 0)) * (hrp.CFrame - hrp.CFrame.Position)
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                    -- Auto click chém liên tục bằng cả Tool Activate và VirtualUser
+                    -- Tự động kích hoạt tấn công liên tục kết hợp gửi lệnh đánh
                     pcall(function()
                         local activeTool = char:FindFirstChildOfClass("Tool")
                         if activeTool then
                             activeTool:Activate()
                         end
-                        VirtualUser:Button1Down(Vector2.new(100, 100), camera.CFrame)
+                        VirtualUser:Button1Down(Vector2.new(500, 500), camera.CFrame)
                         task.spawn(function()
-                            VirtualUser:Button1Up(Vector2.new(100, 100), camera.CFrame)
+                            VirtualUser:Button1Up(Vector2.new(500, 500), camera.CFrame)
                         end)
                     end)
                 end
