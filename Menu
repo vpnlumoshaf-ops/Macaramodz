@@ -355,7 +355,7 @@ end
 
 local camera = Workspace.CurrentCamera
 
--- HÀM NHẬN NHIỆM VỤ CHUẨN (LEVEL 1-10 BANDIT VÀ CÁC MỐC KHÁC QUA REMOTES)
+-- HÀM NHẬN NHIỆM VỤ CHUẨN (BANDIT & JUNGLE ĐẢO KHỈ)
 local function checkAndGetQuest()
     pcall(function()
         local questFolder = LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
@@ -367,19 +367,20 @@ local function checkAndGetQuest()
             
             local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if hrp then
-                local questName, mobTargetName, npcPos = "BanditQuest1", "Bandit", Vector3.new(1059, 16, 1379)
+                local questName, npcPos = "BanditQuest1", Vector3.new(1059, 16, 1379) -- Level 1-9: Bandit
                 
-                if level >= 10 and level <= 15 then
-                    questName, npcPos = "JungleQuest", Vector3.new(-1598, 37, 153)
-                elseif level >= 15 and level <= 30 then
-                    questName, npcPos = "JungleQuest2", Vector3.new(-1049, 12, 4090)
+                if level >= 10 and level <= 14 then
+                    questName, npcPos = "JungleQuest", Vector3.new(-1598, 37, 153) -- Level 10-14: Monkey (Khỉ)
+                elseif level >= 15 and level <= 29 then
+                    questName, npcPos = "JungleQuest2", Vector3.new(-1598, 37, 153) -- Level 15+: Gorilla
                 elseif level >= 30 then
-                    questName, npcPos = "PirateQuest", Vector3.new(-1201, 4, 3855)
+                    questName, npcPos = "PirateQuest", Vector3.new(-1201, 4, 3855) -- Level 30+: Pirate
                 end
 
-                if (hrp.Position - npcPos).Magnitude > 15 then
-                    hrp.CFrame = CFrame.new(npcPos)
-                    task.wait(0.2)
+                -- Nếu đứng cách NPC quá xa thì tự động bay thẳng qua đảo đó
+                if (hrp.Position - npcPos).Magnitude > 25 then
+                    hrp.CFrame = CFrame.new(npcPos + Vector3.new(0, 10, 0))
+                    task.wait(0.5)
                 else
                     local remotes = ReplicatedStorage:FindFirstChild("Remotes")
                     if remotes and remotes:FindFirstChild("CommF_") then
