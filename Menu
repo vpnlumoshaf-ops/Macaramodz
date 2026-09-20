@@ -137,7 +137,7 @@ local MainContainer = Instance.new("ScrollingFrame", MainFrame)
 MainContainer.Position = UDim2.new(0, 0, 0, 72)
 MainContainer.Size = UDim2.new(1, 0, 1, -72)
 MainContainer.BackgroundTransparency = 1
-MainContainer.CanvasSize = UDim2.new(0, 0, 0, 320)
+MainContainer.CanvasSize = UDim2.new(0, 0, 0, 360)
 MainContainer.Visible = true
 
 local EspContainer = Instance.new("ScrollingFrame", MainFrame)
@@ -202,9 +202,68 @@ local function createToggle(parent, text, defaultVal, callback, customY)
     return btn
 end
 
+-- HÀM LẤY NHIỆM VỤ DÙNG CHUNG (CHO CẢ AUTO VÀ NÚT BẤM THỦ CÔNG)
+local function checkAndGetQuestClean()
+    pcall(function()
+        local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
+        local level = stats and stats.Value or 1
+        
+        local questName, npcPos = "BanditQuest1", Vector3.new(1059, 16, 1379)
+        
+        if level >= 1 and level <= 9 then
+            questName, npcPos = "BanditQuest1", Vector3.new(1059, 16, 1379)
+        elseif level >= 10 and level <= 29 then
+            questName, npcPos = "JungleQuest", Vector3.new(-1598, 37, 153)
+        elseif level >= 30 and level <= 59 then
+            questName, npcPos = "PirateQuest", Vector3.new(-1201, 4, 3855)
+        elseif level >= 60 and level <= 89 then
+            questName, npcPos = "DesertQuest", Vector3.new(896, 6, 4389)
+        elseif level >= 90 and level <= 119 then
+            questName, npcPos = "SnowQuest", Vector3.new(1389, 87, -1298)
+        elseif level >= 120 and level <= 149 then
+            questName, npcPos = "MarineQuest", Vector3.new(-5035, 20, 4324)
+        elseif level >= 150 and level <= 189 then
+            questName, npcPos = "SkyQuest", Vector3.new(-4842, 718, -2623)
+        elseif level >= 190 and level <= 249 then
+            questName, npcPos = "PrisonQuest", Vector3.new(4875, 5, 735)
+        elseif level >= 250 and level <= 299 then
+            questName, npcPos = "ColosseumQuest", Vector3.new(-1580, 7, -2992)
+        elseif level >= 300 and level <= 374 then
+            questName, npcPos = "MagmaQuest", Vector3.new(-5315, 12, 8515)
+        elseif level >= 375 and level <= 449 then
+            questName, npcPos = "FishmanQuest", Vector3.new(61123, 18, 1569)
+        elseif level >= 450 and level <= 624 then
+            questName, npcPos = "SkyExp1Quest", Vector3.new(-7862, 5545, -380)
+        elseif level >= 625 and level <= 700 then
+            questName, npcPos = "FountainQuest", Vector3.new(5247, 38, 4048)
+        end
+
+        local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+        if remotes and remotes:FindFirstChild("CommF_") then
+            remotes.CommF_:InvokeServer("StartQuest", questName, 1)
+        end
+    end)
+end
+
 -- TAB MAIN
 local mY = 15
 createToggle(MainContainer, "Auto Farm (Bay Trên Đầu & Đánh)", false, function(v) Config.AutoFarm = v end, mY)
+mY = mY + 40
+
+-- THÊM NÚT NHẬN NHIỆM VỤ THỦ CÔNG
+local GetQuestBtn = Instance.new("TextButton", MainContainer)
+GetQuestBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+GetQuestBtn.Position = UDim2.new(0.05, 0, 0, mY)
+GetQuestBtn.Size = UDim2.new(0.9, 0, 0, 32)
+GetQuestBtn.Font = Enum.Font.SourceSansBold
+GetQuestBtn.Text = "📥 Nhận Nhiệm Vụ Nhanh (Click thủ công)"
+GetQuestBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+GetQuestBtn.TextSize = 13
+
+GetQuestBtn.MouseButton1Click:Connect(function()
+    checkAndGetQuestClean()
+end)
+
 mY = mY + 40
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
     Config.FixLag = v 
@@ -380,9 +439,9 @@ local function clearAllESP()
     end
 end
 
--- HÀM KIỂM TRA & NHẬN NHIỆM VỤ AN TOÀN (CHUẨN XÁC)
+-- TỰ ĐỘNG NHẬN NHIỆM VỤ AN TOÀN TRONG LUỒNG AUTO FARM
 local lastQuestAttempt = 0
-local function checkAndGetQuestClean()
+local function autoCheckAndGetQuest()
     if tick() - lastQuestAttempt < 3 then return end
     lastQuestAttempt = tick()
 
@@ -400,55 +459,12 @@ local function checkAndGetQuestClean()
         end
 
         if not hasActiveQuest then
-            local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
-            local level = stats and stats.Value or 1
-            
-            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local questName, npcPos = "BanditQuest1", Vector3.new(1059, 16, 1379)
-                
-                if level >= 1 and level <= 9 then
-                    questName, npcPos = "BanditQuest1", Vector3.new(1059, 16, 1379)
-                elseif level >= 10 and level <= 29 then
-                    questName, npcPos = "JungleQuest", Vector3.new(-1598, 37, 153)
-                elseif level >= 30 and level <= 59 then
-                    questName, npcPos = "PirateQuest", Vector3.new(-1201, 4, 3855)
-                elseif level >= 60 and level <= 89 then
-                    questName, npcPos = "DesertQuest", Vector3.new(896, 6, 4389)
-                elseif level >= 90 and level <= 119 then
-                    questName, npcPos = "SnowQuest", Vector3.new(1389, 87, -1298)
-                elseif level >= 120 and level <= 149 then
-                    questName, npcPos = "MarineQuest", Vector3.new(-5035, 20, 4324)
-                elseif level >= 150 and level <= 189 then
-                    questName, npcPos = "SkyQuest", Vector3.new(-4842, 718, -2623)
-                elseif level >= 190 and level <= 249 then
-                    questName, npcPos = "PrisonQuest", Vector3.new(4875, 5, 735)
-                elseif level >= 250 and level <= 299 then
-                    questName, npcPos = "ColosseumQuest", Vector3.new(-1580, 7, -2992)
-                elseif level >= 300 and level <= 374 then
-                    questName, npcPos = "MagmaQuest", Vector3.new(-5315, 12, 8515)
-                elseif level >= 375 and level <= 449 then
-                    questName, npcPos = "FishmanQuest", Vector3.new(61123, 18, 1569)
-                elseif level >= 450 and level <= 624 then
-                    questName, npcPos = "SkyExp1Quest", Vector3.new(-7862, 5545, -380)
-                elseif level >= 625 and level <= 700 then
-                    questName, npcPos = "FountainQuest", Vector3.new(5247, 38, 4048)
-                end
-
-                if (hrp.Position - npcPos).Magnitude > 25 then
-                    hrp.CFrame = CFrame.new(npcPos + Vector3.new(0, 10, 0))
-                else
-                    local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-                    if remotes and remotes:FindFirstChild("CommF_") then
-                        remotes.CommF_:InvokeServer("StartQuest", questName, 1)
-                    end
-                end
-            end
+            checkAndGetQuestClean()
         end
     end)
 end
 
--- TIẾN TRÌNH AUTO STATS (KIỂM TRA ĐIỂM DƯ TRÁNH SPAM TOAST)
+-- TIẾN TRÌNH AUTO STATS
 task.spawn(function()
     while true do
         task.wait(1)
@@ -668,10 +684,10 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- AUTO FARM: BAY ĐỈNH ĐẦU TỪNG CON QUÁI + AUTO CLICK CHUẨN XÁC
+    -- AUTO FARM: BAY ĐỈNH ĐẦU QUÁI + KÍCH HOẠT ĐÁNH LIÊN TỤC
     if Config.AutoFarm then
         pcall(function()
-            checkAndGetQuestClean()
+            autoCheckAndGetQuest()
 
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
@@ -724,7 +740,7 @@ RunService.RenderStepped:Connect(function()
                     hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 4, 0))
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                    -- Auto đánh mượt mà không khựng và không bị lệch trỏ chuột
+                    -- Auto đánh mượt mà, kết hợp cả Activate của Tool và VirtualUser
                     if mHum and mHum.Health > 0 then
                         pcall(function()
                             local activeTool = char:FindFirstChildOfClass("Tool")
