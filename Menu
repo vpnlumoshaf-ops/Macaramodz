@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Fixed Auto Farm & Smooth Teleport)
+-- Blox Fruit Master Hub - Admin Tienphat (Fixed Auto Farm, Quest & Color ESP)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -344,12 +344,8 @@ local function clearAllESP()
     end
 end
 
--- HÀM KIỂM TRA NHIỆM VỤ KHÔNG BỊ LẶP (FIX LỖI 1/6 VỀ 0/6)
-local lastQuestCheck = 0
+-- HÀM KIỂM TRA & NHẬN NHIỆM VỤ CHUẨN XÁC 1-700 WIKI
 local function checkAndGetQuestClean()
-    if tick() - lastQuestCheck < 3 then return end -- Chỉ check lại sau mỗi 3 giây để tránh Spam lệnh gây lỗi reset nhiệm vụ
-    lastQuestCheck = tick()
-
     pcall(function()
         local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
         local hasActiveQuest = questGui and questGui.Visible and questGui:FindFirstChild("Container") and questGui.Container:FindFirstChild("QuestTitle") and questGui.Container.QuestTitle.Text ~= ""
@@ -431,7 +427,7 @@ RunService.RenderStepped:Connect(function()
         updateWeaponButtons()
     end
 
-    -- ESP Quái
+    -- ESP QUÁI (BOX XANH DƯƠNG - LINE TRẮNG)
     if Config.ShowESP then
         local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
         local activeFound = {}
@@ -443,13 +439,13 @@ RunService.RenderStepped:Connect(function()
                     if not espCache[mob] then
                         local box = Drawing.new("Square")
                         box.Visible = false
-                        box.Color = Color3.fromRGB(255, 50, 50)
+                        box.Color = Color3.fromRGB(0, 170, 255) -- Xanh dương
                         box.Thickness = 1
                         box.Filled = false
 
                         local line = Drawing.new("Line")
                         line.Visible = false
-                        line.Color = Color3.fromRGB(255, 170, 0)
+                        line.Color = Color3.fromRGB(255, 255, 255) -- Trắng
                         line.Thickness = 1
 
                         espCache[mob] = {Box = box, Line = line}
@@ -492,7 +488,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Weapon Scanner
+    -- WEAPON SCANNER
     if Config.ShowWeaponScanner then
         local activePlayers = {}
         for _, plr in ipairs(Players:GetPlayers()) do
@@ -538,7 +534,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- AUTO FARM: FIX HOÀN TOÀN TÌNH TRẠNG GIẬT LAG VÀ AUTO CLICK MÀN HÌNH MƯỢT MÀ
+    -- AUTO FARM: BAY ĐỈNH ĐẦU + AUTO CLICK ĐÁNH MƯỢT MÀ
     if Config.AutoFarm then
         pcall(function()
             checkAndGetQuestClean()
@@ -551,7 +547,7 @@ RunService.RenderStepped:Connect(function()
                 -- Trang bị vũ khí
                 local currentTool = char:FindFirstChildOfClass("Tool")
                 if not currentTool or (Config.SelectedWeapon ~= "Tự động chọn" and currentTool.Name ~= Config.SelectedWeapon) then
-                    local backpack = LocalPlayer:FindFirstChildFromClass("Backpack") or LocalPlayer.Backpack
+                    local backpack = LocalPlayer:FindFirstChildOfClass("Backpack") or LocalPlayer.Backpack
                     if backpack then
                         local targetTool = nil
                         for _, item in ipairs(backpack:GetChildren()) do
@@ -571,7 +567,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Tìm quái gần nhất để ghim trên đầu ổn định
+                -- Tìm quái gần nhất
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 local targetMob = nil
                 local shortestDist = math.huge
@@ -594,18 +590,17 @@ RunService.RenderStepped:Connect(function()
                     local mHrp = targetMob.HumanoidRootPart
                     local mHum = targetMob:FindFirstChildOfClass("Humanoid")
 
-                    -- Ghim cố định mượt mà ngay trên đầu quái (Không bị giật cục)
+                    -- Ghim vị trí trên đỉnh đầu quái
                     hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 4.5, 0))
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                    -- Cơ chế Auto Click vô màn hình đánh liên tục không bị kẹt
+                    -- Ép đánh liên tục bằng Tool Activate và VirtualUser
                     if mHum and mHum.Health > 0 then
                         pcall(function()
                             local activeTool = char:FindFirstChildOfClass("Tool")
                             if activeTool then
                                 activeTool:Activate()
                             end
-                            -- Giả lập click chuột trực tiếp vào màn hình game
                             VirtualUser:Button1Down(Vector2.new(400, 300), camera.CFrame)
                             task.spawn(function()
                                 VirtualUser:Button1Up(Vector2.new(400, 300), camera.CFrame)
