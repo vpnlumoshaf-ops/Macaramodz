@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Fixed Auto Quest & Auto Farm by Level/Current Quest)
+-- Blox Fruit Master Hub - Admin Tienphat (Fixed Position-Based Auto Quest & Auto Farm)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -194,45 +194,42 @@ local function createToggle(parent, text, defaultVal, callback, customY)
     return btn
 end
 
--- HỆ THỐNG CHECK VÀ NHẬN NHIỆM VỤ THEO LEVEL CHUẨN XÁC
+-- HỆ THỐNG QUÉT TỌA ĐỘ VÀ KIỂM TRA ĐẢO ĐỂ NHẬN NHIỆM VỤ CHÍNH XÁC
 local function checkAndGetQuestClean()
     pcall(function()
-        local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
-        local level = stats and stats.Value or 1
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        local pos = char.HumanoidRootPart.Position
         
         local questName = "BanditQuest1"
         local questIndex = 1
-        
-        if level >= 1 and level <= 9 then 
-            questName = "BanditQuest1"; questIndex = 1
-        elseif level >= 10 and level <= 14 then 
-            questName = "JungleQuest"; questIndex = 1
-        elseif level >= 15 and level <= 29 then 
-            questName = "JungleQuest"; questIndex = 2 -- Đánh goku / monkey
-        elseif level >= 30 and level <= 39 then 
-            questName = "PirateQuest"; questIndex = 1 -- Hải tặc đảo 30
-        elseif level >= 40 and level <= 59 then 
-            QuestName = "PirateQuest"; questIndex = 2 -- Brute
-        elseif level >= 60 and level <= 89 then 
-            questName = "DesertQuest"; questIndex = 1
-        elseif level >= 90 and level <= 119 then 
-            questName = "SnowQuest"; questIndex = 1
-        elseif level >= 120 and level <= 149 then 
-            questName = "MarineQuest"; questIndex = 1
-        elseif level >= 150 and level <= 189 then 
-            questName = "SkyQuest"; questIndex = 1
-        elseif level >= 190 and level <= 249 then 
-            questName = "PrisonQuest"; questIndex = 1
-        elseif level >= 250 and level <= 299 then 
-            questName = "ColosseumQuest"; questIndex = 1
-        elseif level >= 300 and level <= 374 then 
-            questName = "MagmaQuest"; questIndex = 1
-        elseif level >= 375 and level <= 449 then 
-            questName = "FishmanQuest"; questIndex = 1
-        elseif level >= 450 and level <= 624 then 
-            questName = "SkyExp1Quest"; questIndex = 1
-        elseif level >= 625 and level <= 700 then 
-            questName = "FountainQuest"; questIndex = 1
+
+        -- Quét khoảng cách tọa độ (X, Z) để nhận diện đang ở đảo nào
+        if pos.Z > 2000 and pos.Z < 5000 and pos.X > 500 and pos.X < 1500 then
+            questName = "DesertQuest"; questIndex = 1 -- Hoặc DesertQuest 2 tùy level
+        elseif pos.Z > 3000 and pos.Z < 4500 and pos.X > -1500 and pos.X < -500 then
+            questName = "PirateQuest"; questIndex = 1 -- Đảo Cướp Biển (Mob: Pirate / Brute)
+        elseif pos.Z > -200 and pos.Z < 800 and pos.X > -1800 and pos.X < -800 then
+            questName = "JungleQuest"; questIndex = 1 -- Đảo Khỉ
+        elseif pos.Z > -1500 and pos.Z < -800 and pos.X > 800 and pos.X < 1800 then
+            questName = "SnowQuest"; questIndex = 1 -- Đảo Tuyết
+        elseif pos.Z > 500 and pos.Z < 1200 and pos.X > 4000 and pos.X < 5500 then
+            questName = "PrisonQuest"; questIndex = 1 -- Nhà Tù
+        elseif pos.Z > -3500 and pos.Z < -2500 and pos.X > -1800 and pos.X < -1000 then
+            questName = "ColosseumQuest"; questIndex = 1 -- Đấu Trường
+        elseif pos.Z > 7500 and pos.Z < 9500 and pos.X > -6000 and pos.X < -4500 then
+            questName = "MagmaQuest"; questIndex = 1 -- Đảo Dung Nham
+        elseif pos.Z > 1000 and pos.Z < 2500 and pos.X > 58000 and pos.X < 64000 then
+            questName = "FishmanQuest"; questIndex = 1 -- Đảo Người Cá
+        else
+            -- Dự phòng theo Level nếu đứng ở khoảng trống
+            local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
+            local level = stats and stats.Value or 1
+            if level >= 30 and level <= 59 then
+                questName = "PirateQuest"; questIndex = 1
+            elseif level >= 60 then
+                questName = "DesertQuest"; questIndex = 1
+            end
         end
 
         local remotes = ReplicatedStorage:FindFirstChild("Remotes")
@@ -305,7 +302,7 @@ GetQuestBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
 GetQuestBtn.Position = UDim2.new(0.05, 0, 0, mY)
 GetQuestBtn.Size = UDim2.new(0.9, 0, 0, 32)
 GetQuestBtn.Font = Enum.Font.SourceSansBold
-GetQuestBtn.Text = "📥 Nhận Nhiệm Vụ Nhanh Theo Level"
+GetQuestBtn.Text = "📥 Nhận Nhiệm Vụ Theo Đảo Đang Đứng"
 GetQuestBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 GetQuestBtn.TextSize = 13
 GetQuestBtn.MouseButton1Click:Connect(function()
@@ -639,7 +636,7 @@ task.spawn(function()
     end
 end)
 
--- Vòng lặp Auto Farm thông minh theo nhiệm vụ hiện tại trên màn hình
+-- Vòng lặp Auto Farm và xử lý nhiệm vụ dựa trên tọa độ đảo hiện tại
 RunService.RenderStepped:Connect(function(dt)
     if not ScreenGui.Parent then 
         clearAllESP()
@@ -884,10 +881,9 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- LOGIC AUTO FARM KẾT HỢP CHECK NHIỆM VỤ TỰ ĐỘNG
+    -- LOGIC AUTO FARM KẾT HỢP KIỂM TRA NHIỆM VỤ DỰA TRÊN TỌA ĐỘ ĐẢO
     if Config.AutoFarm then
         pcall(function()
-            -- Nếu chưa có nhiệm vụ trên màn hình, tự động gọi nhận nhiệm vụ phù hợp với level hiện tại
             if not hasActiveQuest() then
                 checkAndGetQuestClean()
                 task.wait(0.5)
@@ -916,7 +912,6 @@ RunService.RenderStepped:Connect(function(dt)
                     end
                 end
 
-                -- Lấy tên quái từ bảng nhiệm vụ để tìm đánh chính xác mục tiêu
                 local questMobName = getCurrentQuestMobName()
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 local targetMob = nil
@@ -938,7 +933,6 @@ RunService.RenderStepped:Connect(function(dt)
                     end
                 end
 
-                -- Nếu không tìm thấy đúng tên quái nhiệm vụ, mặc định tìm quái gần nhất quanh đó
                 if not targetMob and folderEnemies then
                     for _, mob in ipairs(folderEnemies:GetChildren()) do
                         local mobHrp = mob:FindFirstChild("HumanoidRootPart")
