@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Clean & Fixed Menu GUI)
+-- Blox Fruit Master Hub - Admin Tienphat (Ultimate Mob Vacuum & Hover Farm)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -123,7 +123,7 @@ local function createToggle(parent, text, defaultVal, callback)
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Đứng Trên Đầu & Đánh Chuẩn Dame)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "Auto Farm (Gom 150m & Bay Trên Đầu Đánh)", false, function(v) Config.AutoFarm = v end)
 createToggle(MainContainer, "ESP Box Nhỏ Gọn & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
 createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
@@ -239,6 +239,35 @@ local function clearAllESP()
 end
 
 local camera = Workspace.CurrentCamera
+
+-- Hàm check và nhận nhiệm vụ tự động Cấp 1-10 (Bandit)
+local function checkAndGetQuest()
+    pcall(function()
+        local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
+        local level = stats and stats.Value or 1
+        
+        if level >= 1 and level <= 10 then
+            local questFolder = LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
+            local hasQuest = questFolder and questFolder.Visible
+            
+            if not hasQuest then
+                local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local banditQuestNPC = Vector3.new(1059, 16, 1379)
+                    if (hrp.Position - banditQuestNPC).Magnitude > 15 then
+                        hrp.CFrame = CFrame.new(banditQuestNPC)
+                        task.wait(0.2)
+                    else
+                        local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+                        if remotes and remotes:FindFirstChild("CommF_") then
+                            remotes.CommF_:InvokeServer("StartQuest", "BanditQuest1", 1)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
 
 RunService.RenderStepped:Connect(function()
     if not ScreenGui.Parent then 
@@ -357,9 +386,11 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 4. AUTO FARM CHUẨN: ĐỨNG TRÊN ĐẦU QUÁI, GOM QUÁI LÊN CÙNG VÀ TỰ ĐỘNG CHÉM NHẬN DAME
+    -- 4. AUTO FARM: GOM TOÀN BỘ QUÁI 150M VỀ 1 ĐIỂM DƯỚI ĐẤT + PLAYER BAY LƠ LỬNG TRÊN ĐẦU
     if Config.AutoFarm then
         pcall(function()
+            checkAndGetQuest()
+
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
                 local hrp = char.HumanoidRootPart
@@ -388,10 +419,10 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Tìm quái gần nhất và gom toàn bộ quái lại dưới chân/bay lên đầu quái đúng chuẩn Blox Fruit
+                -- Tìm quái đầu tiên làm tâm điểm tập kết
+                local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 local targetMob = nil
                 local shortestDist = math.huge
-                local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 
                 if folderEnemies then
                     for _, mob in ipairs(folderEnemies:GetChildren()) do
@@ -399,17 +430,6 @@ RunService.RenderStepped:Connect(function()
                         local mobHum = mob:FindFirstChildOfClass("Humanoid")
                         if mobHrp and mobHum and mobHum.Health > 0 then
                             local d = (mobHrp.Position - hrp.Position).Magnitude
-                            
-                            if d < 200 then
-                                -- Gom quái dồn sát vào vị trí thấp hơn nhân vật 4 stud để nhân vật đứng trên đầu đánh xuống trúng 100%
-                                mobHrp.CFrame = hrp.CFrame + Vector3.new(0, -4, 0)
-                                mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                                mobHrip.AssemblyAngularVelocity = Vector3.new(0, 0, 0) -- fixed spelling
-                                if mobHum:FindFirstChild("Animator") then
-                                    pcall(function() mobHum.Animator:Destroy() end)
-                                end
-                            end
-                            
                             if d < shortestDist then
                                 shortestDist = d
                                 targetMob = mob
@@ -418,13 +438,32 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                if targetMob then
+                if targetMob and targetMob:FindFirstChild("HumanoidRootPart") then
                     local mHrp = targetMob.HumanoidRootPart
-                    -- Đặt nhân vật lơ lửng đúng 5 stud trên đầu quái để không bị dính người và đánh trúng dame thật
-                    hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 5, 0)) * (hrp.CFrame - hrp.CFrame.Position)
+                    local clusterCenter = mHrp.Position -- Lấy vị trí quái đầu tiên làm tâm điểm
+
+                    -- Gom toàn bộ quái trong bán kính 150m dồn chặt vào đúng tâm điểm dưới đất
+                    for _, mob in ipairs(folderEnemies:GetChildren()) do
+                        local mobHrp = mob:FindFirstChild("HumanoidRootPart")
+                        local mobHum = mob:FindFirstChildOfClass("Humanoid")
+                        if mobHrp and mobHum and mobHum.Health > 0 then
+                            local d = (mobHrp.Position - clusterCenter).Magnitude
+                            if d <= 150 then
+                                mobHrp.CFrame = CFrame.new(clusterCenter)
+                                mobHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                mobHrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                                if mobHum:FindFirstChild("Animator") then
+                                    pcall(function() mobHum.Animator:Destroy() end)
+                                end
+                            end
+                        end
+                    end
+
+                    -- Nhân vật BAY LƠ LỬNG (cách tâm quái dưới đất đúng 6 stud) nhìn xuống và khóa chặt vị trí
+                    hrp.CFrame = CFrame.new(clusterCenter + Vector3.new(0, 6, 0)) * (hrp.CFrame - hrp.CFrame.Position)
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                    -- Auto click siêu tốc đánh liên tục bằng cả Tool Activate và VirtualUser
+                    -- Auto click chém liên tục bằng cả Tool Activate và VirtualUser
                     pcall(function()
                         local activeTool = char:FindFirstChildOfClass("Tool")
                         if activeTool then
