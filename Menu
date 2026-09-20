@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Target Hop & Clean Kill Farm)
+-- Blox Fruit Master Hub - Admin Tienphat (Target Hop & Clean Kill Farm + Stat Upgrader)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -20,7 +20,13 @@ local Config = {
     SelectedWeapon = "Tự động chọn",
     ShowESP = true,
     ShowWeaponScanner = true,
-    FixLag = true
+    FixLag = true,
+    -- Cấu hình Stat
+    AutoStatMelee = false,
+    AutoStatDefense = false,
+    AutoStatSword = false,
+    AutoStatDevilFruit = false,
+    StatAmount = 3
 }
 
 -- 1. FIX LAG TOÀN DIỆN
@@ -46,7 +52,7 @@ local function applyFixLag(state)
     end
 end
 
--- 2. GIAO DIỆN CHÍNH
+-- 2. GIAO DIỆN CHÍNH (CÓ THÊM TAB STATS)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AdminTienphatBloxFruit"
 ScreenGui.Parent = CoreGui
@@ -58,7 +64,7 @@ MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.Position = UDim2.new(0.5, -200, 0.5, -240)
-MainFrame.Size = UDim2.new(0, 400, 0, 460)
+MainFrame.Size = UDim2.new(0, 400, 0, 480)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
@@ -92,13 +98,65 @@ CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.TextSize = 14
 
-local MainContainer = Instance.new("ScrollingFrame")
-MainContainer.Parent = MainFrame
-MainContainer.Position = UDim2.new(0, 0, 0, 40)
-MainContainer.Size = UDim2.new(1, 0, 1, -40)
-MainContainer.BackgroundTransparency = 1
-MainContainer.CanvasSize = UDim2.new(0, 0, 0, 620)
+-- Thanh Chuyển Tab (Main / Stats)
+local TabBar = Instance.new("Frame", MainFrame)
+TabBar.Position = UDim2.new(0, 0, 0, 38)
+TabBar.Size = UDim2.new(1, 0, 0, 30)
+TabBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TabBar.BorderSizePixel = 0
 
+local TabMainBtn = Instance.new("TextButton", TabBar)
+TabMainBtn.Size = UDim2.new(0.5, 0, 1, 0)
+TabMainBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+TabMainBtn.Font = Enum.Font.SourceSansBold
+TabMainBtn.Text = "🎯 Auto Farm & Visual"
+TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TabMainBtn.TextSize = 13
+
+local TabStatsBtn = Instance.new("TextButton", TabBar)
+TabStatsBtn.Position = UDim2.new(0.5, 0, 0, 0)
+TabStatsBtn.Size = UDim2.new(0.5, 0, 1, 0)
+TabStatsBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TabStatsBtn.Font = Enum.Font.SourceSansBold
+TabStatsBtn.Text = "📈 Auto Stats"
+TabStatsBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+TabStatsBtn.TextSize = 13
+
+-- Container Tab 1: Main
+local MainContainer = Instance.new("ScrollingFrame", MainFrame)
+MainContainer.Position = UDim2.new(0, 0, 0, 72)
+MainContainer.Size = UDim2.new(1, 0, 1, -72)
+MainContainer.BackgroundTransparency = 1
+MainContainer.CanvasSize = UDim2.new(0, 0, 0, 580)
+MainContainer.Visible = true
+
+-- Container Tab 2: Stats
+local StatsContainer = Instance.new("ScrollingFrame", MainFrame)
+StatsContainer.Position = UDim2.new(0, 0, 0, 72)
+StatsContainer.Size = UDim2.new(1, 0, 1, -72)
+StatsContainer.BackgroundTransparency = 1
+StatsContainer.CanvasSize = UDim2.new(0, 0, 0, 320)
+StatsContainer.Visible = false
+
+TabMainBtn.MouseButton1Click:Connect(function()
+    MainContainer.Visible = true
+    StatsContainer.Visible = false
+    TabMainBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabStatsBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    TabStatsBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+end)
+
+TabStatsBtn.MouseButton1Click:Connect(function()
+    MainContainer.Visible = false
+    StatsContainer.Visible = true
+    TabStatsBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    TabStatsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabMainBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    TabMainBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+end)
+
+-- NỘI DUNG TAB 1 (MAIN)
 local yPos = 15
 
 local function createToggle(parent, text, defaultVal, callback)
@@ -123,20 +181,19 @@ local function createToggle(parent, text, defaultVal, callback)
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Bay Lên Đầu Từng Con & Đánh)", false, function(v) Config.AutoFarm = v end)
-createToggle(MainContainer, "ESP Box Nhỏ Gọn & Line (Hiển thị quái)", true, function(v) Config.ShowESP = v end)
-createToggle(MainContainer, "Hiện Tên Người Chơi & Vũ Khí Đang Cầm", true, function(v) Config.ShowWeaponScanner = v end)
+createToggle(MainContainer, "Auto Farm (Bay Lên Đầu Quái & Đánh)", false, function(v) Config.AutoFarm = v end)
+createToggle(MainContainer, "ESP Box Nhỏ Gọn & Line", true, function(v) Config.ShowESP = v end)
+createToggle(MainContainer, "Hiện Tên & Vũ Khí Người Chơi", true, function(v) Config.ShowWeaponScanner = v end)
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
     Config.FixLag = v 
     applyFixLag(v)
 end)
 
--- Danh sách chọn vũ khí
 local weaponHeader = Instance.new("TextLabel", MainContainer)
 weaponHeader.Position = UDim2.new(0.05, 0, 0, yPos)
 weaponHeader.Size = UDim2.new(0.9, 0, 0, 20)
 weaponHeader.Font = Enum.Font.SourceSansBold
-weaponHeader.Text = "Chọn Vũ Khí / Kiếm / Võ để Auto Farm:"
+weaponHeader.Text = "Chọn Vũ Khí Auto Farm:"
 weaponHeader.TextColor3 = Color3.fromRGB(255, 220, 100)
 weaponHeader.TextSize = 13
 yPos = yPos + 22
@@ -187,9 +244,68 @@ local function updateWeaponButtons()
     end
     weaponContainer.CanvasSize = UDim2.new(0, 0, 0, wPosY)
 end
-
 updateWeaponButtons()
-yPos = yPos + 100
+
+
+-- NỘI DUNG TAB 2 (STATS)
+local sYPos = 15
+
+local amountLbl = Instance.new("TextLabel", StatsContainer)
+amountLbl.Position = UDim2.new(0.05, 0, 0, sYPos)
+amountLbl.Size = UDim2.new(0.5, 0, 0, 25)
+amountLbl.Font = Enum.Font.SourceSansBold
+amountLbl.Text = "Số lượng nâng mỗi lần:"
+amountLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+amountLbl.TextSize = 13
+amountLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+local amountBox = Instance.new("TextBox", StatsContainer)
+amountBox.Position = UDim2.new(0.58, 0, 0, sYPos)
+amountBox.Size = UDim2.new(0.37, 0, 0, 25)
+amountBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+amountBox.Font = Enum.Font.SourceSansBold
+amountBox.Text = tostring(Config.StatAmount)
+amountBox.TextColor3 = Color3.fromRGB(0, 255, 128)
+amountBox.TextSize = 14
+amountBox.ClearTextOnFocus = false
+
+amountBox.FocusLost:Connect(function()
+    local num = tonumber(amountBox.Text)
+    if num and num > 0 then
+        Config.StatAmount = math.floor(num)
+    else
+        amountBox.Text = tostring(Config.StatAmount)
+    end
+end)
+
+sYPos = sYPos + 35
+
+local function createStatToggle(text, statKey, callback)
+    local btn = Instance.new("TextButton")
+    btn.Parent = StatsContainer
+    btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    btn.Position = UDim2.new(0.05, 0, 0, sYPos)
+    btn.Size = UDim2.new(0.9, 0, 0, 32)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Text = text .. ": Off"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 13
+    
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = text .. (state and ": On" or ": Off")
+        btn.BackgroundColor3 = state and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45, 45, 45)
+        callback(state)
+    end)
+    sYPos = sYPos + 40
+end
+
+createStatToggle("Auto Năng Điểm Cận Chiến (Melee)", "Melee", function(v) Config.AutoStatMelee = v end)
+createStatToggle("Auto Năng Điểm Máu (Defense)", "Defense", function(v) Config.AutoStatDefense = v end)
+createStatToggle("Auto Năng Điểm Kiếm (Sword)", "Sword", function(v) Config.AutoStatSword = v end)
+createStatToggle("Auto Năng Điểm Trái Ác Quỷ (DevilFruit)", "DevilFruit", function(v) Config.AutoStatDevilFruit = v end)
+
 
 -- Nút mở/đóng menu phụ
 local ToggleGui = Instance.new("ScreenGui")
@@ -239,34 +355,65 @@ end
 
 local camera = Workspace.CurrentCamera
 
--- Hàm check và nhận nhiệm vụ cấp 1-10 (Bandit) tự động
+-- HÀM NHẬN NHIỆM VỤ CHUẨN (LEVEL 1-10 BANDIT VÀ CÁC MỐC KHÁC QUA REMOTES)
 local function checkAndGetQuest()
     pcall(function()
-        local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
-        local level = stats and stats.Value or 1
+        local questFolder = LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
+        local hasQuest = questFolder and questFolder.Visible
         
-        if level >= 1 and level <= 10 then
-            local questFolder = LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
-            local hasQuest = questFolder and questFolder.Visible
+        if not hasQuest then
+            local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
+            local level = stats and stats.Value or 1
             
-            if not hasQuest then
-                local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    local banditQuestNPC = Vector3.new(1059, 16, 1379)
-                    if (hrp.Position - banditQuestNPC).Magnitude > 15 then
-                        hrp.CFrame = CFrame.new(banditQuestNPC)
-                        task.wait(0.2)
-                    else
-                        local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-                        if remotes and remotes:FindFirstChild("CommF_") then
-                            remotes.CommF_:InvokeServer("StartQuest", "BanditQuest1", 1)
-                        end
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local questName, mobTargetName, npcPos = "BanditQuest1", "Bandit", Vector3.new(1059, 16, 1379)
+                
+                if level >= 10 and level <= 15 then
+                    questName, npcPos = "JungleQuest", Vector3.new(-1598, 37, 153)
+                elseif level >= 15 and level <= 30 then
+                    questName, npcPos = "JungleQuest2", Vector3.new(-1049, 12, 4090)
+                elseif level >= 30 then
+                    questName, npcPos = "PirateQuest", Vector3.new(-1201, 4, 3855)
+                end
+
+                if (hrp.Position - npcPos).Magnitude > 15 then
+                    hrp.CFrame = CFrame.new(npcPos)
+                    task.wait(0.2)
+                else
+                    local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+                    if remotes and remotes:FindFirstChild("CommF_") then
+                        remotes.CommF_:InvokeServer("StartQuest", questName, 1)
                     end
                 end
             end
         end
     end)
 end
+
+-- TIẾN TRÌNH AUTO STATS (DELAY 0.5 GIÂY)
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        pcall(function()
+            local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+            if remotes and remotes:FindFirstChild("CommF_") then
+                if Config.AutoStatMelee then
+                    remotes.CommF_:InvokeServer("AddPoint", "Melee", Config.StatAmount)
+                end
+                if Config.AutoStatDefense then
+                    remotes.CommF_:InvokeServer("AddPoint", "Defense", Config.StatAmount)
+                end
+                if Config.AutoStatSword then
+                    remotes.CommF_:InvokeServer("AddPoint", "Sword", Config.StatAmount)
+                end
+                if Config.AutoStatDevilFruit then
+                    remotes.CommF_:InvokeServer("AddPoint", "Demon Fruit", Config.StatAmount)
+                end
+            end
+        end)
+    end
+end)
 
 RunService.RenderStepped:Connect(function()
     if not ScreenGui.Parent then 
@@ -385,7 +532,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 4. AUTO FARM: BAY LÊN ĐẦU TỪNG CON QUÁI DƯỚI ĐẤT -> ĐÁNH CHẾT -> CHUYỂN CON TIẾP THEO
+    -- AUTO FARM: BAY LÊN ĐẦU + NHẬN NHIỆM VỤ + TỰ ĐỘNG CLICK ĐÁNH LIÊN TỤC
     if Config.AutoFarm then
         pcall(function()
             checkAndGetQuest()
@@ -418,7 +565,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Tìm con quái gần nhất đang sống để xử lý
+                -- Tìm quái gần nhất để bay lên đầu
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 local targetMob = nil
                 local shortestDist = math.huge
@@ -441,11 +588,11 @@ RunService.RenderStepped:Connect(function()
                     local mHrp = targetMob.HumanoidRootPart
                     local mHum = targetMob:FindFirstChildOfClass("Humanoid")
 
-                    -- Bay thẳng lên lơ lửng ngay TRÊN ĐẦU con quái (cách 5 stud)
+                    -- Bay chuẩn xác lên đỉnh đầu quái cách 5 stud
                     hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 5, 0)) * (hrp.CFrame - hrp.CFrame.Position)
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                    -- Nếu quái chưa chết thì auto chém liên tục
+                    -- Auto đánh mượt mà bằng cả Tool Activate và VirtualUser
                     if mHum and mHum.Health > 0 then
                         pcall(function()
                             local activeTool = char:FindFirstChildOfClass("Tool")
