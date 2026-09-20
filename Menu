@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Manual Quest Selector & Locked Auto Farm)
+-- Blox Fruit Master Hub - Admin Tienphat (Pure Auto Farm & Manual Quest)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -32,10 +32,10 @@ local Config = {
     InstantTpFruit = false,
     AutoStoreFruit = false,
     FlyToFruit = false,
-    -- Cấu hình nhiệm vụ thủ công cố định
-    LockedQuestName = "BanditQuest1",
-    LockedQuestIndex = 1,
-    LockedQuestTitle = "Cướp Biển (Bandit) - Đảo Khởi Đầu"
+    SelectedIsland = nil,
+    IslandPos = nil,
+    FlySpeed = 350,
+    FlyToIslandState = false
 }
 
 local function applyFixLag(state)
@@ -138,7 +138,7 @@ local function createContainer()
     c.Position = UDim2.new(0, 0, 0, 72)
     c.Size = UDim2.new(1, 0, 1, -72)
     c.BackgroundTransparency = 1
-    c.CanvasSize = UDim2.new(0, 0, 0, 420)
+    c.CanvasSize = UDim2.new(0, 0, 0, 380)
     c.Visible = false
     return c
 end
@@ -194,35 +194,50 @@ local function createToggle(parent, text, defaultVal, callback, customY)
     return btn
 end
 
--- HÀM NHẬN NHIỆM VỤ THEO KHÓA THỦ CÔNG
-local function requestLockedQuest()
+-- HỆ THỐNG QUÉT TỌA ĐỘ VÀ NHẬN NHIỆM VỤ THỦ CÔNG (CHỈ DÙNG KHI BẠN BẤM NÚT)
+local function checkAndGetQuestClean()
     pcall(function()
-        local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-        if remotes and remotes:FindFirstChild("CommF_") then
-            remotes.CommF_:InvokeServer("StartQuest", Config.LockedQuestName, Config.LockedQuestIndex)
-        end
-    end)
-end
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        local pos = char.HumanoidRootPart.Position
+        
+        local questName = "BanditQuest1"
+        local questIndex = 1
 
--- KIỂM TRA ĐÃ CÓ NHIỆM VỤ CHƯA
-local function hasActiveQuest()
-    local success, res = pcall(function()
-        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-        if playerGui then
-            local mainGui = playerGui:FindFirstChild("Main")
-            if mainGui then
-                local questDisplay = mainGui:FindFirstChild("Quest")
-                if questDisplay and questDisplay.Visible then
-                    return true
-                end
+        if pos.Z > 2000 and pos.Z < 5000 and pos.X > 500 and pos.X < 1500 then
+            questName = "DesertQuest"; questIndex = 1
+        elseif pos.Z > 3000 and pos.Z < 4500 and pos.X > -1500 and pos.X < -500 then
+            questName = "PirateQuest"; questIndex = 1
+        elseif pos.Z > -200 and pos.Z < 800 and pos.X > -1800 and pos.X < -800 then
+            questName = "JungleQuest"; questIndex = 1
+        elseif pos.Z > -1500 and pos.Z < -800 and pos.X > 800 and pos.X < 1800 then
+            questName = "SnowQuest"; questIndex = 1
+        elseif pos.Z > 500 and pos.Z < 1200 and pos.X > 4000 and pos.X < 5500 then
+            questName = "PrisonQuest"; questIndex = 1
+        elseif pos.Z > -3500 and pos.Z < -2500 and pos.X > -1800 and pos.X < -1000 then
+            questName = "ColosseumQuest"; questIndex = 1
+        elseif pos.Z > 7500 and pos.Z < 9500 and pos.X > -6000 and pos.X < -4500 then
+            questName = "MagmaQuest"; questIndex = 1
+        elseif pos.Z > 1000 and pos.Z < 2500 and pos.X > 58000 and pos.X < 64000 then
+            questName = "FishmanQuest"; questIndex = 1
+        else
+            local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
+            local level = stats and stats.Value or 1
+            if level >= 30 and level <= 59 then
+                questName = "PirateQuest"; questIndex = 1
+            elseif level >= 60 then
+                questName = "DesertQuest"; questIndex = 1
             end
         end
-        return false
+
+        local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+        if remotes and remotes:FindFirstChild("CommF_") then
+            remotes.CommF_:InvokeServer("StartQuest", questName, questIndex)
+        end
     end)
-    return success and res
 end
 
--- LẤY TÊN QUÁI TỪ BẢNG NHIỆM VỤ ĐANG HIỆN
+-- LẤY TÊN QUÁI TỪ BẢNG NHIỆM VỤ ĐỂ AUTO FARM ĐÁNH ĐÚNG MỤC TIÊU
 local function getCurrentQuestMobName()
     local success, mobName = pcall(function()
         local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
@@ -259,30 +274,22 @@ end
 
 -- TAB MAIN
 local mY = 15
-createToggle(MainContainer, "Auto Farm (Theo Nhiệm Vụ Đã Chọn Cố Định)", false, function(v) Config.AutoFarm = v end, mY)
+createToggle(MainContainer, "Auto Farm Theo Nhiệm Vụ (Chỉ Đánh & Check Mục Tiêu)", false, function(v) Config.AutoFarm = v end, mY)
 mY = mY + 40
 
--- KHUNG HIỂN THỊ NHIỆM VỤ ĐANG KHÓA
-local currentQuestLabel = Instance.new("TextLabel", MainContainer)
-currentQuestLabel.Position = UDim2.new(0.05, 0, 0, mY)
-currentQuestLabel.Size = UDim2.new(0.9, 0, 0, 26)
-currentQuestLabel.Font = Enum.Font.SourceSansBold
-currentQuestLabel.Text = "📌 Đang khóa nhiệm vụ: " .. Config.LockedQuestTitle
-currentQuestLabel.TextColor3 = Color3.fromRGB(0, 255, 128)
-currentQuestLabel.TextSize = 12
-mY = mY + 32
+local GetQuestBtn = Instance.new("TextButton", MainContainer)
+GetQuestBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+GetQuestBtn.Position = UDim2.new(0.05, 0, 0, mY)
+GetQuestBtn.Size = UDim2.new(0.9, 0, 0, 32)
+GetQuestBtn.Font = Enum.Font.SourceSansBold
+GetQuestBtn.Text = "📥 Nhận Nhiệm Vụ Theo Đảo Đang Đứng (Thủ Công)"
+GetQuestBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+GetQuestBtn.TextSize = 12
+GetQuestBtn.MouseButton1Click:Connect(function()
+    checkAndGetQuestClean()
+end)
 
--- NÚT MỞ BẢNG CHỌN NHIỆM VỤ THỦ CÔNG
-local openQuestSelectorBtn = Instance.new("TextButton", MainContainer)
-openQuestSelectorBtn.BackgroundColor3 = Color3.fromRGB(0, 102, 204)
-openQuestSelectorBtn.Position = UDim2.new(0.05, 0, 0, mY)
-openQuestSelectorBtn.Size = UDim2.new(0.9, 0, 0, 35)
-openQuestSelectorBtn.Font = Enum.Font.SourceSansBold
-openQuestSelectorBtn.Text = "📜 Mở Bảng Chọn Nhiệm Vụ Thủ Công"
-openQuestSelectorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-openQuestSelectorBtn.TextSize = 13
-mY = mY + 45
-
+mY = mY + 40
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
     Config.FixLag = v 
     applyFixLag(v)
@@ -300,7 +307,7 @@ mY = mY + 22
 
 local weaponContainer = Instance.new("ScrollingFrame", MainContainer)
 weaponContainer.Position = UDim2.new(0.05, 0, 0, mY)
-weaponContainer.Size = UDim2.new(0.9, 0, 0, 100)
+weaponContainer.Size = UDim2.new(0.9, 0, 0, 110)
 weaponContainer.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 weaponContainer.CanvasSize = UDim2.new(0, 0, 0, 150)
 
@@ -345,99 +352,6 @@ local function updateWeaponButtons()
     weaponContainer.CanvasSize = UDim2.new(0, 0, 0, wPosY)
 end
 updateWeaponButtons()
-
--- GIAO DIỆN POPUP BẢNG CHỌN NHIỆM VỤ THỦ CÔNG (DANH SÁCH TẤT CẢ NHIỆM VỤ)
-local QuestListGui = Instance.new("ScreenGui")
-QuestListGui.Name = "AdminTienphatQuestList"
-QuestListGui.Parent = CoreGui
-QuestListGui.ResetOnSpawn = false
-QuestListGui.Enabled = false
-
-local QuestFrame = Instance.new("Frame", QuestListGui)
-QuestFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-QuestFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
-QuestFrame.Size = UDim2.new(0, 350, 0, 400)
-QuestFrame.Active = true
-QuestFrame.Draggable = true
-
-local QTitle = Instance.new("TextLabel", QuestFrame)
-QTitle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-QTitle.Size = UDim2.new(1, 0, 0, 35)
-QTitle.Font = Enum.Font.SourceSansBold
-QTitle.Text = "  📋 Bảng Chọn Nhiệm Vụ Thủ Công"
-QTitle.TextColor3 = Color3.fromRGB(255, 170, 0)
-QTitle.TextSize = 14
-QTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-local CloseQBtn = Instance.new("TextButton", QuestFrame)
-CloseQBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-CloseQBtn.Position = UDim2.new(1, -30, 0, 5)
-CloseQBtn.Size = UDim2.new(0, 24, 0, 24)
-CloseQBtn.Font = Enum.Font.SourceSansBold
-CloseQBtn.Text = "X"
-CloseQBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseQBtn.TextSize = 14
-CloseQBtn.MouseButton1Click:Connect(function()
-    QuestListGui.Enabled = false
-end)
-
-openQuestSelectorBtn.MouseButton1Click:Connect(function()
-    QuestListGui.Enabled = true
-end)
-
-local allQuestsList = {
-    {"Đảo Khởi Đầu: Cướp Biển (Bandit)", "BanditQuest1", 1},
-    {"Đảo Khởi Đầu: Chúa Tướng Cướp (Boss)", "BanditQuest1", 2},
-    {"Đảo Khỉ: Khỉ Thường (Monkey)", "JungleQuest", 1},
-    {"Đảo Khỉ: Khỉ Đột (Gorilla)", "JungleQuest", 2},
-    {"Đảo Cướp Biển: Cướp Biển Thường (Pirate)", "PirateQuest", 1},
-    {"Đảo Cướp Biển: Đồ Tể / Brute", "PirateQuest", 2},
-    {"Sa Mạc: Thợ Săn Sa Mạc (Desert Bandit)", "DesertQuest", 1},
-    {"Sa Mạc: Sĩ Quan Sa Mạc (Desert Officer)", "DesertQuest", 2},
-    {"Đảo Tuyết: Thợ Săn Tuyết (Snow Bandit)", "SnowQuest", 1},
-    {"Đảo Tuyết: Người Tuyết / Yeti", "SnowQuest", 2},
-    {"Nhà Tù: Lính Can Ngục (Prison Guard)", "PrisonQuest", 1},
-    {"Nhà Tù: Tù Nhân Nguy Hiểm (Dangerous Prisoner)", "PrisonQuest", 2},
-    {"Đấu Trường: Đấu Sĩ (Gladiator)", "ColosseumQuest", 1},
-    {"Đấu Trường: Chiến Binh Cổ (Toga Warrior)", "ColosseumQuest", 2},
-    {"Đảo Dung Nham: Thợ Mỏ Dung Nham (Magma Miner)", "MagmaQuest", 1},
-    {"Đảo Dung Nham: Sĩ Quan Dung Nham (Military Spy)", "MagmaQuest", 2},
-    {"Đảo Người Cá: Chiến Binh Người Cá (Fishman Warrior)", "FishmanQuest", 1},
-    {"Đảo Người Cá: Sư Tôn Người Cá (Fishman Commando)", "FishmanQuest", 2}
-}
-
-local qScroll = Instance.new("ScrollingFrame", QuestFrame)
-qScroll.Position = UDim2.new(0.05, 0, 0, 45)
-qScroll.Size = UDim2.new(0.9, 0, 1, -55)
-qScroll.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-qScroll.CanvasSize = UDim2.new(0, 0, 0, #allQuestsList * 38)
-
-local qPosY = 5
-for _, qData in ipairs(allQuestsList) do
-    local qText = qData[1]
-    local qName = qData[2]
-    local qIndex = qData[3]
-    
-    local btn = Instance.new("TextButton", qScroll)
-    btn.Position = UDim2.new(0.02, 0, 0, qPosY)
-    btn.Size = UDim2.new(0.96, 0, 0, 32)
-    btn.Text = qText
-    btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 11
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-    
-    btn.MouseButton1Click:Connect(function()
-        Config.LockedQuestName = qName
-        Config.LockedQuestIndex = qIndex
-        Config.LockedQuestTitle = qText
-        currentQuestLabel.Text = "📌 Đang khóa nhiệm vụ: " .. qText
-        QuestListGui.Enabled = false
-        -- Nhận ngay lập tức khi bấm chọn
-        requestLockedQuest()
-    end)
-    qPosY = qPosY + 36
-end
 
 -- TAB ESP
 local eY = 15
@@ -625,7 +539,6 @@ end)
 CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
     ToggleGui:Destroy()
-    QuestListGui:Destroy()
 end)
 
 applyFixLag(true)
@@ -703,7 +616,7 @@ task.spawn(function()
     end
 end)
 
--- Vòng lặp Auto Farm sử dụng nhiệm vụ đã khóa thủ công
+-- VÒNG LẶP AUTO FARM (ĐÃ LOẠI BỎ HOÀN TOÀN AUTO NHẬN NHIỆM VỤ, CHỈ ĐÁNH THEO MỤC TIÊU)
 RunService.RenderStepped:Connect(function(dt)
     if not ScreenGui.Parent then 
         clearAllESP()
@@ -948,14 +861,9 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- LOGIC AUTO FARM: LUÔN DÙNG NHIỆM VỤ ĐÃ KHÓA CỐ ĐỊNH CHO TỚI KHI THAY ĐỔI
+    -- LOGIC AUTO FARM: CHỈ KIỂM TRA MỤC TIÊU VÀ ĐÁNH (KHÔNG TỰ GỌI NHIỆM VỤ NỮA)
     if Config.AutoFarm then
         pcall(function()
-            if not hasActiveQuest() then
-                requestLockedQuest()
-                task.wait(0.5)
-            end
-
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
                 local hrp = char.HumanoidRootPart
