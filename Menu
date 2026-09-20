@@ -355,7 +355,7 @@ end
 
 local camera = Workspace.CurrentCamera
 
--- HÀM NHẬN NHIỆM VỤ CHUẨN (BANDIT & JUNGLE ĐẢO KHỈ)
+-- HÀM NHẬN NHIỆM VỤ VÀ DI CHUYỂN TOÀN BỘ CÁC ĐẢO CHUẨN WIKI (1 - 700)
 local function checkAndGetQuest()
     pcall(function()
         local questFolder = LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
@@ -367,24 +367,46 @@ local function checkAndGetQuest()
             
             local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if hrp then
-                local questName, npcPos = "BanditQuest1", Vector3.new(1059, 16, 1379) -- Level 1-9: Bandit
+                local questName, npcPos = "BanditQuest1", Vector3.new(1059, 16, 1379)
                 
-                if level >= 10 and level <= 14 then
-                    questName, npcPos = "JungleQuest", Vector3.new(-1598, 37, 153) -- Level 10-14: Monkey (Khỉ)
-                elseif level >= 15 and level <= 29 then
-                    questName, npcPos = "JungleQuest2", Vector3.new(-1598, 37, 153) -- Level 15+: Gorilla
-                elseif level >= 30 then
-                    questName, npcPos = "PirateQuest", Vector3.new(-1201, 4, 3855) -- Level 30+: Pirate
+                -- Phân chia mốc level và tọa độ NPC nhận quest chuẩn các đảo từ Wiki
+                if level >= 1 and level <= 9 then
+                    questName, npcPos = "BanditQuest1", Vector3.new(1059, 16, 1379)                -- Pirate Starter Island (Bandit)
+                elseif level >= 10 and level <= 29 then
+                    questName, npcPos = "JungleQuest", Vector3.new(-1598, 37, 153)                -- Jungle (Monkey / Gorilla)
+                elseif level >= 30 and level <= 59 then
+                    questName, npcPos = "PirateQuest", Vector3.new(-1201, 4, 3855)               -- Pirate Village (Pirate / Brute)
+                elseif level >= 60 and level <= 89 then
+                    questName, npcPos = "DesertQuest", Vector3.new(896, 6, 4389)                  -- Desert (Desert Bandit / Officer)
+                elseif level >= 90 and level <= 119 then
+                    questName, npcPos = "SnowQuest", Vector3.new(1389, 87, -1298)                 -- Frozen Village (Snow Trooper / Yeti)
+                elseif level >= 120 and level <= 149 then
+                    questName, npcPos = "MarineQuest", Vector3.new(-5035, 20, 4324)               -- Marine Fortress (Chief Petty Officer)
+                elseif level >= 150 and level <= 189 then
+                    questName, npcPos = "SkyQuest", Vector3.new(-4842, 718, -2623)                -- Skylands (God's Guard)
+                elseif level >= 190 and level <= 249 then
+                    questName, npcPos = "PrisonQuest", Vector3.new(4875, 5, 735)                  -- Prison (Prisoner / Dangerous Prisoner)
+                elseif level >= 250 and level <= 299 then
+                    questName, npcPos = "ColosseumQuest", Vector3.new(-1580, 7, -2992)            -- Colosseum (Toga Warrior)
+                elseif level >= 300 and level <= 374 then
+                    questName, npcPos = "MagmaQuest", Vector3.new(-5315, 12, 8515)                -- Magma Village (Military Spy)
+                elseif level >= 375 and level <= 449 then
+                    questName, npcPos = "FishmanQuest", Vector3.new(61123, 18, 1569)              -- Underwater City (Fishman Warrior)
+                elseif level >= 450 and level <= 624 then
+                    questName, npcPos = "SkyExp1Quest", Vector3.new(-7862, 5545, -380)            -- Upper Skylands (Skylands / Shanda)
+                elseif level >= 625 and level <= 700 then
+                    questName, npcPos = "FountainQuest", Vector3.new(5247, 38, 4048)              -- Fountain City (Galley Pirate)
                 end
 
-                -- Nếu đứng cách NPC quá xa thì tự động bay thẳng qua đảo đó
+                -- Kiểm tra khoảng cách: Có độ trễ giãn cách hợp lý để tránh anti-cheat kéo ngược hoặc văng game
                 if (hrp.Position - npcPos).Magnitude > 25 then
-                    hrp.CFrame = CFrame.new(npcPos + Vector3.new(0, 10, 0))
-                    task.wait(0.5)
+                    hrp.CFrame = CFrame.new(npcPos + Vector3.new(0, 15, 0))
+                    task.wait(1)
                 else
                     local remotes = ReplicatedStorage:FindFirstChild("Remotes")
                     if remotes and remotes:FindFirstChild("CommF_") then
                         remotes.CommF_:InvokeServer("StartQuest", questName, 1)
+                        task.wait(0.5)
                     end
                 end
             end
