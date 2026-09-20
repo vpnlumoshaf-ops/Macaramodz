@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Optimized Quest, Smooth Flight, Green ESP Box & Fruit Notifier)
+-- Blox Fruit Master Hub - Admin Tienphat (Optimized Quest, Smooth Flight, Tabs Restructured & Island ESP)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -20,6 +20,8 @@ local Config = {
     SelectedWeapon = "Tự động chọn",
     ShowESP = true,
     ShowFruitESP = true,
+    FruitNotifier = false,
+    ShowIslandESP = true,
     ShowWeaponScanner = true,
     FixLag = true,
     AutoStatMelee = false,
@@ -105,60 +107,85 @@ TabBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 TabBar.BorderSizePixel = 0
 
 local TabMainBtn = Instance.new("TextButton", TabBar)
-TabMainBtn.Size = UDim2.new(0.5, 0, 1, 0)
+TabMainBtn.Size = UDim2.new(0.333, 0, 1, 0)
 TabMainBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 TabMainBtn.Font = Enum.Font.SourceSansBold
-TabMainBtn.Text = "🎯 Auto Farm & Visual"
+TabMainBtn.Text = "🎯 Main"
 TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 TabMainBtn.TextSize = 13
 
+local TabEspBtn = Instance.new("TextButton", TabBar)
+TabEspBtn.Position = UDim2.new(0.333, 0, 0, 0)
+TabEspBtn.Size = UDim2.new(0.333, 0, 1, 0)
+TabEspBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TabEspBtn.Font = Enum.Font.SourceSansBold
+TabEspBtn.Text = "👁️ ESP"
+TabEspBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+TabEspBtn.TextSize = 13
+
 local TabStatsBtn = Instance.new("TextButton", TabBar)
-TabStatsBtn.Position = UDim2.new(0.5, 0, 0, 0)
-TabStatsBtn.Size = UDim2.new(0.5, 0, 1, 0)
+TabStatsBtn.Position = UDim2.new(0.666, 0, 0, 0)
+TabStatsBtn.Size = UDim2.new(0.334, 0, 1, 0)
 TabStatsBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 TabStatsBtn.Font = Enum.Font.SourceSansBold
-TabStatsBtn.Text = "📈 Auto Stats"
+TabStatsBtn.Text = "📈 Stats"
 TabStatsBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 TabStatsBtn.TextSize = 13
 
+-- Containers
 local MainContainer = Instance.new("ScrollingFrame", MainFrame)
 MainContainer.Position = UDim2.new(0, 0, 0, 72)
 MainContainer.Size = UDim2.new(1, 0, 1, -72)
 MainContainer.BackgroundTransparency = 1
-MainContainer.CanvasSize = UDim2.new(0, 0, 0, 620)
+MainContainer.CanvasSize = UDim2.new(0, 0, 0, 320)
 MainContainer.Visible = true
+
+local EspContainer = Instance.new("ScrollingFrame", MainFrame)
+EspContainer.Position = UDim2.new(0, 0, 0, 72)
+EspContainer.Size = UDim2.new(1, 0, 1, -72)
+EspContainer.BackgroundTransparency = 1
+EspContainer.CanvasSize = UDim2.new(0, 0, 0, 300)
+EspContainer.Visible = false
 
 local StatsContainer = Instance.new("ScrollingFrame", MainFrame)
 StatsContainer.Position = UDim2.new(0, 0, 0, 72)
 StatsContainer.Size = UDim2.new(1, 0, 1, -72)
 StatsContainer.BackgroundTransparency = 1
-StatsContainer.CanvasSize = UDim2.new(0, 0, 0, 320)
+StatsContainer.CanvasSize = UDim2.new(0, 0, 0, 250)
 StatsContainer.Visible = false
 
 TabMainBtn.MouseButton1Click:Connect(function()
     MainContainer.Visible = true
+    EspContainer.Visible = false
     StatsContainer.Visible = false
-    TabMainBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabStatsBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    TabStatsBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabMainBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50); TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabEspBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabEspBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabStatsBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabStatsBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+end)
+
+TabEspBtn.MouseButton1Click:Connect(function()
+    MainContainer.Visible = false
+    EspContainer.Visible = true
+    StatsContainer.Visible = false
+    TabMainBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabMainBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabEspBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50); TabEspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabStatsBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabStatsBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 end)
 
 TabStatsBtn.MouseButton1Click:Connect(function()
     MainContainer.Visible = false
+    EspContainer.Visible = false
     StatsContainer.Visible = true
-    TabStatsBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    TabStatsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabMainBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    TabMainBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabMainBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabMainBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabEspBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); TabEspBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabStatsBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50); TabStatsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 end)
 
-local yPos = 15
-local function createToggle(parent, text, defaultVal, callback)
+local function createToggle(parent, text, defaultVal, callback, customY)
     local btn = Instance.new("TextButton")
     btn.Parent = parent
     btn.BackgroundColor3 = defaultVal and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45, 45, 45)
-    btn.Position = UDim2.new(0.05, 0, 0, yPos)
+    btn.Position = UDim2.new(0.05, 0, 0, customY)
     btn.Size = UDim2.new(0.9, 0, 0, 32)
     btn.Font = Enum.Font.SourceSansBold
     btn.Text = text .. (defaultVal and ": On" or ": Off")
@@ -172,31 +199,31 @@ local function createToggle(parent, text, defaultVal, callback)
         btn.BackgroundColor3 = state and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45, 45, 45)
         callback(state)
     end)
-    yPos = yPos + 40
     return btn
 end
 
-createToggle(MainContainer, "Auto Farm (Bay Trên Đầu & Auto Click)", false, function(v) Config.AutoFarm = v end)
-createToggle(MainContainer, "ESP Quái Xanh Lá & Line Trắng", true, function(v) Config.ShowESP = v end)
-createToggle(MainContainer, "ESP Trái Ác Quỷ Dưới Đất", true, function(v) Config.ShowFruitESP = v end)
-createToggle(MainContainer, "Hiện Tên & Vũ Khí Người Chơi", true, function(v) Config.ShowWeaponScanner = v end)
+-- TAB MAIN
+local mY = 15
+createToggle(MainContainer, "Auto Farm (Bay Trên Đầu & Đánh)", false, function(v) Config.AutoFarm = v end, mY)
+mY = mY + 40
 createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
     Config.FixLag = v 
     applyFixLag(v)
-end)
+end, mY)
+mY = mY + 45
 
 local weaponHeader = Instance.new("TextLabel", MainContainer)
-weaponHeader.Position = UDim2.new(0.05, 0, 0, yPos)
+weaponHeader.Position = UDim2.new(0.05, 0, 0, mY)
 weaponHeader.Size = UDim2.new(0.9, 0, 0, 20)
 weaponHeader.Font = Enum.Font.SourceSansBold
 weaponHeader.Text = "Chọn Vũ Khí Auto Farm:"
 weaponHeader.TextColor3 = Color3.fromRGB(255, 220, 100)
 weaponHeader.TextSize = 13
-yPos = yPos + 22
+mY = mY + 22
 
 local weaponContainer = Instance.new("ScrollingFrame", MainContainer)
-weaponContainer.Position = UDim2.new(0.05, 0, 0, yPos)
-weaponContainer.Size = UDim2.new(0.9, 0, 0, 90)
+weaponContainer.Position = UDim2.new(0.05, 0, 0, mY)
+weaponContainer.Size = UDim2.new(0.9, 0, 0, 110)
 weaponContainer.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 weaponContainer.CanvasSize = UDim2.new(0, 0, 0, 150)
 
@@ -242,10 +269,18 @@ local function updateWeaponButtons()
 end
 updateWeaponButtons()
 
--- TAB 2: STATS
-local sYPos = 15
+-- TAB ESP
+local eY = 15
+createToggle(EspContainer, "ESP Quái Xanh Lá & Line", true, function(v) Config.ShowESP = v end, eY); eY = eY + 40
+createToggle(EspContainer, "ESP Trái Ác Quỷ Dưới Đất", true, function(v) Config.ShowFruitESP = v end, eY); eY = eY + 40
+createToggle(EspContainer, "Fruit Notifier (Thông báo trái trên màn hình)", false, function(v) Config.FruitNotifier = v end, eY); eY = eY + 40
+createToggle(EspContainer, "ESP Đảo (Island ESP)", true, function(v) Config.ShowIslandESP = v end, eY); eY = eY + 40
+createToggle(EspContainer, "Hiện Tên & Vũ Khí Người Chơi", true, function(v) Config.ShowWeaponScanner = v end, eY)
+
+-- TAB STATS
+local sY = 15
 local amountLbl = Instance.new("TextLabel", StatsContainer)
-amountLbl.Position = UDim2.new(0.05, 0, 0, sYPos)
+amountLbl.Position = UDim2.new(0.05, 0, 0, sY)
 amountLbl.Size = UDim2.new(0.5, 0, 0, 25)
 amountLbl.Font = Enum.Font.SourceSansBold
 amountLbl.Text = "Số lượng nâng mỗi lần:"
@@ -254,7 +289,7 @@ amountLbl.TextSize = 13
 amountLbl.TextXAlignment = Enum.TextXAlignment.Left
 
 local amountBox = Instance.new("TextBox", StatsContainer)
-amountBox.Position = UDim2.new(0.58, 0, 0, sYPos)
+amountBox.Position = UDim2.new(0.58, 0, 0, sY)
 amountBox.Size = UDim2.new(0.37, 0, 0, 25)
 amountBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 amountBox.Font = Enum.Font.SourceSansBold
@@ -272,34 +307,13 @@ amountBox.FocusLost:Connect(function()
     end
 end)
 
-sYPos = sYPos + 35
-local function createStatToggle(text, statKey, callback)
-    local btn = Instance.new("TextButton")
-    btn.Parent = StatsContainer
-    btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    btn.Position = UDim2.new(0.05, 0, 0, sYPos)
-    btn.Size = UDim2.new(0.9, 0, 0, 32)
-    btn.Font = Enum.Font.SourceSansBold
-    btn.Text = text .. ": Off"
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 13
-    
-    local state = false
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        btn.Text = text .. (state and ": On" or ": Off")
-        btn.BackgroundColor3 = state and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45, 45, 45)
-        callback(state)
-    end)
-    sYPos = sYPos + 40
-end
+sY = sY + 35
+createToggle(StatsContainer, "Auto Nâng Điểm Cận Chiến (Melee)", false, function(v) Config.AutoStatMelee = v end, sY); sY = sY + 40
+createToggle(StatsContainer, "Auto Nâng Điểm Máu (Defense)", false, function(v) Config.AutoStatDefense = v end, sY); sY = sY + 40
+createToggle(StatsContainer, "Auto Nâng Điểm Kiếm (Sword)", false, function(v) Config.AutoStatSword = v end, sY); sY = sY + 40
+createToggle(StatsContainer, "Auto Nâng Điểm Trái Ác Quỷ (DevilFruit)", false, function(v) Config.AutoStatDevilFruit = v end, sY)
 
-createStatToggle("Auto Nâng Điểm Cận Chiến (Melee)", "Melee", function(v) Config.AutoStatMelee = v end)
-createStatToggle("Auto Nâng Điểm Máu (Defense)", "Defense", function(v) Config.AutoStatDefense = v end)
-createStatToggle("Auto Nâng Điểm Kiếm (Sword)", "Sword", function(v) Config.AutoStatSword = v end)
-createStatToggle("Auto Nâng Điểm Trái Ác Quỷ (DevilFruit)", "DevilFruit", function(v) Config.AutoStatDevilFruit = v end)
-
--- Nút ẩn hiện Menu
+-- Nút ẩn hiện Menu & Notifier Label
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "AdminTienphatToggle"
 ToggleGui.Parent = CoreGui
@@ -316,7 +330,6 @@ OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 OpenBtn.TextSize = 12
 OpenBtn.Draggable = true
 
--- Fruit Notifier UI Label trên màn hình
 local FruitNotifLabel = Instance.new("TextLabel", ToggleGui)
 FruitNotifLabel.Name = "FruitNotifier"
 FruitNotifLabel.BackgroundTransparency = 0.5
@@ -327,6 +340,7 @@ FruitNotifLabel.Font = Enum.Font.SourceSansBold
 FruitNotifLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
 FruitNotifLabel.TextSize = 14
 FruitNotifLabel.Text = "Đang có trái ác quỷ: Không có"
+FruitNotifLabel.Visible = false
 
 local isOpen = true
 OpenBtn.MouseButton1Click:Connect(function()
@@ -346,6 +360,7 @@ applyFixLag(true)
 
 local espCache = {}
 local fruitEspCache = {}
+local islandEspCache = {}
 local weaponScannerCache = {}
 local camera = Workspace.CurrentCamera
 
@@ -357,12 +372,15 @@ local function clearAllESP()
     for _, elements in pairs(fruitEspCache) do
         if elements.Text then elements.Text.Visible = false end
     end
+    for _, elements in pairs(islandEspCache) do
+        if elements.Text then elements.Text.Visible = false end
+    end
     for _, textObj in pairs(weaponScannerCache) do
         if textObj then textObj.Visible = false end
     end
 end
 
--- HÀM KIỂM TRA & NHẬN NHIỆM VỤ AN TOÀN (ĐÃ FIX KHÔNG BỊ SPAM / CHECK CHUẨN GUI)
+-- HÀM KIỂM TRA & NHẬN NHIỆM VỤ AN TOÀN (CHUẨN XÁC)
 local lastQuestAttempt = 0
 local function checkAndGetQuestClean()
     if tick() - lastQuestAttempt < 3 then return end
@@ -373,15 +391,9 @@ local function checkAndGetQuestClean()
         local mainGui = playerGui and playerGui:FindFirstChild("Main")
         local questFrame = mainGui and mainGui:FindFirstChild("Quest")
         
-        -- Kiểm tra xem bảng nhiệm vụ trên màn hình có đang hiển thị nội dung hay không
         local hasActiveQuest = false
         if questFrame and questFrame.Visible then
             local container = questFrame:FindFirstChild("Container")
-            local questTitle = container and container:FindFirstChild("QuestTitle")
-            if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Defeat") == false then -- Tùy biến kiểm tra chuỗi title
-                hasActiveQuest = true
-            end
-            -- Cách kiểm tra an toàn khác dựa trên hiển thị trực tiếp của Quest Container
             if container and container.Visible and #container:GetChildren() > 0 then
                 hasActiveQuest = true
             end
@@ -436,17 +448,21 @@ local function checkAndGetQuestClean()
     end)
 end
 
--- TIẾN TRÌNH AUTO STATS
+-- TIẾN TRÌNH AUTO STATS (KIỂM TRA ĐIỂM DƯ TRÁNH SPAM TOAST)
 task.spawn(function()
     while true do
         task.wait(1)
         pcall(function()
-            local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-            if remotes and remotes:FindFirstChild("CommF_") then
-                if Config.AutoStatMelee then remotes.CommF_:InvokeServer("AddPoint", "Melee", Config.StatAmount) end
-                if Config.AutoStatDefense then remotes.CommF_:InvokeServer("AddPoint", "Defense", Config.StatAmount) end
-                if Config.AutoStatSword then remotes.CommF_:InvokeServer("AddPoint", "Sword", Config.StatAmount) end
-                if Config.AutoStatDevilFruit then remotes.CommF_:InvokeServer("AddPoint", "Demon Fruit", Config.StatAmount) end
+            local data = LocalPlayer:FindFirstChild("Data")
+            local points = data and data:FindFirstChild("Points")
+            if points and points.Value > 0 then
+                local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+                if remotes and remotes:FindFirstChild("CommF_") then
+                    if Config.AutoStatMelee then remotes.CommF_:InvokeServer("AddPoint", "Melee", Config.StatAmount) end
+                    if Config.AutoStatDefense then remotes.CommF_:InvokeServer("AddPoint", "Defense", Config.StatAmount) end
+                    if Config.AutoStatSword then remotes.CommF_:InvokeServer("AddPoint", "Sword", Config.StatAmount) end
+                    if Config.AutoStatDevilFruit then remotes.CommF_:InvokeServer("AddPoint", "Demon Fruit", Config.StatAmount) end
+                end
             end
         end)
     end
@@ -462,7 +478,7 @@ RunService.RenderStepped:Connect(function()
         updateWeaponButtons()
     end
 
-    -- ESP QUÁI (BOX XANH LÁ - LINE TRẮNG)
+    -- ESP QUÁI
     if Config.ShowESP then
         local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
         local activeFound = {}
@@ -473,16 +489,9 @@ RunService.RenderStepped:Connect(function()
                 if hrp and hum and hum.Health > 0 then
                     if not espCache[mob] then
                         local box = Drawing.new("Square")
-                        box.Visible = false
-                        box.Color = Color3.fromRGB(0, 255, 0)
-                        box.Thickness = 1
-                        box.Filled = false
-
+                        box.Visible = false; box.Color = Color3.fromRGB(0, 255, 0); box.Thickness = 1; box.Filled = false
                         local line = Drawing.new("Line")
-                        line.Visible = false
-                        line.Color = Color3.fromRGB(255, 255, 255)
-                        line.Thickness = 1
-
+                        line.Visible = false; line.Color = Color3.fromRGB(255, 255, 255); line.Thickness = 1
                         espCache[mob] = {Box = box, Line = line}
                     end
 
@@ -504,8 +513,7 @@ RunService.RenderStepped:Connect(function()
                         
                         activeFound[mob] = true
                     else
-                        espCache[mob].Box.Visible = false
-                        espCache[mob].Line.Visible = false
+                        espCache[mob].Box.Visible = false; espCache[mob].Line.Visible = false
                     end
                 end
             end
@@ -523,7 +531,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- ESP TRÁI ÁC QUỶ (DEVIL FRUIT ESP & NOTIFIER)
+    -- ESP TRÁI ÁC QUỶ & NOTIFIER
     local foundFruitsNames = {}
     if Config.ShowFruitESP then
         local activeFruits = {}
@@ -533,11 +541,7 @@ RunService.RenderStepped:Connect(function()
                 if handle then
                     if not fruitEspCache[obj] then
                         local tObj = Drawing.new("Text")
-                        tObj.Visible = false
-                        tObj.Size = 14
-                        tObj.Color = Color3.fromRGB(255, 0, 0)
-                        tObj.Center = true
-                        tObj.Outline = true
+                        tObj.Visible = false; tObj.Size = 14; tObj.Color = Color3.fromRGB(255, 0, 0); tObj.Center = true; tObj.Outline = true
                         fruitEspCache[obj] = {Text = tObj}
                     end
 
@@ -567,13 +571,59 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Cập nhật Fruit Notifier trên màn hình
-    if #foundFruitsNames > 0 then
-        FruitNotifLabel.Text = "Đang có trái ác quỷ: " .. table.concat(foundFruitsNames, ", ")
-        FruitNotifLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    -- Fruit Notifier Logic
+    if Config.FruitNotifier then
+        FruitNotifLabel.Visible = true
+        if #foundFruitsNames > 0 then
+            FruitNotifLabel.Text = "Đang có trái ác quỷ: " .. table.concat(foundFruitsNames, ", ")
+            FruitNotifLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        else
+            FruitNotifLabel.Text = "Đang có trái ác quỷ: Không có"
+            FruitNotifLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+        end
     else
-        FruitNotifLabel.Text = "Đang có trái ác quỷ: Không có"
-        FruitNotifLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+        FruitNotifLabel.Visible = false
+    end
+
+    -- ESP ĐẢO (ISLAND ESP)
+    if Config.ShowIslandESP then
+        local mapFolder = Workspace:FindFirstChild("_Map") or Workspace:FindFirstChild("Map")
+        local activeIslands = {}
+        if mapFolder then
+            for _, island in ipairs(mapFolder:GetChildren()) do
+                if island:IsA("Model") then
+                    local primaryPart = island.PrimaryPart or island:FindFirstChildWhichIsA("BasePart")
+                    if primaryPart then
+                        if not islandEspCache[island] then
+                            local tObj = Drawing.new("Text")
+                            tObj.Visible = false; tObj.Size = 15; tObj.Color = Color3.fromRGB(0, 255, 255); tObj.Center = true; tObj.Outline = true
+                            islandEspCache[island] = {Text = tObj}
+                        end
+
+                        local vector, onScreen = camera:WorldToViewportPoint(primaryPart.Position)
+                        if onScreen then
+                            local dist = math.floor((camera.CFrame.Position - primaryPart.Position).Magnitude)
+                            local txtObj = islandEspCache[island].Text
+                            txtObj.Text = "🏝️ " .. island.Name .. " (" .. dist .. "m)"
+                            txtObj.Position = Vector2.new(vector.X, vector.Y)
+                            txtObj.Visible = true
+                            activeIslands[island] = true
+                        else
+                            islandEspCache[island].Text.Visible = false
+                        end
+                    end
+                end
+            end
+        end
+        for island, elements in pairs(islandEspCache) do
+            if not activeIslands[island] then
+                if elements.Text then elements.Text.Visible = false end
+            end
+        end
+    else
+        for _, elements in pairs(islandEspCache) do
+            if elements.Text then elements.Text.Visible = false end
+        end
     end
 
     -- WEAPON SCANNER
@@ -592,11 +642,7 @@ RunService.RenderStepped:Connect(function()
 
                     if not weaponScannerCache[plr] then
                         local tObj = Drawing.new("Text")
-                        tObj.Visible = false
-                        tObj.Size = 13
-                        tObj.Color = Color3.fromRGB(0, 255, 255)
-                        tObj.Center = true
-                        tObj.Outline = true
+                        tObj.Visible = false; tObj.Size = 13; tObj.Color = Color3.fromRGB(255, 128, 255); tObj.Center = true; tObj.Outline = true
                         weaponScannerCache[plr] = tObj
                     end
 
@@ -622,7 +668,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- AUTO FARM: BAY ĐỈNH ĐẦU TỪNG CON QUÁI + TỰ ĐỘNG ĐÁNH
+    -- AUTO FARM: BAY ĐỈNH ĐẦU TỪNG CON QUÁI + AUTO CLICK CHUẨN XÁC
     if Config.AutoFarm then
         pcall(function()
             checkAndGetQuestClean()
@@ -641,21 +687,17 @@ RunService.RenderStepped:Connect(function()
                         for _, item in ipairs(backpack:GetChildren()) do
                             if item:IsA("Tool") then
                                 if Config.SelectedWeapon == "Tự động chọn" then
-                                    targetTool = item
-                                    break
+                                    targetTool = item; break
                                 elseif item.Name == Config.SelectedWeapon then
-                                    targetTool = item
-                                    break
+                                    targetTool = item; break
                                 end
                             end
                         end
-                        if targetTool then
-                            hum:EquipTool(targetTool)
-                        end
+                        if targetTool then hum:EquipTool(targetTool) end
                     end
                 end
 
-                -- Tìm quái gần nhất để bay lên đầu đánh
+                -- Tìm quái gần nhất
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 local targetMob = nil
                 local shortestDist = math.huge
@@ -678,18 +720,20 @@ RunService.RenderStepped:Connect(function()
                     local mHrp = targetMob.HumanoidRootPart
                     local mHum = targetMob:FindFirstChildOfClass("Humanoid")
 
-                    -- Ghim vị trí mượt mà ở đỉnh đầu quái, triệt tiêu vận tốc thừa
+                    -- Bám sát đỉnh đầu quái mượt mà, triệt tiêu gia tốc trượt
                     hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 4, 0))
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                    -- Kích hoạt đánh tự động liên tục
+                    -- Auto đánh mượt mà không khựng và không bị lệch trỏ chuột
                     if mHum and mHum.Health > 0 then
                         pcall(function()
                             local activeTool = char:FindFirstChildOfClass("Tool")
                             if activeTool then
                                 activeTool:Activate()
                             end
-                            VirtualUser:Button1Down(Vector2.new(400, 300), camera.CFrame)
+                            VirtualUser:Button1Down(Vector2.new(100, 100), camera.CFrame)
+                            task.wait()
+                            VirtualUser:Button1Up(Vector2.new(100, 100), camera.CFrame)
                         end)
                     end
                 end
