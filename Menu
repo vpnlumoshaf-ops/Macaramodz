@@ -1,4 +1,4 @@
--- Blox Fruit Master Hub - Admin Tienphat (Smart Quest Farm, TP Islands & Speed Flight)
+-- Blox Fruit Master Hub - Admin Tienphat (Fixed Auto Quest & Auto Farm by Level/Current Quest)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -32,14 +32,12 @@ local Config = {
     InstantTpFruit = false,
     AutoStoreFruit = false,
     FlyToFruit = false,
-    -- Cấu hình Teleport Đảo & Tốc độ bay
     SelectedIsland = nil,
     IslandPos = nil,
     FlySpeed = 350,
     FlyToIslandState = false
 }
 
--- 1. FIX LAG TOÀN DIỆN
 local function applyFixLag(state)
     if state then
         pcall(function()
@@ -62,7 +60,6 @@ local function applyFixLag(state)
     end
 end
 
--- 2. GIAO DIỆN CHÍNH
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AdminTienphatBloxFruit"
 ScreenGui.Parent = CoreGui
@@ -197,34 +194,73 @@ local function createToggle(parent, text, defaultVal, callback, customY)
     return btn
 end
 
+-- HỆ THỐNG CHECK VÀ NHẬN NHIỆM VỤ THEO LEVEL CHUẨN XÁC
 local function checkAndGetQuestClean()
     pcall(function()
         local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
         local level = stats and stats.Value or 1
         
         local questName = "BanditQuest1"
-        if level >= 1 and level <= 9 then questName = "BanditQuest1"
-        elseif level >= 10 and level <= 29 then questName = "JungleQuest"
-        elseif level >= 30 and level <= 59 then questName = "PirateQuest"
-        elseif level >= 60 and level <= 89 then questName = "DesertQuest"
-        elseif level >= 90 and level <= 119 then questName = "SnowQuest"
-        elseif level >= 120 and level <= 149 then questName = "MarineQuest"
-        elseif level >= 150 and level <= 189 then questName = "SkyQuest"
-        elseif level >= 190 and level <= 249 then questName = "PrisonQuest"
-        elseif level >= 250 and level <= 299 then questName = "ColosseumQuest"
-        elseif level >= 300 and level <= 374 then questName = "MagmaQuest"
-        elseif level >= 375 and level <= 449 then questName = "FishmanQuest"
-        elseif level >= 450 and level <= 624 then questName = "SkyExp1Quest"
-        elseif level >= 625 and level <= 700 then questName = "FountainQuest"
+        local questIndex = 1
+        
+        if level >= 1 and level <= 9 then 
+            questName = "BanditQuest1"; questIndex = 1
+        elseif level >= 10 and level <= 14 then 
+            questName = "JungleQuest"; questIndex = 1
+        elseif level >= 15 and level <= 29 then 
+            questName = "JungleQuest"; questIndex = 2 -- Đánh goku / monkey
+        elseif level >= 30 and level <= 39 then 
+            questName = "PirateQuest"; questIndex = 1 -- Hải tặc đảo 30
+        elseif level >= 40 and level <= 59 then 
+            QuestName = "PirateQuest"; questIndex = 2 -- Brute
+        elseif level >= 60 and level <= 89 then 
+            questName = "DesertQuest"; questIndex = 1
+        elseif level >= 90 and level <= 119 then 
+            questName = "SnowQuest"; questIndex = 1
+        elseif level >= 120 and level <= 149 then 
+            questName = "MarineQuest"; questIndex = 1
+        elseif level >= 150 and level <= 189 then 
+            questName = "SkyQuest"; questIndex = 1
+        elseif level >= 190 and level <= 249 then 
+            questName = "PrisonQuest"; questIndex = 1
+        elseif level >= 250 and level <= 299 then 
+            questName = "ColosseumQuest"; questIndex = 1
+        elseif level >= 300 and level <= 374 then 
+            questName = "MagmaQuest"; questIndex = 1
+        elseif level >= 375 and level <= 449 then 
+            questName = "FishmanQuest"; questIndex = 1
+        elseif level >= 450 and level <= 624 then 
+            questName = "SkyExp1Quest"; questIndex = 1
+        elseif level >= 625 and level <= 700 then 
+            questName = "FountainQuest"; questIndex = 1
         end
 
         local remotes = ReplicatedStorage:FindFirstChild("Remotes")
         if remotes and remotes:FindFirstChild("CommF_") then
-            remotes.CommF_:InvokeServer("StartQuest", questName, 1)
+            remotes.CommF_:InvokeServer("StartQuest", questName, questIndex)
         end
     end)
 end
 
+-- KIỂM TRA XEM ĐÃ CÓ NHIỆM VỤ CHƯA
+local function hasActiveQuest()
+    local success, res = pcall(function()
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if playerGui then
+            local mainGui = playerGui:FindFirstChild("Main")
+            if mainGui then
+                local questDisplay = mainGui:FindFirstChild("Quest")
+                if questDisplay and questDisplay.Visible then
+                    return true
+                end
+            end
+        end
+        return false
+    end)
+    return success and res
+end
+
+-- LẤY TÊN QUÁI TỪ BẢNG NHIỆM VỤ
 local function getCurrentQuestMobName()
     local success, mobName = pcall(function()
         local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
@@ -261,7 +297,7 @@ end
 
 -- TAB MAIN
 local mY = 15
-createToggle(MainContainer, "Auto Farm Theo Nhiệm Vụ (Bay & Đánh)", false, function(v) Config.AutoFarm = v end, mY)
+createToggle(MainContainer, "Auto Farm Theo Nhiệm Vụ (Tự Nhận & Đánh)", false, function(v) Config.AutoFarm = v end, mY)
 mY = mY + 40
 
 local GetQuestBtn = Instance.new("TextButton", MainContainer)
@@ -269,7 +305,7 @@ GetQuestBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
 GetQuestBtn.Position = UDim2.new(0.05, 0, 0, mY)
 GetQuestBtn.Size = UDim2.new(0.9, 0, 0, 32)
 GetQuestBtn.Font = Enum.Font.SourceSansBold
-GetQuestBtn.Text = "📥 Nhận Nhiệm Vụ Nhanh (Thủ công)"
+GetQuestBtn.Text = "📥 Nhận Nhiệm Vụ Nhanh Theo Level"
 GetQuestBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 GetQuestBtn.TextSize = 13
 GetQuestBtn.MouseButton1Click:Connect(function()
@@ -603,6 +639,7 @@ task.spawn(function()
     end
 end)
 
+-- Vòng lặp Auto Farm thông minh theo nhiệm vụ hiện tại trên màn hình
 RunService.RenderStepped:Connect(function(dt)
     if not ScreenGui.Parent then 
         clearAllESP()
@@ -847,8 +884,15 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
+    -- LOGIC AUTO FARM KẾT HỢP CHECK NHIỆM VỤ TỰ ĐỘNG
     if Config.AutoFarm then
         pcall(function()
+            -- Nếu chưa có nhiệm vụ trên màn hình, tự động gọi nhận nhiệm vụ phù hợp với level hiện tại
+            if not hasActiveQuest() then
+                checkAndGetQuestClean()
+                task.wait(0.5)
+            end
+
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
                 local hrp = char.HumanoidRootPart
@@ -872,24 +916,18 @@ RunService.RenderStepped:Connect(function(dt)
                     end
                 end
 
+                -- Lấy tên quái từ bảng nhiệm vụ để tìm đánh chính xác mục tiêu
                 local questMobName = getCurrentQuestMobName()
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 local targetMob = nil
                 local shortestDist = math.huge
                 
-                if folderEnemies then
+                if folderEnemies and questMobName then
                     for _, mob in ipairs(folderEnemies:GetChildren()) do
                         local mobHrp = mob:FindFirstChild("HumanoidRootPart")
                         local mobHum = mob:FindFirstChildOfClass("Humanoid")
                         if mobHrp and mobHum and mobHum.Health > 0 then
-                            local matchCondition = true
-                            if questMobName then
-                                if not string.find(mob.Name:lower(), questMobName:lower()) then
-                                    matchCondition = false
-                                end
-                            end
-
-                            if matchCondition then
+                            if string.find(mob.Name:lower(), questMobName:lower()) then
                                 local d = (mobHrp.Position - hrp.Position).Magnitude
                                 if d < shortestDist then
                                     shortestDist = d
@@ -900,6 +938,7 @@ RunService.RenderStepped:Connect(function(dt)
                     end
                 end
 
+                -- Nếu không tìm thấy đúng tên quái nhiệm vụ, mặc định tìm quái gần nhất quanh đó
                 if not targetMob and folderEnemies then
                     for _, mob in ipairs(folderEnemies:GetChildren()) do
                         local mobHrp = mob:FindFirstChild("HumanoidRootPart")
@@ -918,7 +957,7 @@ RunService.RenderStepped:Connect(function(dt)
                     local mHrp = targetMob.HumanoidRootPart
                     local mHum = targetMob:FindFirstChildOfClass("Humanoid")
 
-                    hrp.CFrame = CFrame.new(mHpr.Position + Vector3.new(0, 4, 0))
+                    hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 4, 0))
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
                     if mHum and mHum.Health > 0 then
