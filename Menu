@@ -32,7 +32,7 @@ local Config = {
     InstantTpFruit = false,
     AutoStoreFruit = false,
     FlyToFruit = false,
-    -- Cấu hình Teleport Đảo và Tốc độ bay
+    -- Cấu hình Teleport Đảo & Tốc độ bay
     SelectedIsland = nil,
     IslandPos = nil,
     FlySpeed = 350,
@@ -133,11 +133,9 @@ local TabFruitBtn = createTabBtn("TabFruit", "🍎 Fruit", 0.4)
 local TabTpBtn = createTabBtn("TabTp", "🗺️ TP", 0.6)
 local TabStatsBtn = createTabBtn("TabStats", "📈 Stats", 0.8)
 
--- Tab Mặc định ban đầu
 TabMainBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
--- Containers
 local function createContainer()
     local c = Instance.new("ScrollingFrame", MainFrame)
     c.Position = UDim2.new(0, 0, 0, 72)
@@ -199,7 +197,6 @@ local function createToggle(parent, text, defaultVal, callback, customY)
     return btn
 end
 
--- HÀM LẤY NHIỆM VỤ THỦ CÔNG
 local function checkAndGetQuestClean()
     pcall(function()
         local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
@@ -228,7 +225,6 @@ local function checkAndGetQuestClean()
     end)
 end
 
--- HÀM LẤY TÊN QUÁI THEO NHIỆM VỤ HIỆN TẠI CỦA NGƯỜI CHƠI
 local function getCurrentQuestMobName()
     local success, mobName = pcall(function()
         local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
@@ -241,9 +237,7 @@ local function getCurrentQuestMobName()
                     if container then
                         for _, v in pairs(container:GetChildren()) do
                             if v:IsA("TextLabel") and string.find(v.Text, "Defeat") then
-                                -- Thường cấu trúc text là "Defeat Bandit (0/5)" -> Lọc lấy tên quái
                                 local cleaned = v.Text:gsub("Defeat ", ""):gsub("[\n%d/()%s]+", " ")
-                                -- Lấy từ đầu tiên hoặc tinh chỉnh tên quái
                                 local parts = {}
                                 for word in cleaned:gmatch("%S+") do
                                     table.insert(parts, word)
@@ -360,7 +354,7 @@ createToggle(FruitContainer, "Instant TP Fruit (Dịch chuyển tới trái ngay
 createToggle(FruitContainer, "Auto Lưu Trữ Trái (Chỉ lưu trái chưa có trong kho)", false, function(v) Config.AutoStoreFruit = v end, fY); fY = fY + 40
 createToggle(FruitContainer, "Bay Lụm Fruit (Bay mượt tới trái dưới đất)", false, function(v) Config.FlyToFruit = v end, fY)
 
--- TAB TELEPORT (MỚI)
+-- TAB TELEPORT
 local tpY = 15
 local tpHeader = Instance.new("TextLabel", TpContainer)
 tpHeader.Position = UDim2.new(0.05, 0, 0, tpY)
@@ -492,7 +486,6 @@ createToggle(StatsContainer, "Auto Nâng Điểm Máu (Defense)", false, functio
 createToggle(StatsContainer, "Auto Nâng Điểm Kiếm (Sword)", false, function(v) Config.AutoStatSword = v end, sY); sY = sY + 40
 createToggle(StatsContainer, "Auto Nâng Điểm Trái Ác Quỷ (DevilFruit)", false, function(v) Config.AutoStatDevilFruit = v end, sY)
 
--- Nút ẩn hiện Menu & Notifier Label
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "AdminTienphatToggle"
 ToggleGui.Parent = CoreGui
@@ -559,7 +552,6 @@ local function clearAllESP()
     end
 end
 
--- TIẾN TRÌNH AUTO STATS
 task.spawn(function()
     while true do
         task.wait(1)
@@ -579,7 +571,6 @@ task.spawn(function()
     end
 end)
 
--- TIẾN TRÌNH AUTO STORE FRUIT AN TOÀN
 task.spawn(function()
     while true do
         task.wait(3)
@@ -622,7 +613,6 @@ RunService.RenderStepped:Connect(function(dt)
         updateWeaponButtons()
     end
 
-    -- TÌM TRÁI ÁC QUỶ ĐANG XUẤT HIỆN
     local targetFruitHandle = nil
     for _, obj in ipairs(Workspace:GetChildren()) do
         if obj:IsA("Tool") and (string.find(obj.Name, "Fruit") or obj:FindFirstChild("Handle")) then
@@ -634,7 +624,6 @@ RunService.RenderStepped:Connect(function(dt)
         end
     end
 
-    -- TÍNH NĂNG INSTANT TP FRUIT
     if Config.InstantTpFruit and targetFruitHandle then
         pcall(function()
             local char = LocalPlayer.Character
@@ -644,7 +633,6 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- TÍNH NĂNG BAY ĐẾN ĐẢO VỚI TỐC ĐỘ ĐÃ CHỌN
     if Config.FlyToIslandState and Config.IslandPos then
         pcall(function()
             local char = LocalPlayer.Character
@@ -663,7 +651,6 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- ESP QUÁI
     if Config.ShowESP then
         local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
         local activeFound = {}
@@ -716,7 +703,6 @@ RunService.RenderStepped:Connect(function(dt)
         end
     end
 
-    -- ESP TRÁI ÁC QUỶ & NOTIFIER
     local foundFruitsNames = {}
     if Config.ShowFruitESP then
         local activeFruits = {}
@@ -769,7 +755,6 @@ RunService.RenderStepped:Connect(function(dt)
         FruitNotifLabel.Visible = false
     end
 
-    -- ESP ĐẢO (ISLAND ESP)
     if Config.ShowIslandESP then
         local mapFolder = Workspace:FindFirstChild("_Map") or Workspace:FindFirstChild("Map")
         local activeIslands = {}
@@ -810,7 +795,6 @@ RunService.RenderStepped:Connect(function(dt)
         end
     end
 
-    -- WEAPON SCANNER
     if Config.ShowWeaponScanner then
         local activePlayers = {}
         for _, plr in ipairs(Players:GetPlayers()) do
@@ -833,7 +817,6 @@ RunService.RenderStepped:Connect(function(dt)
                     local vector, onScreen = camera:WorldToViewportPoint(pHrp.Position + Vector3.new(0, 3, 0))
                     if onScreen then
                         local txtObj = weaponScannerCache[plr]
-                        txtObj.Text = "[" .. plr.Name .. "] ⚔️ " đúng activeTool
                         txtObj.Text = "[" .. plr.Name .. "] ⚔️ " .. activeTool
                         txtObj.Position = Vector2.new(vector.X, vector.Y)
                         txtObj.Visible = true
@@ -853,7 +836,6 @@ RunService.RenderStepped:Connect(function(dt)
         end
     end
 
-    -- BAY LỤM FRUIT
     if Config.FlyToFruit and targetFruitHandle then
         pcall(function()
             local char = LocalPlayer.Character
@@ -865,7 +847,6 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- AUTO FARM: LỌC QUÁI THEO NHIỆM VỤ HIỆN TẠI VÀ ĐÁNH
     if Config.AutoFarm then
         pcall(function()
             local char = LocalPlayer.Character
@@ -873,7 +854,6 @@ RunService.RenderStepped:Connect(function(dt)
                 local hrp = char.HumanoidRootPart
                 local hum = char:FindFirstChildOfClass("Humanoid")
 
-                -- Trang bị vũ khí
                 local currentTool = char:FindFirstChildOfClass("Tool")
                 if not currentTool or (Config.SelectedWeapon ~= "Tự động chọn" and currentTool.Name ~= Config.SelectedWeapon) then
                     local backpack = LocalPlayer:FindFirstChildOfClass("Backpack") or LocalPlayer.Backpack
@@ -892,10 +872,7 @@ RunService.RenderStepped:Connect(function(dt)
                     end
                 end
 
-                -- Lấy tên nhiệm vụ hiện tại để tìm đúng loại quái cần tiêu diệt
                 local questMobName = getCurrentQuestMobName()
-
-                -- Tìm quái phù hợp
                 local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
                 local targetMob = nil
                 local shortestDist = math.huge
@@ -905,7 +882,6 @@ RunService.RenderStepped:Connect(function(dt)
                         local mobHrp = mob:FindFirstChild("HumanoidRootPart")
                         local mobHum = mob:FindFirstChildOfClass("Humanoid")
                         if mobHrp and mobHum and mobHum.Health > 0 then
-                            -- Nếu có nhiệm vụ, ưu tiên tìm con quái khớp tên nhiệm vụ
                             local matchCondition = true
                             if questMobName then
                                 if not string.find(mob.Name:lower(), questMobName:lower()) then
@@ -924,7 +900,6 @@ RunService.RenderStepped:Connect(function(dt)
                     end
                 end
 
-                -- Nếu không tìm thấy chính xác quái nhiệm vụ (hoặc chưa nhận nhiệm vụ), lấy tạm con gần nhất
                 if not targetMob and folderEnemies then
                     for _, mob in ipairs(folderEnemies:GetChildren()) do
                         local mobHrp = mob:FindFirstChild("HumanoidRootPart")
@@ -943,11 +918,9 @@ RunService.RenderStepped:Connect(function(dt)
                     local mHrp = targetMob.HumanoidRootPart
                     local mHum = targetMob:FindFirstChildOfClass("Humanoid")
 
-                    -- Bám sát đỉnh đầu quái
-                    hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 4, 0))
+                    hrp.CFrame = CFrame.new(mHpr.Position + Vector3.new(0, 4, 0))
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                    -- Kích hoạt đánh liên tục
                     if mHum and mHum.Health > 0 then
                         pcall(function()
                             local activeTool = char:FindFirstChildOfClass("Tool")
