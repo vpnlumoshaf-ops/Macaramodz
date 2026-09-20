@@ -17,7 +17,6 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "TphatFixLagMenu"
 ScreenGui.ResetOnSpawn = false
 
--- Đưa vào CoreGui nếu được, nếu không thì vào PlayerGui
 local success = pcall(function()
     ScreenGui.Parent = CoreGui
 end)
@@ -50,7 +49,6 @@ local UICornerFloat = Instance.new("UICorner")
 UICornerFloat.CornerRadius = UDim.new(0, 12)
 UICornerFloat.Parent = FloatBtn
 
--- Viền LED RGB 7 màu xoay quanh hình vuông bo góc
 local UIStrokeFloat = Instance.new("UIStroke")
 UIStrokeFloat.Thickness = 3
 UIStrokeFloat.Parent = FloatBtn
@@ -67,8 +65,8 @@ end)
 -- ==================== 2. MENU CHÍNH ====================
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 450, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -160)
+MainFrame.Size = UDim2.new(0, 450, 0, 360)
+MainFrame.Position = UDim2.new(0.5, -225, 0.5, -180)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.Visible = false
 MainFrame.Active = true
@@ -84,7 +82,6 @@ UIStrokeMain.Color = Color3.fromRGB(50, 50, 50)
 UIStrokeMain.Thickness = 1
 UIStrokeMain.Parent = MainFrame
 
--- Thanh tiêu đề
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 35)
 TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -105,7 +102,6 @@ TitleLabel.Font = Enum.Font.SourceSansBold
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = TopBar
 
--- Nút ẩn menu (-)
 local MinBtn = Instance.new("TextButton")
 MinBtn.Size = UDim2.new(0, 30, 0, 30)
 MinBtn.Position = UDim2.new(1, -70, 0, 2)
@@ -117,7 +113,6 @@ MinBtn.Font = Enum.Font.SourceSansBold
 MinBtn.Parent = TopBar
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 4)
 
--- Nút tắt hẳn menu (x)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -35, 0, 2)
@@ -129,7 +124,6 @@ CloseBtn.Font = Enum.Font.SourceSansBold
 CloseBtn.Parent = TopBar
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
 
--- Sự kiện ẩn/tắt/mở menu
 FloatBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
@@ -168,16 +162,14 @@ Tab2Btn.TextSize = 14
 Tab2Btn.Parent = TabBtnContainer
 Instance.new("UICorner", Tab2Btn).CornerRadius = UDim.new(0, 6)
 
--- Khung chứa nội dung Tab 1
 local Tab1Content = Instance.new("ScrollingFrame")
 Tab1Content.Size = UDim2.new(1, -20, 1, -90)
 Tab1Content.Position = UDim2.new(0, 10, 0, 85)
 Tab1Content.BackgroundTransparency = 1
-Tab1Content.CanvasSize = UDim2.new(0, 0, 0, 380)
+Tab1Content.CanvasSize = UDim2.new(0, 0, 0, 420)
 Tab1Content.ScrollBarThickness = 4
 Tab1Content.Parent = MainFrame
 
--- Khung chứa nội dung Tab 2
 local Tab2Content = Instance.new("ScrollingFrame")
 Tab2Content.Size = UDim2.new(1, -20, 1, -90)
 Tab2Content.Position = UDim2.new(0, 10, 0, 85)
@@ -207,7 +199,6 @@ end)
 
 -- ==================== NỘI DUNG TAB 1 (MAIN FIX LAG) ====================
 
--- Nút chọn mức độ Fix Lag
 local FixLagDropdownLabel = Instance.new("TextLabel")
 FixLagDropdownLabel.Size = UDim2.new(1, 0, 0, 25)
 FixLagDropdownLabel.BackgroundTransparency = 1
@@ -218,7 +209,7 @@ FixLagDropdownLabel.TextSize = 13
 FixLagDropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
 FixLagDropdownLabel.Parent = Tab1Content
 
-local currentFixLevel = "Nhe" -- Mặc định
+local currentFixLevel = "Nhe"
 
 local BtnNhe = Instance.new("TextButton")
 BtnNhe.Size = UDim2.new(1, 0, 0, 30)
@@ -246,14 +237,13 @@ local BtnManh = Instance.new("TextButton")
 BtnManh.Size = UDim2.new(1, 0, 0, 30)
 BtnManh.Position = UDim2.new(0, 0, 0, 100)
 BtnManh.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-BtnManh.Text = "3. Fix Mạnh (Tối đa: Xóa vật thể/Anim/VFX)"
+BtnManh.Text = "3. Fix Mạnh (Tối đa: Dừng Anim/Rồng + Xóa vật thể)"
 BtnManh.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnManh.Font = Enum.Font.SourceSansBold
 BtnManh.TextSize = 13
 BtnManh.Parent = Tab1Content
 Instance.new("UICorner", BtnManh).CornerRadius = UDim.new(0, 6)
 
--- Thực thi hành động Fix Lag khi nhấn nút chính
 local ExecuteFixBtn = Instance.new("TextButton")
 ExecuteFixBtn.Size = UDim2.new(1, 0, 0, 35)
 ExecuteFixBtn.Position = UDim2.new(0, 0, 0, 140)
@@ -287,7 +277,7 @@ BtnManh.MouseButton1Click:Connect(function()
 end)
 
 ExecuteFixBtn.MouseButton1Click:Connect(function()
-    -- Fix nhẹ: Xóa trang phục (Shirt, Pants, Accessories) của mình và người khác
+    -- Fix nhẹ: Xóa trang phục
     for _, p in ipairs(Players:GetPlayers()) do
         if p.Character then
             for _, v in ipairs(p.Character:GetChildren()) do
@@ -299,7 +289,6 @@ ExecuteFixBtn.MouseButton1Click:Connect(function()
     end
 
     if currentFixLevel == "TrungBinh" or currentFixLevel == "Manh" then
-        -- Fix trung bình: Xóa tất cả Texture, Decal trên toàn map
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("Texture") or obj:IsA("Decal") then
                 obj:Destroy()
@@ -308,27 +297,66 @@ ExecuteFixBtn.MouseButton1Click:Connect(function()
     end
 
     if currentFixLevel == "Manh" then
-        -- Fix mạnh: Xóa animation, vfx và các vật thể rác trên map, chỉ chừa lại mặt đất
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("ParticleEmitter") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Trail") then
-                obj:Destroy()
-            elseif obj:IsA("BasePart") and not obj.Name:lower():find("baseplate") and not obj.Name:lower():find("floor") and not obj.Name:lower():find("ground") then
-                -- Nếu vật thể không phải mặt đất thì xóa hoặc ẩn đi
-                -- Tùy chọn: xóa bớt vật thể linh tinh
-                if obj.Size.Magnitude > 300 then 
-                    -- Giữ lại các vật thể map lớn nếu cần, còn lại xóa bớt
+        -- Xóa triệt để Animation đang chạy (giúp rồng dừng vỗ cánh, nhân vật đứng cứng)
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Character then
+                local humanoid = p.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    local animator = humanoid:FindFirstChildOfClass("Animator")
+                    if animator then
+                        for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+                            track:Stop()
+                            track:Destroy()
+                        end
+                    end
                 end
+                -- Xóa cả các pet/model rồng bay lượn gắn trên người chơi nếu có
+                for _, child in ipairs(p.Character:GetChildren()) do
+                    if child:IsA("Model") or child:IsA("BasePart") and child.Name ~= "HumanoidRootPart" then
+                        if child.Name:lower():find("dragon") or child.Name:lower():find("pet") or child.Name:lower():find("egg") then
+                            child:Destroy()
+                        end
+                    end
+                end
+            end
+        end
+
+        -- Xóa hiệu ứng VFX / Hạt
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ParticleEmitter") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Trail") or obj:IsA("Beam") then
+                obj:Destroy()
             end
         end
     end
 end)
 
--- Nút 2: Map Tối (Chỉnh tất cả texture, models thành màu đen)
+-- Nút Map Trắng (Thêm mới theo yêu cầu)
+local MapTrangBtn = Instance.new("TextButton")
+MapTrangBtn.Size = UDim2.new(1, 0, 0, 30)
+MapTrangBtn.Position = UDim2.new(0, 0, 0, 185)
+MapTrangBtn.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+MapTrangBtn.Text = "Map Trắng (Đổi toàn bộ map thành màu trắng)"
+MapTrangBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+MapTrangBtn.Font = Enum.Font.SourceSansBold
+MapTrangBtn.TextSize = 13
+MapTrangBtn.Parent = Tab1Content
+Instance.new("UICorner", MapTrangBtn).CornerRadius = UDim.new(0, 6)
+
+MapTrangBtn.MouseButton1Click:Connect(function()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.Color = Color3.fromRGB(245, 245, 245)
+            obj.Material = Enum.Material.SmoothPlastic
+        end
+    end
+end)
+
+-- Nút 2: Map Tối
 local MapToiBtn = Instance.new("TextButton")
 MapToiBtn.Size = UDim2.new(1, 0, 0, 30)
-MapToiBtn.Position = UDim2.new(0, 0, 0, 185)
+MapToiBtn.Position = UDim2.new(0, 0, 0, 225)
 MapToiBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MapToiBtn.Text = "Nút 2: Map Tối (Chuyển Model/Texture thành đen)"
+MapToiBtn.Text = "Map Tối (Chuyển Model/Texture thành đen)"
 MapToiBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MapToiBtn.Font = Enum.Font.SourceSansBold
 MapToiBtn.TextSize = 13
@@ -344,12 +372,12 @@ MapToiBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Nút 3: No Fog (Xóa sương mù)
+-- Nút 3: No Fog
 local NoFogBtn = Instance.new("TextButton")
 NoFogBtn.Size = UDim2.new(1, 0, 0, 30)
-NoFogBtn.Position = UDim2.new(0, 0, 0, 225)
+NoFogBtn.Position = UDim2.new(0, 0, 0, 265)
 NoFogBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-NoFogBtn.Text = "Nút 3: No Fog (Xóa sương mù)"
+NoFogBtn.Text = "No Fog (Xóa sương mù)"
 NoFogBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 NoFogBtn.Font = Enum.Font.SourceSansBold
 NoFogBtn.TextSize = 13
@@ -366,12 +394,12 @@ NoFogBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Nút 4: No Sky (Xóa bầu trời)
+-- Nút 4: No Sky
 local NoSkyBtn = Instance.new("TextButton")
 NoSkyBtn.Size = UDim2.new(1, 0, 0, 30)
-NoSkyBtn.Position = UDim2.new(0, 0, 0, 265)
+NoSkyBtn.Position = UDim2.new(0, 0, 0, 305)
 NoSkyBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-NoSkyBtn.Text = "Nút 4: No Sky (Xóa bầu trời)"
+NoSkyBtn.Text = "No Sky (Xóa bầu trời)"
 NoSkyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 NoSkyBtn.Font = Enum.Font.SourceSansBold
 NoSkyBtn.TextSize = 13
@@ -386,12 +414,12 @@ NoSkyBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Nút 5: Brightness (Tăng độ sáng tối đa)
+-- Nút 5: Brightness
 local BrightnessBtn = Instance.new("TextButton")
 BrightnessBtn.Size = UDim2.new(1, 0, 0, 30)
-BrightnessBtn.Position = UDim2.new(0, 0, 0, 305)
+BrightnessBtn.Position = UDim2.new(0, 0, 0, 345)
 BrightnessBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-BrightnessBtn.Text = "Nút 5: Brightness (Sáng tối đa)"
+BrightnessBtn.Text = "Brightness (Sáng tối đa)"
 BrightnessBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 BrightnessBtn.Font = Enum.Font.SourceSansBold
 BrightnessBtn.TextSize = 13
@@ -407,12 +435,11 @@ end)
 
 -- ==================== NỘI DUNG TAB 2 (SETTINGS & ESP) ====================
 
--- Nút 1: ESP Box & Line Player
 local ESPBtn = Instance.new("TextButton")
 ESPBtn.Size = UDim2.new(1, 0, 0, 35)
 ESPBtn.Position = UDim2.new(0, 0, 0, 10)
 ESPBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ESPBtn.Text = "Bật/Tắt ESP Box & Line Player"
+ESPBtn.Text = "Bật/Tắt ESP Box & Line (Màu Xanh Dương)"
 ESPBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ESPBtn.Font = Enum.Font.SourceSansBold
 ESPBtn.TextSize = 13
@@ -422,22 +449,23 @@ Instance.new("UICorner", ESPBtn).CornerRadius = UDim.new(0, 6)
 local espEnabled = false
 ESPBtn.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
-    ESPBtn.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
+    ESPBtn.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(30, 30, 30)
 end)
 
--- Logic ESP đơn giản vẽ Line/Box bằng Highlight hoặc Drawing (Built-in)
+-- Dùng Box Highlight màu xanh dương bao quanh nhân vật thay vì viền phẳng
 RunService.RenderStepped:Connect(function()
     if not getgenv().TphatFixLagLoaded then return end
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
-            local highlight = p.Character:FindFirstChild("TphatESP")
+            local highlight = p.Character:FindFirstChild("TphatESPBox")
             if espEnabled then
                 if not highlight then
                     highlight = Instance.new("Highlight")
-                    highlight.Name = "TphatESP"
+                    highlight.Name = "TphatESPBox"
                     highlight.Adornee = p.Character
-                    highlight.FillTransparency = 1
-                    highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+                    highlight.FillColor = Color3.fromRGB(0, 150, 255)
+                    highlight.FillTransparency = 0.5  -- Tạo khung màu bên trong
+                    highlight.OutlineColor = Color3.fromRGB(0, 255, 255)
                     highlight.OutlineTransparency = 0
                     highlight.Parent = p.Character
                 end
@@ -450,7 +478,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Nút 2: Cài đặt màu nền (Trắng hoặc Đen)
 local BgColorLabel = Instance.new("TextLabel")
 BgColorLabel.Size = UDim2.new(1, 0, 0, 25)
 BgColorLabel.Position = UDim2.new(0, 0, 0, 55)
