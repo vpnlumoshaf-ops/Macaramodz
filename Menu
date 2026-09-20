@@ -250,7 +250,7 @@ local mY = 15
 createToggle(MainContainer, "Auto Farm (Bay Trên Đầu & Đánh)", false, function(v) Config.AutoFarm = v end, mY)
 mY = mY + 40
 
--- THÊM NÚT NHẬN NHIỆM VỤ THỦ CÔNG
+-- NÚT NHẬN NHIỆM VỤ THỦ CÔNG
 local GetQuestBtn = Instance.new("TextButton", MainContainer)
 GetQuestBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
 GetQuestBtn.Position = UDim2.new(0.05, 0, 0, mY)
@@ -439,11 +439,10 @@ local function clearAllESP()
     end
 end
 
--- TỰ ĐỘNG NHẬN NHIỆM VỤ AN TOÀN TRONG LUỒNG AUTO FARM
+-- TỰ ĐỘNG NHẬN NHIỆM VỤ AN TOÀN TRONG LUỒNG AUTO FARM (ĐÃ FIX CHỐNG RESET LIÊN TỤC)
 local lastQuestAttempt = 0
 local function autoCheckAndGetQuest()
-    if tick() - lastQuestAttempt < 3 then return end
-    lastQuestAttempt = tick()
+    if tick() - lastQuestAttempt < 5 then return end
 
     pcall(function()
         local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
@@ -453,12 +452,21 @@ local function autoCheckAndGetQuest()
         local hasActiveQuest = false
         if questFrame and questFrame.Visible then
             local container = questFrame:FindFirstChild("Container")
-            if container and container.Visible and #container:GetChildren() > 0 then
-                hasActiveQuest = true
+            if container and container.Visible then
+                for _, child in ipairs(container:GetChildren()) do
+                    if child:IsA("TextLabel") and (string.find(child.Text, "/") or string.find(child.Text, "Defeat") or string.find(child.Text, "Bọn")) then
+                        hasActiveQuest = true
+                        break
+                    end
+                end
+                if #container:GetChildren() > 0 then
+                    hasActiveQuest = true
+                end
             end
         end
 
         if not hasActiveQuest then
+            lastQuestAttempt = tick()
             checkAndGetQuestClean()
         end
     end)
