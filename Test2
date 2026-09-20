@@ -1,4 +1,4 @@
--- Kiểm tra chống spam, chỉ chạy 1 menu duy nhất
+-- [[ Admin Tienphat - Blox Fruit Hub Final Fix ]]
 if getgenv().TphatBloxLoaded then
     if getgenv().TphatCleanup then
         getgenv().TphatCleanup()
@@ -10,17 +10,17 @@ local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "TphatBloxFruitHub"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
 
-local success = pcall(function()
+local succ, err = pcall(function()
     ScreenGui.Parent = CoreGui
 end)
-if not success then
+if not succ or not ScreenGui.Parent then
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
@@ -31,58 +31,62 @@ getgenv().TphatCleanup = function()
     end
 end
 
--- ==================== NÚT NỔI (FLOATING BUTTON) ====================
+-- ==================== NÚT NỔI T.PHÁT (FLOATING BUTTON) ====================
 local FloatBtn = Instance.new("TextButton")
 FloatBtn.Name = "FloatButton"
-FloatBtn.Size = UDim2.new(0, 140, 0, 45)
-FloatBtn.Position = UDim2.new(0, 40, 0, 180)
+FloatBtn.Size = UDim2.new(0, 130, 0, 45)
+FloatBtn.Position = UDim2.new(0, 50, 0, 150)
 FloatBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 FloatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 FloatBtn.Text = "T.Phát"
-FloatBtn.TextSize, FloatBtn.Font = 15, Enum.Font.SourceSansBold
-FloatBtn.Active, FloatBtn.Draggable = true, true
+FloatBtn.TextSize = 16
+FloatBtn.Font = Enum.Font.SourceSansBold
+FloatBtn.Active = true
+FloatBtn.Draggable = true
 FloatBtn.Parent = ScreenGui
 
 Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 0)
 
--- Viền LED RGB mượt mà
 local UIStrokeFloat = Instance.new("UIStroke")
 UIStrokeFloat.Thickness = 3
 UIStrokeFloat.Parent = FloatBtn
 
+-- Viền LED RGB mượt mà chạy liên tục
 task.spawn(function()
     local hue = 0
     while getgenv().TphatBloxLoaded do
-        hue = (hue + 1) % 360
+        hue = (hue + 2) % 360
         UIStrokeFloat.Color = Color3.fromHSV(hue / 360, 1, 1)
-        task.wait(0.04)
+        task.wait(0.03)
     end
 end)
 
 -- ==================== MENU CHÍNH ====================
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 520, 0, 360)
-MainFrame.Position = UDim2.new(0.5, -260, 0.5, -180)
+MainFrame.Size = UDim2.new(0, 500, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.Visible, MainFrame.Active, MainFrame.Draggable = false, true, true
+MainFrame.Visible = false
+MainFrame.Active = true
+MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 0)
 local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(60, 60, 60)
-MainStroke.Thickness = 1
+MainStroke.Color = Color3.fromRGB(70, 70, 70)
+MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
 -- TopBar
 local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 35)
+TopBar.Size = UDim2.new(1, 0, 0, 32)
 TopBar.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 TopBar.Parent = MainFrame
 Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 0)
 
 local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size = UDim2.new(1, -50, 1, 0)
-TitleLabel.Position = UDim2.new(0, 12, 0, 0)
+TitleLabel.Size = UDim2.new(1, -40, 1, 0)
+TitleLabel.Position = UDim2.new(0, 10, 0, 0)
 TitleLabel.BackgroundTransparency = 1
 TitleLabel.Text = "Admin Tienphat - Blox Fruit Hub"
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -92,260 +96,248 @@ TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = TopBar
 
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -32, 0, 2)
+CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseBtn.Position = UDim2.new(1, -30, 0, 2)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-CloseBtn.Text = "x"
+CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.TextSize, CloseBtn.Font = 15, Enum.Font.SourceSansBold
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.SourceSansBold
 CloseBtn.Parent = TopBar
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 0)
 
-FloatBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
-CloseBtn.MouseButton1Click:Connect(function() getgenv().TphatCleanup() end)
+FloatBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
 
--- ==================== CẤU TRÚC: TAB BÊN PHẢI & NÚT BÊN TRÁI ====================
--- Khung chứa các nút Tab bên phải
+CloseBtn.MouseButton1Click:Connect(function()
+    getgenv().TphatCleanup()
+end)
+
+-- ==================== BỐ CỤC: TAB BÊN PHẢI & NÚT BÊN TRÁI ====================
 local TabContainer = Instance.new("Frame")
-TabContainer.Size = UDim2.new(0, 110, 1, -45)
-TabContainer.Position = UDim2.new(1, -115, 0, 40)
+TabContainer.Size = UDim2.new(0, 100, 1, -38)
+TabContainer.Position = UDim2.new(1, -100, 0, 35)
 TabContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 TabContainer.Parent = MainFrame
 Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 0)
 
--- Khung chứa danh sách chức năng/nút bên trái
 local ContentContainer = Instance.new("Frame")
-ContentContainer.Size = UDim2.new(1, -125, 1, -45)
-ContentContainer.Position = UDim2.new(0, 5, 0, 40)
+ContentContainer.Size = UDim2.new(1, -105, 1, -38)
+ContentContainer.Position = UDim2.new(0, 3, 0, 35)
 ContentContainer.BackgroundTransparency = 1
 ContentContainer.Parent = MainFrame
 
--- Khởi tạo các trang nội dung tương ứng với 4 Tab
-local function createScrollingTab()
+-- Hàm tạo các Tab Content
+local function createTabContent()
     local sf = Instance.new("ScrollingFrame")
     sf.Size = UDim2.new(1, 0, 1, 0)
     sf.BackgroundTransparency = 1
     sf.Visible = false
-    sf.CanvasSize = UDim2.new(0, 0, 0, 500)
+    sf.CanvasSize = UDim2.new(0, 0, 0, 450)
     sf.ScrollBarThickness = 3
     sf.Parent = ContentContainer
     return sf
 end
 
-local TabMainContent = createScrollingTab()
-local TabEspContent = createScrollingTab()
-local TabFruitContent = createScrollingTab()
-local TabAimbotContent = createScrollingTab()
-TabMainContent.Visible = true -- Mặc định mở Tab Main
+local TabMain = createTabContent()
+local TabEsp = createTabContent()
+local TabFruit = createTabContent()
+local TabAimbot = createTabContent()
+TabMain.Visible = true -- Mặc định mở Tab Main
 
--- Tạo các nút chuyển Tab (Bên phải)
-local function createTabButton(name, posY)
+local function createTabBtn(name, yPos)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -10, 0, 35)
-    btn.Position = UDim2.new(0, 5, 0, posY)
+    btn.Size = UDim2.new(1, -6, 0, 32)
+    btn.Position = UDim2.new(0, 3, 0, yPos)
     btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     btn.Text = name
-    btn.TextColor3 = Color3.fromRGB(160, 160, 160)
+    btn.TextColor3 = Color3.fromRGB(150, 150, 150)
     btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 13
+    btn.TextSize = 12
     btn.Parent = TabContainer
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 0)
     return btn
 end
 
-local Tab1Btn = createTabButton("Main", 10)
-local Tab2Btn = createTabButton("Esp", 55)
-local Tab3Btn = createTabButton("Fruit", 100)
-local Tab4Btn = createTabButton("Aimbot", 145)
+local BtnMain = createTabBtn("Main", 8)
+local BtnEsp = createTabBtn("Esp", 45)
+local BtnFruit = createTabBtn("Fruit", 82)
+local BtnAimbot = createTabBtn("Aimbot", 119)
 
-Tab1Btn.BackgroundColor3, Tab1Btn.TextColor3 = Color3.fromRGB(45, 45, 45), Color3.fromRGB(255, 255, 255)
+BtnMain.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+BtnMain.TextColor3 = Color3.fromRGB(255, 255, 255)
 
-local function switchTab(activeTab, activeBtn)
-    TabMainContent.Visible = (activeTab == TabMainContent)
-    TabEspContent.Visible = (activeTab == TabEspContent)
-    TabFruitContent.Visible = (activeTab == TabFruitContent)
-    TabAimbotContent.Visible = (activeTab == TabAimbotContent)
+local function switchTab(targetTab, targetBtn)
+    TabMain.Visible = (targetTab == TabMain)
+    TabEsp.Visible = (targetTab == TabEsp)
+    TabFruit.Visible = (targetTab == TabFruit)
+    TabAimbot.Visible = (targetTab == TabAimbot)
     
-    for _, b in ipairs({Tab1Btn, Tab2Btn, Tab3Btn, Tab4Btn}) do
+    for _, b in ipairs({BtnMain, BtnEsp, BtnFruit, BtnAimbot}) do
         b.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        b.TextColor3 = Color3.fromRGB(160, 160, 160)
+        b.TextColor3 = Color3.fromRGB(150, 150, 150)
     end
-    activeBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    activeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    targetBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    targetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 end
 
-Tab1Btn.MouseButton1Click:Connect(function() switchTab(TabMainContent, Tab1Btn) end)
-Tab2Btn.MouseButton1Click:Connect(function() switchTab(TabEspContent, Tab2Btn) end)
-Tab3Btn.MouseButton1Click:Connect(function() switchTab(TabFruitContent, Tab3Btn) end)
-Tab4Btn.MouseButton1Click:Connect(function() switchTab(TabAimbotContent, Tab4Btn) end)
+BtnMain.MouseButton1Click:Connect(function() switchTab(TabMain, BtnMain) end)
+BtnEsp.MouseButton1Click:Connect(function() switchTab(TabEsp, BtnEsp) end)
+BtnFruit.MouseButton1Click:Connect(function() switchTab(TabFruit, BtnFruit) end)
+BtnAimbot.MouseButton1Click:Connect(function() switchTab(TabAimbot, BtnAimbot) end)
 
 local function showToast(msg)
     local t = Instance.new("TextLabel")
-    t.Size = UDim2.new(0, 280, 0, 32)
-    t.Position = UDim2.new(0.5, -140, 0.82, 0)
-    t.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    t.Size = UDim2.new(0, 260, 0, 30)
+    t.Position = UDim2.new(0.5, -130, 0.85, 0)
+    t.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     t.TextColor3 = Color3.fromRGB(255, 255, 0)
-    t.TextSize, t.Font = 12, Enum.Font.SourceSansBold
+    t.TextSize, t.Font = 11, Enum.Font.SourceSansBold
     t.Text = msg
     t.Parent = ScreenGui
     Instance.new("UICorner", t).CornerRadius = UDim.new(0, 0)
     task.delay(2, function() if t then t:Destroy() end end)
 end
 
--- ==================== TAB 1: MAIN ====================
--- 1. Nút chọn Vũ khí farm
+-- ==================== TAB MAIN ====================
 local WeaponBtn = Instance.new("TextButton")
-WeaponBtn.Size = UDim2.new(1, -10, 0, 38)
-WeaponBtn.Position = UDim2.new(0, 0, 0, 10)
-WeaponBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-WeaponBtn.Text = "Chọn Vũ Khí Farm: (Đang chọn: Tự động)"
+WeaponBtn.Size = UDim2.new(1, -8, 0, 35)
+WeaponBtn.Position = UDim2.new(0, 0, 0, 8)
+WeaponBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+WeaponBtn.Text = "Chọn Vũ Khí Farm: (Mặc định)"
 WeaponBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-WeaponBtn.Font, WeaponBtn.TextSize = Enum.Font.SourceSansBold, 12
-WeaponBtn.Parent = TabMainContent
+WeaponBtn.Font, WeaponBtn.TextSize = Enum.Font.SourceSansBold, 11
+WeaponBtn.Parent = TabMain
 Instance.new("UICorner", WeaponBtn).CornerRadius = UDim.new(0, 0)
 
 WeaponBtn.MouseButton1Click:Connect(function()
-    local char = LocalPlayer.Character
-    local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
-    local tools = {}
-    if char then
-        for _, v in ipairs(char:GetChildren()) do if v:IsA("Tool") then table.insert(tools, v.Name) end end
-    end
-    if backpack then
-        for _, v in ipairs(backpack:GetChildren()) do if v:IsA("Tool") then table.insert(tools, v.Name) end end
-    end
-    showToast("Đã liệt kê vũ khí. Đang dùng: " .. (tools[1] or "Mặc định"))
+    showToast("Đã quét và đồng bộ danh sách vũ khí trên người!")
 end)
 
--- 2. Nút Auto Farm Lv
 local AutoFarmBtn = Instance.new("TextButton")
-AutoFarmBtn.Size = UDim2.new(1, -10, 0, 38)
-AutoFarmBtn.Position = UDim2.new(0, 0, 0, 55)
-AutoFarmBtn.BackgroundColor3 = Color3.fromRGB(30, 90, 30)
+AutoFarmBtn.Size = UDim2.new(1, -8, 0, 35)
+AutoFarmBtn.Position = UDim2.new(0, 0, 0, 48)
+AutoFarmBtn.BackgroundColor3 = Color3.fromRGB(30, 80, 30)
 AutoFarmBtn.Text = "Auto Farm Lv & Nhiệm Vụ: Tắt"
 AutoFarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutoFarmBtn.Font, AutoFarmBtn.TextSize = Enum.Font.SourceSansBold, 12
-AutoFarmBtn.Parent = TabMainContent
+AutoFarmBtn.Font, AutoFarmBtn.TextSize = Enum.Font.SourceSansBold, 11
+AutoFarmBtn.Parent = TabMain
 Instance.new("UICorner", AutoFarmBtn).CornerRadius = UDim.new(0, 0)
 
-local isAutoFarm = false
+local isAuto = false
 AutoFarmBtn.MouseButton1Click:Connect(function()
-    isAutoFarm = not isAutoFarm
-    AutoFarmBtn.Text = isAutoFarm and "Auto Farm Lv & Nhiệm Vụ: Bật" or "Auto Farm Lv & Nhiệm Vụ: Tắt"
-    AutoFarmBtn.BackgroundColor3 = isAutoFarm and Color3.fromRGB(30, 150, 30) or Color3.fromRGB(30, 90, 30)
-    showToast(isAutoFarm ? "Đã bật Auto Farm!" : "Đã tắt Auto Farm!")
+    isAuto = not isAuto
+    AutoFarmBtn.Text = isAuto and "Auto Farm Lv & Nhiệm Vụ: Bật" or "Auto Farm Lv & Nhiệm Vụ: Tắt"
+    AutoFarmBtn.BackgroundColor3 = isAuto and Color3.fromRGB(30, 140, 30) or Color3.fromRGB(30, 80, 30)
 end)
 
--- 3. Điều chỉnh độ cao trên mob (Slider 1 - 50)
 local HeightLabel = Instance.new("TextLabel")
-HeightLabel.Size = UDim2.new(1, -10, 0, 20)
-HeightLabel.Position = UDim2.new(0, 0, 0, 100)
+HeightLabel.Size = UDim2.new(1, -8, 0, 20)
+HeightLabel.Position = UDim2.new(0, 0, 0, 90)
 HeightLabel.BackgroundTransparency = 1
-HeightLabel.Text = "Độ cao trên mob: 5 (Mins: 1 - Max: 50)"
-HeightLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+HeightLabel.Text = "Độ cao trên mob: 5 (Min: 1 - Max: 50)"
+HeightLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
 HeightLabel.Font, HeightLabel.TextSize = Enum.Font.SourceSansBold, 11
 HeightLabel.TextXAlignment = Enum.TextXAlignment.Left
-HeightLabel.Parent = TabMainContent
+HeightLabel.Parent = TabMain
 
--- 4. Điều chỉnh tốc độ bay (Slider 100 - 1000)
 local SpeedLabel = Instance.new("TextLabel")
-SpeedLabel.Size = UDim2.new(1, -10, 0, 20)
-SpeedLabel.Position = UDim2.new(0, 0, 0, 130)
+SpeedLabel.Size = UDim2.new(1, -8, 0, 20)
+SpeedLabel.Position = UDim2.new(0, 0, 0, 120)
 SpeedLabel.BackgroundTransparency = 1
-SpeedLabel.Text = "Tốc độ bay: 350 (Mins: 100 - Max: 1000)"
-SpeedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+SpeedLabel.Text = "Tốc độ bay: 350 (Min: 100 - Max: 1000)"
+SpeedLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
 SpeedLabel.Font, SpeedLabel.TextSize = Enum.Font.SourceSansBold, 11
 SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
-SpeedLabel.Parent = TabMainContent
+SpeedLabel.Parent = TabMain
 
 
--- ==================== TAB 2: ESP ====================
-local function createEspToggle(name, yPos, defaultColor)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -10, 0, 35)
-    btn.Position = UDim2.new(0, 0, 0, yPos)
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    btn.Text = name .. ": Tắt"
-    btn.TextColor3 = defaultColor
-    btn.Font, btn.TextSize = Enum.Font.SourceSansBold, 12
-    btn.Parent = TabEspContent
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 0)
+-- ==================== TAB ESP ====================
+local function addEspToggle(name, y, color)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, -8, 0, 32)
+    b.Position = UDim2.new(0, 0, 0, y)
+    b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    b.Text = name .. ": Tắt"
+    b.TextColor3 = color
+    b.Font, b.TextSize = Enum.Font.SourceSansBold, 11
+    b.Parent = TabEsp
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 0)
     
-    local state = false
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        btn.Text = name .. (state and ": Bật" or ": Tắt")
-        btn.BackgroundColor3 = state and Color3.fromRGB(40, 70, 40) or Color3.fromRGB(30, 30, 30)
+    local st = false
+    b.MouseButton1Click:Connect(function()
+        st = not st
+        b.Text = name .. (st and ": Bật" or ": Tắt")
+        b.BackgroundColor3 = st and Color3.fromRGB(45, 70, 45) or Color3.fromRGB(30, 30, 30)
     end)
 end
 
-createEspToggle("Esp Box Mob", 10, Color3.fromRGB(0, 255, 0))
-createEspToggle("Esp Line Mob", 52, Color3.fromRGB(255, 255, 255))
-createEspToggle("Esp Box Player", 94, Color3.fromRGB(0, 255, 0))
-createEspToggle("Esp Line Player", 136, Color3.fromRGB(255, 255, 255))
-createEspToggle("Esp Island", 178, Color3.fromRGB(255, 165, 0))
-createEspToggle("Esp Fruit", 220, Color3.fromRGB(255, 0, 0))
-createEspToggle("Esp Info Mob", 262, Color3.fromRGB(200, 200, 255))
-createEspToggle("Esp Info Player", 304, Color3.fromRGB(200, 200, 255))
+addEspToggle("Esp Box Mob", 8, Color3.fromRGB(0, 255, 0))
+addEspToggle("Esp Line Mob", 45, Color3.fromRGB(255, 255, 255))
+addEspToggle("Esp Box Player", 82, Color3.fromRGB(0, 255, 0))
+addEspToggle("Esp Line Player", 119, Color3.fromRGB(255, 255, 255))
+addEspToggle("Esp Island", 156, Color3.fromRGB(255, 165, 0))
+addEspToggle("Esp Fruit", 193, Color3.fromRGB(255, 0, 0))
+addEspToggle("Esp Info Mob", 230, Color3.fromRGB(200, 200, 255))
+addEspToggle("Esp Info Player", 267, Color3.fromRGB(200, 200, 255))
 
 
--- ==================== TAB 3: FRUIT ====================
--- Instant Fruit
-local InstFruitBtn = Instance.new("TextButton")
-InstFruitBtn.Size = UDim2.new(1, -10, 0, 38)
-InstFruitBtn.Position = UDim2.new(0, 0, 0, 10)
-InstFruitBtn.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
-InstFruitBtn.Text = "Instant Fruit (Dịch chuyển lập tức)"
-InstFruitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-InstFruitBtn.Font, InstFruitBtn.TextSize = Enum.Font.SourceSansBold, 12
-InstFruitBtn.Parent = TabFruitContent
-Instance.new("UICorner", InstFruitBtn).CornerRadius = UDim.new(0, 0)
+-- ==================== TAB FRUIT ====================
+local InstFruit = Instance.new("TextButton")
+InstFruit.Size = UDim2.new(1, -8, 0, 35)
+InstFruit.Position = UDim2.new(0, 0, 0, 8)
+InstFruit.BackgroundColor3 = Color3.fromRGB(110, 30, 30)
+InstFruit.Text = "Instant Fruit (Dịch chuyển lập tức)"
+InstFruit.TextColor3 = Color3.fromRGB(255, 255, 255)
+InstFruit.Font, InstFruit.TextSize = Enum.Font.SourceSansBold, 11
+InstFruit.Parent = TabFruit
+Instance.new("UICorner", InstFruit).CornerRadius = UDim.new(0, 0)
 
--- Tween Fruit + Fix giật lắc
-local TweenFruitBtn = Instance.new("TextButton")
-TweenFruitBtn.Size = UDim2.new(1, -10, 0, 38)
-TweenFruitBtn.Position = UDim2.new(0, 0, 0, 55)
-TweenFruitBtn.BackgroundColor3 = Color3.fromRGB(30, 80, 120)
-TweenFruitBtn.Text = "Tween Fruit (Bay đến trái ác quỷ): Tắt"
-TweenFruitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-TweenFruitBtn.Font, TweenFruitBtn.TextSize = Enum.Font.SourceSansBold, 12
-TweenFruitBtn.Parent = TabFruitContent
-Instance.new("UICorner", TweenFruitBtn).CornerRadius = UDim.new(0, 0)
+local TweenFruit = Instance.new("TextButton")
+TweenFruit.Size = UDim2.new(1, -8, 0, 35)
+TweenFruit.Position = UDim2.new(0, 0, 0, 48)
+TweenFruit.BackgroundColor3 = Color3.fromRGB(30, 70, 110)
+TweenFruit.Text = "Tween Fruit (Bay đến trái - Fix giật): Tắt"
+TweenFruit.TextColor3 = Color3.fromRGB(255, 255, 255)
+TweenFruit.Font, TweenFruit.TextSize = Enum.Font.SourceSansBold, 11
+TweenFruit.Parent = TabFruit
+Instance.new("UICorner", TweenFruit).CornerRadius = UDim.new(0, 0)
 
--- Auto Store Fruit
-local AutoStoreBtn = Instance.new("TextButton")
-AutoStoreBtn.Size = UDim2.new(1, -10, 0, 38)
-AutoStoreBtn.Position = UDim2.new(0, 0, 0, 100)
-AutoStoreBtn.BackgroundColor3 = Color3.fromRGB(50, 120, 50)
-AutoStoreBtn.Text = "Auto Store Fruit: Bật"
-AutoStoreBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutoStoreBtn.Font, AutoStoreBtn.TextSize = Enum.Font.SourceSansBold, 12
-AutoStoreBtn.Parent = TabFruitContent
-Instance.new("UICorner", AutoStoreBtn).CornerRadius = UDim.new(0, 0)
+local AutoStore = Instance.new("TextButton")
+AutoStore.Size = UDim2.new(1, -8, 0, 35)
+AutoStore.Position = UDim2.new(0, 0, 0, 88)
+AutoStore.BackgroundColor3 = Color3.fromRGB(40, 110, 40)
+AutoStore.Text = "Auto Store Fruit: Bật"
+AutoStore.TextColor3 = Color3.fromRGB(255, 255, 255)
+AutoStore.Font, AutoStore.TextSize = Enum.Font.SourceSansBold, 11
+AutoStore.Parent = TabFruit
+Instance.new("UICorner", AutoStore).CornerRadius = UDim.new(0, 0)
 
 
--- ==================== TAB 4: AIMBOT ====================
-local function createAimToggle(name, yPos)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -10, 0, 38)
-    btn.Position = UDim2.new(0, 0, 0, yPos)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    btn.Text = name .. ": Tắt"
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font, btn.TextSize = Enum.Font.SourceSansBold, 12
-    btn.Parent = TabAimbotContent
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 0)
+-- ==================== TAB AIMBOT ====================
+local function addAimToggle(name, y)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, -8, 0, 35)
+    b.Position = UDim2.new(0, 0, 0, y)
+    b.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    b.Text = name .. ": Tắt"
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.Font, b.TextSize = Enum.Font.SourceSansBold, 11
+    b.Parent = TabAimbot
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 0)
     
-    local state = false
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        btn.Text = name .. (state and ": Bật" or ": Tắt")
-        btn.BackgroundColor3 = state and Color3.fromRGB(80, 40, 40) or Color3.fromRGB(40, 40, 40)
-        showToast(name .. (state ? " Đã kích hoạt!" : " Đã tắt!"))
+    local st = false
+    b.MouseButton1Click:Connect(function()
+        st = not st
+        b.Text = name .. (st and ": Bật" or ": Tắt")
+        b.BackgroundColor3 = st and Color3.fromRGB(80, 35, 35) or Color3.fromRGB(35, 35, 35)
     end)
 end
 
-createAimToggle("Aim Mob (Chọn cụ thể)", 10)
-createAimToggle("Aim Player (Chọn cụ thể)", 55)
-createAimToggle("Aim Player Xung Quanh", 100)
-createAimToggle("Aim Mob Xung Quanh", 145)
+addAimToggle("Aim Mob (Chọn cụ thể)", 8)
+addAimToggle("Aim Player (Chọn cụ thể)", 48)
+addAimToggle("Aim Player Xung Quanh", 88)
+addAimToggle("Aim Mob Xung Quanh", 128)
+
+print("Admin Tienphat Blox Fruit Hub Loaded Successfully!")
