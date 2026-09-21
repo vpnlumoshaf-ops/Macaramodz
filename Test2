@@ -205,7 +205,7 @@ Tab3Content.Size = UDim2.new(1, -20, 1, -90)
 Tab3Content.Position = UDim2.new(0, 10, 0, 85)
 Tab3Content.BackgroundTransparency = 1
 Tab3Content.Visible = false
-Tab3Content.CanvasSize = UDim2.new(0, 0, 0, 150)
+Tab3Content.CanvasSize = UDim2.new(0, 0, 0, 320)
 Tab3Content.ScrollBarThickness = 4
 Tab3Content.Parent = MainFrame
 
@@ -516,103 +516,6 @@ BtnThemeWhite.MouseButton1Click:Connect(function()
 end)
 
 
--- ==================== NỘI DUNG TAB 3 (AIMING FOV & AUTO NÉ ĐẠN) ====================
-local AimPlayerBtn = Instance.new("TextButton")
-AimPlayerBtn.Size = UDim2.new(1, 0, 0, 30)
-AimPlayerBtn.Position = UDim2.new(0, 0, 0, 10)
-AimPlayerBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-AimPlayerBtn.Text = "Bật/Tắt Aim Player (Trong FOV)"
-AimPlayerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AimPlayerBtn.Font = Enum.Font.SourceSansBold
-AimPlayerBtn.TextSize = 13
-AimPlayerBtn.Parent = Tab3Content
-Instance.new("UICorner", AimPlayerBtn).CornerRadius = UDim.new(0, 6)
-
-local aimPlayerEnabled = false
-AimPlayerBtn.MouseButton1Click:Connect(function()
-    aimPlayerEnabled = not aimPlayerEnabled
-    AimPlayerBtn.BackgroundColor3 = aimPlayerEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
-end)
-
-local AimMobBtn = Instance.new("TextButton")
-AimMobBtn.Size = UDim2.new(1, 0, 0, 30)
-AimMobBtn.Position = UDim2.new(0, 0, 0, 45)
-AimMobBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-AimMobBtn.Text = "Bật/Tắt Aim Mob (Trong FOV)"
-AimMobBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AimMobBtn.Font = Enum.Font.SourceSansBold
-AimMobBtn.TextSize = 13
-AimMobBtn.Parent = Tab3Content
-Instance.new("UICorner", AimMobBtn).CornerRadius = UDim.new(0, 6)
-
-local aimMobEnabled = false
-AimMobBtn.MouseButton1Click:Connect(function()
-    aimMobEnabled = not aimMobEnabled
-    AimMobBtn.BackgroundColor3 = aimMobEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
-end)
-
--- Nút Bật/Tắt hiển thị vòng tròn FOV
-local FOVBtn = Instance.new("TextButton")
-FOVBtn.Size = UDim2.new(1, 0, 0, 30)
-FOVBtn.Position = UDim2.new(0, 0, 0, 80)
-FOVBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-FOVBtn.Text = "Bật/Tắt Vòng Tròn FOV"
-FOVBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-FOVBtn.Font = Enum.Font.SourceSansBold
-FOVBtn.TextSize = 13
-FOVBtn.Parent = Tab3Content
-Instance.new("UICorner", FOVBtn).CornerRadius = UDim.new(0, 6)
-
-local fovVisible = false
-FOVBtn.MouseButton1Click:Connect(function()
-    fovVisible = not fovVisible
-    FOVBtn.BackgroundColor3 = fovVisible and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
-end)
-
--- Nút Bật/Tắt Auto Né Đạn
-local AutoDodgeBtn = Instance.new("TextButton")
-AutoDodgeBtn.Size = UDim2.new(1, 0, 0, 30)
-AutoDodgeBtn.Position = UDim2.new(0, 0, 0, 115)
-AutoDodgeBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-AutoDodgeBtn.Text = "Bật/Tắt Auto Né Đạn"
-AutoDodgeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutoDodgeBtn.Font = Enum.Font.SourceSansBold
-AutoDodgeBtn.TextSize = 13
-AutoDodgeBtn.Parent = Tab3Content
-Instance.new("UICorner", AutoDodgeBtn).CornerRadius = UDim.new(0, 6)
-
-local autoDodgeEnabled = false
-AutoDodgeBtn.MouseButton1Click:Connect(function()
-    autoDodgeEnabled = not autoDodgeEnabled
-    AutoDodgeBtn.BackgroundColor3 = autoDodgeEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
-end)
-
--- Tạo tâm vòng tròn FOV hiển thị trên màn hình
-local FOVRing = Drawing.new("Circle")
-FOVRing.Thickness = 2
-FOVRing.NumSides = 60
-FOVRing.Radius = 120 -- Bán kính vùng FOV
-FOVRing.Filled = false
-FOVRing.Color = Color3.fromRGB(0, 255, 0)
-FOVRing.Transparency = 0.8
-FOVRing.Visible = false
-
-local smoothness = 0.25
-
-RunService.RenderStepped:Connect(function()
-    if not getgenv().TphatFixLagLoaded then
-        FOVRing.Visible = false
-        return
-    end
-
-    local screenSize = Camera.ViewportSize
-    local centerScreen = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
-
-    -- Cập nhật vị trí vòng tròn FOV luôn ở chính giữa màn hình
-    FOVRing.Position = centerScreen
-    FOVRing.Visible = fovVisible
-
-    local targetPart = nil
 -- ==================== NỘI DUNG TAB 3 (AIMING MỞ RỘNG & FLY KILL) ====================
 
 -- 1. Thanh kéo (Slider) chỉnh kích thước FOV (10 - 360)
@@ -896,3 +799,5 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
+Admin Tienphat
