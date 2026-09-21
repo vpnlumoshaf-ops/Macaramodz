@@ -516,526 +516,7 @@ BtnThemeWhite.MouseButton1Click:Connect(function()
 end)
 
 
--- Kiểm tra và chống spam script (Đảm bảo chỉ tồn tại 1 menu duy nhất)
-if getgenv().TphatFixLagLoaded then
-    if getgenv().TphatCleanup then
-        getgenv().TphatCleanup()
-    end
-end
-getgenv().TphatFixLagLoaded = true
-
-local CoreGui = game:GetService("CoreGui")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Lighting = game:GetService("Lighting")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-
--- Container chính để quản lý việc dọn dẹp khi tắt hoặc reload script
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TphatFixLagMenu"
-ScreenGui.ResetOnSpawn = false
-
--- Đưa vào CoreGui nếu được, nếu không thì vào PlayerGui
-local success = pcall(function()
-    ScreenGui.Parent = CoreGui
-end)
-if not success then
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-end
-
-getgenv().TphatCleanup = function()
-    getgenv().TphatFixLagLoaded = false
-    if ScreenGui then
-        ScreenGui:Destroy()
-    end
-end
-
--- ==================== 1. NÚT NỔI (FLOATING BUTTON) ====================
-local FloatBtn = Instance.new("TextButton")
-FloatBtn.Name = "FloatButton"
-FloatBtn.Size = UDim2.new(0, 50, 0, 50)
-FloatBtn.Position = UDim2.new(0, 50, 0, 200)
-FloatBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-FloatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-FloatBtn.Text = "T.phat"
-FloatBtn.TextSize = 14
-FloatBtn.Font = Enum.Font.SourceSansBold
-FloatBtn.Active = true
-FloatBtn.Draggable = true
-FloatBtn.Parent = ScreenGui
-
-local UICornerFloat = Instance.new("UICorner")
-UICornerFloat.CornerRadius = UDim.new(0, 12)
-UICornerFloat.Parent = FloatBtn
-
--- Viền LED RGB 7 màu xoay quanh hình vuông bo góc
-local UIStrokeFloat = Instance.new("UIStroke")
-UIStrokeFloat.Thickness = 3
-UIStrokeFloat.Parent = FloatBtn
-
-task.spawn(function()
-    local hue = 0
-    while getgenv().TphatFixLagLoaded do
-        hue = (hue + 1) % 360
-        UIStrokeFloat.Color = Color3.fromHSV(hue / 360, 1, 1)
-        task.wait(0.05)
-    end
-end)
-
--- ==================== 2. MENU CHÍNH ====================
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 450, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -160)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.Visible = false
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
-
-local UICornerMain = Instance.new("UICorner")
-UICornerMain.CornerRadius = UDim.new(0, 8)
-UICornerMain.Parent = MainFrame
-
-local UIStrokeMain = Instance.new("UIStroke")
-UIStrokeMain.Color = Color3.fromRGB(50, 50, 50)
-UIStrokeMain.Thickness = 1
-UIStrokeMain.Parent = MainFrame
-
--- Thanh tiêu đề
-local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 35)
-TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-TopBar.Parent = MainFrame
-
-local UICornerTop = Instance.new("UICorner")
-UICornerTop.CornerRadius = UDim.new(0, 8)
-UICornerTop.Parent = TopBar
-
-local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size = UDim2.new(1, -80, 1, 0)
-TitleLabel.Position = UDim2.new(0, 10, 0, 0)
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "Admin Tienphat - Fix Lag Hub"
-TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleLabel.TextSize = 14
-TitleLabel.Font = Enum.Font.SourceSansBold
-TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-TitleLabel.Parent = TopBar
-
--- Nút ẩn menu (-)
-local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(1, -70, 0, 2)
-MinBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-MinBtn.Text = "-"
-MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinBtn.TextSize = 18
-MinBtn.Font = Enum.Font.SourceSansBold
-MinBtn.Parent = TopBar
-Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 4)
-
--- Nút tắt hẳn menu (x)
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -35, 0, 2)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-CloseBtn.Text = "x"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.TextSize = 16
-CloseBtn.Font = Enum.Font.SourceSansBold
-CloseBtn.Parent = TopBar
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
-
--- Sự kiện ẩn/tắt/mở menu
-FloatBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-end)
-MinBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
-end)
-CloseBtn.MouseButton1Click:Connect(function()
-    getgenv().TphatCleanup()
-end)
-
--- ==================== 3. TAB SYSTEM (3 TABS) ====================
-local TabBtnContainer = Instance.new("Frame")
-TabBtnContainer.Size = UDim2.new(1, -20, 0, 30)
-TabBtnContainer.Position = UDim2.new(0, 10, 0, 45)
-TabBtnContainer.BackgroundTransparency = 1
-TabBtnContainer.Parent = MainFrame
-
-local Tab1Btn = Instance.new("TextButton")
-Tab1Btn.Size = UDim2.new(0.33, -4, 1, 0)
-Tab1Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-Tab1Btn.Text = "Main Fix Lag"
-Tab1Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Tab1Btn.Font = Enum.Font.SourceSansBold
-Tab1Btn.TextSize = 13
-Tab1Btn.Parent = TabBtnContainer
-Instance.new("UICorner", Tab1Btn).CornerRadius = UDim.new(0, 6)
-
-local Tab2Btn = Instance.new("TextButton")
-Tab2Btn.Size = UDim2.new(0.33, -4, 1, 0)
-Tab2Btn.Position = UDim2.new(0.33, 2, 0, 0)
-Tab2Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Tab2Btn.Text = "Settings & ESP"
-Tab2Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-Tab2Btn.Font = Enum.Font.SourceSansBold
-Tab2Btn.TextSize = 13
-Tab2Btn.Parent = TabBtnContainer
-Instance.new("UICorner", Tab2Btn).CornerRadius = UDim.new(0, 6)
-
-local Tab3Btn = Instance.new("TextButton")
-Tab3Btn.Size = UDim2.new(0.33, -4, 1, 0)
-Tab3Btn.Position = UDim2.new(0.67, 2, 0, 0)
-Tab3Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Tab3Btn.Text = "Aiming"
-Tab3Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-Tab3Btn.Font = Enum.Font.SourceSansBold
-Tab3Btn.TextSize = 13
-Tab3Btn.Parent = TabBtnContainer
-Instance.new("UICorner", Tab3Btn).CornerRadius = UDim.new(0, 6)
-
--- Khung chứa nội dung Tab 1
-local Tab1Content = Instance.new("ScrollingFrame")
-Tab1Content.Size = UDim2.new(1, -20, 1, -90)
-Tab1Content.Position = UDim2.new(0, 10, 0, 85)
-Tab1Content.BackgroundTransparency = 1
-Tab1Content.CanvasSize = UDim2.new(0, 0, 0, 380)
-Tab1Content.ScrollBarThickness = 4
-Tab1Content.Parent = MainFrame
-
--- Khung chứa nội dung Tab 2
-local Tab2Content = Instance.new("ScrollingFrame")
-Tab2Content.Size = UDim2.new(1, -20, 1, -90)
-Tab2Content.Position = UDim2.new(0, 10, 0, 85)
-Tab2Content.BackgroundTransparency = 1
-Tab2Content.Visible = false
-Tab2Content.CanvasSize = UDim2.new(0, 0, 0, 200)
-Tab2Content.ScrollBarThickness = 4
-Tab2Content.Parent = MainFrame
-
--- Khung chứa nội dung Tab 3
-local Tab3Content = Instance.new("ScrollingFrame")
-Tab3Content.Size = UDim2.new(1, -20, 1, -90)
-Tab3Content.Position = UDim2.new(0, 10, 0, 85)
-Tab3Content.BackgroundTransparency = 1
-Tab3Content.Visible = false
-Tab3Content.CanvasSize = UDim2.new(0, 0, 0, 150)
-Tab3Content.ScrollBarThickness = 4
-Tab3Content.Parent = MainFrame
-
-Tab1Btn.MouseButton1Click:Connect(function()
-    Tab1Content.Visible = true
-    Tab2Content.Visible = false
-    Tab3Content.Visible = false
-    Tab1Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    Tab1Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Tab2Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Tab2Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-    Tab3Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Tab3Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-end)
-
-Tab2Btn.MouseButton1Click:Connect(function()
-    Tab2Content.Visible = true
-    Tab1Content.Visible = false
-    Tab3Content.Visible = false
-    Tab2Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    Tab2Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Tab1Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Tab1Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-    Tab3Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Tab3Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-end)
-
-Tab3Btn.MouseButton1Click:Connect(function()
-    Tab3Content.Visible = true
-    Tab1Content.Visible = false
-    Tab2Content.Visible = false
-    Tab3Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    Tab3Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Tab1Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Tab1Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-    Tab2Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Tab2Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-end)
-
--- ==================== NỘI DUNG TAB 1 (MAIN FIX LAG) ====================
-local FixLagDropdownLabel = Instance.new("TextLabel")
-FixLagDropdownLabel.Size = UDim2.new(1, 0, 0, 25)
-FixLagDropdownLabel.BackgroundTransparency = 1
-FixLagDropdownLabel.Text = "Chọn mức độ Fix Lag:"
-FixLagDropdownLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-FixLagDropdownLabel.Font = Enum.Font.SourceSansBold
-FixLagDropdownLabel.TextSize = 13
-FixLagDropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
-FixLagDropdownLabel.Parent = Tab1Content
-
-local currentFixLevel = "Nhe"
-
-local BtnNhe = Instance.new("TextButton")
-BtnNhe.Size = UDim2.new(1, 0, 0, 30)
-BtnNhe.Position = UDim2.new(0, 0, 0, 30)
-BtnNhe.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-BtnNhe.Text = "1. Fix Nhẹ (Xóa trang phục)"
-BtnNhe.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnNhe.Font = Enum.Font.SourceSansBold
-BtnNhe.TextSize = 13
-BtnNhe.Parent = Tab1Content
-Instance.new("UICorner", BtnNhe).CornerRadius = UDim.new(0, 6)
-
-local BtnTrungBinh = Instance.new("TextButton")
-BtnTrungBinh.Size = UDim2.new(1, 0, 0, 30)
-BtnTrungBinh.Position = UDim2.new(0, 0, 0, 65)
-BtnTrungBinh.BackgroundColor3 = Color3.fromRGB(50, 50, 150)
-BtnTrungBinh.Text = "2. Fix Trung Bình (+ Xóa Texture mặt map)"
-BtnTrungBinh.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnTrungBinh.Font = Enum.Font.SourceSansBold
-BtnTrungBinh.TextSize = 13
-BtnTrungBinh.Parent = Tab1Content
-Instance.new("UICorner", BtnTrungBinh).CornerRadius = UDim.new(0, 6)
-
-local BtnManh = Instance.new("TextButton")
-BtnManh.Size = UDim2.new(1, 0, 0, 30)
-BtnManh.Position = UDim2.new(0, 0, 0, 100)
-BtnManh.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-BtnManh.Text = "3. Fix Mạnh (Tối đa: Xóa vật thể/Anim/VFX)"
-BtnManh.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnManh.Font = Enum.Font.SourceSansBold
-BtnManh.TextSize = 13
-BtnManh.Parent = Tab1Content
-Instance.new("UICorner", BtnManh).CornerRadius = UDim.new(0, 6)
-
-local ExecuteFixBtn = Instance.new("TextButton")
-ExecuteFixBtn.Size = UDim2.new(1, 0, 0, 35)
-ExecuteFixBtn.Position = UDim2.new(0, 0, 0, 140)
-ExecuteFixBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-ExecuteFixBtn.Text = "THỰC THI FIX LAG ĐÃ CHỌN"
-ExecuteFixBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ExecuteFixBtn.Font = Enum.Font.SourceSansBold
-ExecuteFixBtn.TextSize = 14
-ExecuteFixBtn.Parent = Tab1Content
-Instance.new("UICorner", ExecuteFixBtn).CornerRadius = UDim.new(0, 6)
-
-BtnNhe.MouseButton1Click:Connect(function()
-    currentFixLevel = "Nhe"
-    BtnNhe.BackgroundColor3 = Color3.fromRGB(80, 200, 80)
-    BtnTrungBinh.BackgroundColor3 = Color3.fromRGB(50, 50, 150)
-    BtnManh.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-end)
-
-BtnTrungBinh.MouseButton1Click:Connect(function()
-    currentFixLevel = "TrungBinh"
-    BtnNhe.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-    BtnTrungBinh.BackgroundColor3 = Color3.fromRGB(80, 80, 220)
-    BtnManh.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-end)
-
-BtnManh.MouseButton1Click:Connect(function()
-    currentFixLevel = "Manh"
-    BtnNhe.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-    BtnTrungBinh.BackgroundColor3 = Color3.fromRGB(50, 50, 150)
-    BtnManh.BackgroundColor3 = Color3.fromRGB(220, 80, 80)
-end)
-
-ExecuteFixBtn.MouseButton1Click:Connect(function()
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p.Character then
-            for _, v in ipairs(p.Character:GetChildren()) do
-                if v:IsA("Accessory") or v:IsA("Clothing") or v:IsA("ShirtGraphic") then
-                    v:Destroy()
-                end
-            end
-        end
-    end
-
-    if currentFixLevel == "TrungBinh" or currentFixLevel == "Manh" then
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("Texture") or obj:IsA("Decal") then
-                obj:Destroy()
-            end
-        end
-    end
-
-    if currentFixLevel == "Manh" then
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("ParticleEmitter") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Trail") then
-                obj:Destroy()
-            end
-        end
-    end
-end)
-
-local MapToiBtn = Instance.new("TextButton")
-MapToiBtn.Size = UDim2.new(1, 0, 0, 30)
-MapToiBtn.Position = UDim2.new(0, 0, 0, 185)
-MapToiBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MapToiBtn.Text = "Nút 2: Map Tối (Chuyển Model/Texture thành đen)"
-MapToiBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MapToiBtn.Font = Enum.Font.SourceSansBold
-MapToiBtn.TextSize = 13
-MapToiBtn.Parent = Tab1Content
-Instance.new("UICorner", MapToiBtn).CornerRadius = UDim.new(0, 6)
-
-MapToiBtn.MouseButton1Click:Connect(function()
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            obj.Color = Color3.fromRGB(15, 15, 15)
-            obj.Material = Enum.Material.SmoothPlastic
-        end
-    end
-end)
-
-local NoFogBtn = Instance.new("TextButton")
-NoFogBtn.Size = UDim2.new(1, 0, 0, 30)
-NoFogBtn.Position = UDim2.new(0, 0, 0, 225)
-NoFogBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-NoFogBtn.Text = "Nút 3: No Fog (Xóa sương mù)"
-NoFogBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-NoFogBtn.Font = Enum.Font.SourceSansBold
-NoFogBtn.TextSize = 13
-NoFogBtn.Parent = Tab1Content
-Instance.new("UICorner", NoFogBtn).CornerRadius = UDim.new(0, 6)
-
-NoFogBtn.MouseButton1Click:Connect(function()
-    Lighting.FogEnd = 999999
-    Lighting.GlobalShadows = false
-    for _, v in ipairs(Lighting:GetChildren()) do
-        if v:IsA("Atmosphere") then
-            v:Destroy()
-        end
-    end
-end)
-
-local NoSkyBtn = Instance.new("TextButton")
-NoSkyBtn.Size = UDim2.new(1, 0, 0, 30)
-NoSkyBtn.Position = UDim2.new(0, 0, 0, 265)
-NoSkyBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-NoSkyBtn.Text = "Nút 4: No Sky (Xóa bầu trời)"
-NoSkyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-NoSkyBtn.Font = Enum.Font.SourceSansBold
-NoSkyBtn.TextSize = 13
-NoSkyBtn.Parent = Tab1Content
-Instance.new("UICorner", NoSkyBtn).CornerRadius = UDim.new(0, 6)
-
-NoSkyBtn.MouseButton1Click:Connect(function()
-    for _, v in ipairs(Lighting:GetChildren()) do
-        if v:IsA("Sky") then
-            v:Destroy()
-        end
-    end
-end)
-
-local BrightnessBtn = Instance.new("TextButton")
-BrightnessBtn.Size = UDim2.new(1, 0, 0, 30)
-BrightnessBtn.Position = UDim2.new(0, 0, 0, 305)
-BrightnessBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-BrightnessBtn.Text = "Nút 5: Brightness (Sáng tối đa)"
-BrightnessBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-BrightnessBtn.Font = Enum.Font.SourceSansBold
-BrightnessBtn.TextSize = 13
-BrightnessBtn.Parent = Tab1Content
-Instance.new("UICorner", BrightnessBtn).CornerRadius = UDim.new(0, 6)
-
-BrightnessBtn.MouseButton1Click:Connect(function()
-    Lighting.Brightness = 3
-    Lighting.ClockTime = 14
-    Lighting.OutdoorAmbient = Color3.fromRGB(200, 200, 200)
-end)
-
-
--- ==================== NỘI DUNG TAB 2 (SETTINGS & ESP) ====================
-local ESPBtn = Instance.new("TextButton")
-ESPBtn.Size = UDim2.new(1, 0, 0, 35)
-ESPBtn.Position = UDim2.new(0, 0, 0, 10)
-ESPBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ESPBtn.Text = "Bật/Tắt ESP Box & Line Player"
-ESPBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ESPBtn.Font = Enum.Font.SourceSansBold
-ESPBtn.TextSize = 13
-ESPBtn.Parent = Tab2Content
-Instance.new("UICorner", ESPBtn).CornerRadius = UDim.new(0, 6)
-
-local espEnabled = false
-ESPBtn.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
-    ESPBtn.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
-end)
-
--- Logic ESP (Màu xanh lá: Color3.fromRGB(0, 255, 0))
-RunService.RenderStepped:Connect(function()
-    if not getgenv().TphatFixLagLoaded then return end
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            local highlight = p.Character:FindFirstChild("TphatESP")
-            if espEnabled then
-                if not highlight then
-                    highlight = Instance.new("Highlight")
-                    highlight.Name = "TphatESP"
-                    highlight.Adornee = p.Character
-                    highlight.FillTransparency = 1
-                    highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
-                    highlight.OutlineTransparency = 0
-                    highlight.Parent = p.Character
-                end
-            else
-                if highlight then
-                    highlight:Destroy()
-                end
-            end
-        end
-    end
-end)
-
-local BgColorLabel = Instance.new("TextLabel")
-BgColorLabel.Size = UDim2.new(1, 0, 0, 25)
-BgColorLabel.Position = UDim2.new(0, 0, 0, 55)
-BgColorLabel.BackgroundTransparency = 1
-BgColorLabel.Text = "Cài đặt màu nền Menu:"
-BgColorLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-BgColorLabel.Font = Enum.Font.SourceSansBold
-BgColorLabel.TextSize = 13
-BgColorLabel.TextXAlignment = Enum.TextXAlignment.Left
-BgColorLabel.Parent = Tab2Content
-
-local BtnThemeBlack = Instance.new("TextButton")
-BtnThemeBlack.Size = UDim2.new(0.48, 0, 0, 30)
-BtnThemeBlack.Position = UDim2.new(0, 0, 0, 85)
-BtnThemeBlack.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-BtnThemeBlack.Text = "Màu Đen"
-BtnThemeBlack.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnThemeBlack.Font = Enum.Font.SourceSansBold
-BtnThemeBlack.TextSize = 13
-BtnThemeBlack.Parent = Tab2Content
-Instance.new("UICorner", BtnThemeBlack).CornerRadius = UDim.new(0, 6)
-
-local BtnThemeWhite = Instance.new("TextButton")
-BtnThemeWhite.Size = UDim2.new(0.48, 0, 0, 30)
-BtnThemeWhite.Position = UDim2.new(0.52, 0, 0, 85)
-BtnThemeWhite.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-BtnThemeWhite.Text = "Màu Trắng"
-BtnThemeWhite.TextColor3 = Color3.fromRGB(0, 0, 0)
-BtnThemeWhite.Font = Enum.Font.SourceSansBold
-BtnThemeWhite.TextSize = 13
-BtnThemeWhite.Parent = Tab2Content
-Instance.new("UICorner", BtnThemeWhite).CornerRadius = UDim.new(0, 6)
-
-BtnThemeBlack.MouseButton1Click:Connect(function()
-    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-end)
-
-BtnThemeWhite.MouseButton1Click:Connect(function()
-    MainFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-    TopBar.BackgroundColor3 = Color3.fromRGB(210, 210, 210)
-end)
-
-
-
--- ==================== NỘI DUNG TAB 3 (AIMING MƯỢT MÀ - ĐÃ TỐI ƯU) ====================
+-- ==================== NỘI DUNG TAB 3 (AIMING) ====================
 local AimPlayerBtn = Instance.new("TextButton")
 AimPlayerBtn.Size = UDim2.new(1, 0, 0, 35)
 AimPlayerBtn.Position = UDim2.new(0, 0, 0, 10)
@@ -1070,35 +551,37 @@ AimMobBtn.MouseButton1Click:Connect(function()
     AimMobBtn.BackgroundColor3 = aimMobEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
 end)
 
--- Tốc độ mượt mà (Smoothing factor) - Số càng nhỏ càng mượt (tránh giật cục)
-local smoothness = 0.25 
-
+-- Logic xử lý Aiming (Aim Player & Aim Mob)
 RunService.RenderStepped:Connect(function()
     if not getgenv().TphatFixLagLoaded then return end
 
-    local targetPart = nil
-    local shortestDistance = math.huge
-
-    -- 1. Tìm mục tiêu là Player nếu bật Aim Player
     if aimPlayerEnabled then
+        local closestPlayer = nil
+        local shortestDistance = math.huge
+        
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                 local humanoid = p.Character:FindFirstChildOfClass("Humanoid")
                 if humanoid and humanoid.Health > 0 then
                     local pos = p.Character.HumanoidRootPart.Position
-                    local distance = (pos - Camera.CFrame.Position).Magnitude
+                    local distance = (pos - Camera.CoordinateFrame.Position).Magnitude
                     if distance < shortestDistance then
                         shortestDistance = distance
-                        -- Ngắm vào phần Ngực/Đầu (Head hoặc UpperTorso) để chuẩn xác nhất
-                        targetPart = p.Character:FindFirstChild("Head") or p.Character.HumanoidRootPart
+                        closestPlayer = p.Character.HumanoidRootPart
                     end
                 end
             end
         end
+        
+        if closestPlayer then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position)
+        end
     end
 
-    -- 2. Nếu không có Player hoặc tắt Aim Player, tìm Mob nếu bật Aim Mob
-    if aimMobEnabled and not targetPart then
+    if aimMobEnabled then
+        local closestMob = nil
+        local shortestDistance = math.huge
+        
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
                 local isPlayer = false
@@ -1113,27 +596,15 @@ RunService.RenderStepped:Connect(function()
                     local humanoid = obj.Humanoid
                     if humanoid.Health > 0 then
                         local pos = obj.HumanoidRootPart.Position
-                        local distance = (pos - Camera.CFrame.Position).Magnitude
+                        local distance = (pos - Camera.CoordinateFrame.Position).Magnitude
                         if distance < shortestDistance then
                             shortestDistance = distance
-                            targetPart = obj:FindFirstChild("Head") or obj.HumanoidRootPart
+                            closestMob = obj.HumanoidRootPart
                         end
                     end
                 end
             end
         end
-    end
-
-    -- 3. Thực hiện khóa mục tiêu mượt mà KHÔNG làm rời camera khỏi nhân vật
-    if targetPart then
-        local currentCFrame = Camera.CFrame
-        -- Tạo góc nhìn mới hướng về mục tiêu nhưng giữ nguyên vị trí mắt (Camera position) của bạn
-        local targetCFrame = CFrame.new(currentCFrame.Position, targetPart.Position)
-        
-        -- Dùng CFrame.Lerp để xoay camera từ từ, tạo độ mượt (không bị giật hay văng góc nhìn)
-        Camera.CFrame = currentCFrame:Lerp(targetCFrame, smoothness)
-    end
-end)
         
         if closestMob then
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestMob.Position)
