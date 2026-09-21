@@ -517,6 +517,7 @@ end)
 
 
 -- ==================== NỘI DUNG TAB 3 (AIMING) ====================
+-- ==================== NỘI DUNG TAB 3 (AIMING MƯỢT MÀ - ĐÃ TỐI ƯU) ====================
 local AimPlayerBtn = Instance.new("TextButton")
 AimPlayerBtn.Size = UDim2.new(1, 0, 0, 35)
 AimPlayerBtn.Position = UDim2.new(0, 0, 0, 10)
@@ -533,6 +534,89 @@ AimPlayerBtn.MouseButton1Click:Connect(function()
     aimPlayerEnabled = not aimPlayerEnabled
     AimPlayerBtn.BackgroundColor3 = aimPlayerEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
 end)
+
+local AimMobBtn = Instance.new("TextButton")
+AimMobBtn.Size = UDim2.new(1, 0, 0, 35)
+AimMobBtn.Position = UDim2.new(0, 0, 0, 55)
+AimMobBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+AimMobBtn.Text = "Bật/Tắt Aim Mob (Khóa Quái/NPC)"
+AimMobBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimMobBtn.Font = Enum.Font.SourceSansBold
+AimMobBtn.TextSize = 13
+AimMobBtn.Parent = Tab3Content
+Instance.new("UICorner", AimMobBtn).CornerRadius = UDim.new(0, 6)
+
+local aimMobEnabled = false
+AimMobBtn.MouseButton1Click:Connect(function()
+    aimMobEnabled = not aimMobEnabled
+    AimMobBtn.BackgroundColor3 = aimMobEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
+end)
+
+-- Tốc độ mượt mà (Smoothing factor) - Số càng nhỏ càng mượt (tránh giật cục)
+local smoothness = 0.25 
+
+RunService.RenderStepped:Connect(function()
+    if not getgenv().TphatFixLagLoaded then return end
+
+    local targetPart = nil
+    local shortestDistance = math.huge
+
+    -- 1. Tìm mục tiêu là Player nếu bật Aim Player
+    if aimPlayerEnabled then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                local humanoid = p.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid and humanoid.Health > 0 then
+                    local pos = p.Character.HumanoidRootPart.Position
+                    local distance = (pos - Camera.CFrame.Position).Magnitude
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        -- Ngắm vào phần Ngực/Đầu (Head hoặc UpperTorso) để chuẩn xác nhất
+                        targetPart = p.Character:FindFirstChild("Head") or p.Character.HumanoidRootPart
+                    end
+                end
+            end
+        end
+    end
+
+    -- 2. Nếu không có Player hoặc tắt Aim Player, tìm Mob nếu bật Aim Mob
+    if aimMobEnabled and not targetPart then
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
+                local isPlayer = false
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p.Character == obj then
+                        isPlayer = true
+                        break
+                    end
+                end
+                
+                if not isPlayer then
+                    local humanoid = obj.Humanoid
+                    if humanoid.Health > 0 then
+                        local pos = obj.HumanoidRootPart.Position
+                        local distance = (pos - Camera.CFrame.Position).Magnitude
+                        if distance < shortestDistance then
+                            shortestDistance = distance
+                            targetPart = obj:FindFirstChild("Head") or obj.HumanoidRootPart
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- 3. Thực hiện khóa mục tiêu mượt mà KHÔNG làm rời camera khỏi nhân vật
+    if targetPart then
+        local currentCFrame = Camera.CFrame
+        -- Tạo góc nhìn mới hướng về mục tiêu nhưng giữ nguyên vị trí mắt (Camera position) của bạn
+        local targetCFrame = CFrame.new(currentCFrame.Position, targetPart.Position)
+        
+        -- Dùng CFrame.Lerp để xoay camera từ từ, tạo độ mượt (không bị giật hay văng góc nhìn)
+        Camera.CFrame = currentCFrame:Lerp(targetCFrame, smoothness)
+    end
+end)
+
 
 local AimMobBtn = Instance.new("TextButton")
 AimMobBtn.Size = UDim2.new(1, 0, 0, 35)
