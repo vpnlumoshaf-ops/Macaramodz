@@ -10,6 +10,7 @@ local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -17,13 +18,17 @@ local Camera = workspace.CurrentCamera
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "TphatFixLagMenu"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 -- Đưa vào CoreGui nếu được, nếu không thì vào PlayerGui
-local success = pcall(function()
+local success, err = pcall(function()
     ScreenGui.Parent = CoreGui
 end)
-if not success then
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+if not success or not ScreenGui.Parent then
+    pcall(function()
+        ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    end)
 end
 
 getgenv().TphatCleanup = function()
@@ -51,7 +56,6 @@ local UICornerFloat = Instance.new("UICorner")
 UICornerFloat.CornerRadius = UDim.new(0, 12)
 UICornerFloat.Parent = FloatBtn
 
--- Viền LED RGB 7 màu xoay quanh hình vuông bo góc
 local UIStrokeFloat = Instance.new("UIStroke")
 UIStrokeFloat.Thickness = 3
 UIStrokeFloat.Parent = FloatBtn
@@ -447,7 +451,6 @@ ESPBtn.MouseButton1Click:Connect(function()
     ESPBtn.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
 end)
 
--- Logic ESP (Màu xanh lá: Color3.fromRGB(0, 255, 0))
 RunService.RenderStepped:Connect(function()
     if not getgenv().TphatFixLagLoaded then return end
     for _, p in ipairs(Players:GetPlayers()) do
@@ -517,9 +520,7 @@ end)
 
 
 -- ==================== NỘI DUNG TAB 3 (AIMING MỞ RỘNG & FLY KILL) ====================
-
--- 1. Thanh kéo (Slider) chỉnh kích thước FOV (10 - 360)
-local fovRadiusValue = 120 -- Mặc định là 120
+local fovRadiusValue = 120
 
 local FOVSliderLabel = Instance.new("TextLabel")
 FOVSliderLabel.Size = UDim2.new(1, 0, 0, 20)
@@ -545,7 +546,6 @@ FOVSliderFill.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
 FOVSliderFill.Parent = FOVSliderBg
 Instance.new("UICorner", FOVSliderFill).CornerRadius = UDim.new(0, 4)
 
--- Xử lý kéo thanh Slider FOV
 local sliderDragging = false
 FOVSliderBg.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -553,13 +553,13 @@ FOVSliderBg.InputBegan:Connect(function(input)
     end
 end)
 
-game:GetService("UserInputService").InputEnded:Connect(function(input)
+UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         sliderDragging = false
     end
 end)
 
-game:GetService("UserInputService").InputChanged:Connect(function(input)
+UserInputService.InputChanged:Connect(function(input)
     if sliderDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local pos = input.Position.X
         local absPos = FOVSliderBg.AbsolutePosition.X
@@ -572,8 +572,6 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
     end
 end)
 
-
--- 2. Thanh kéo chỉnh Độ Cao Bay (Fly Height: 10 đến 500)
 local flyHeightValue = 50
 
 local FlySliderLabel = Instance.new("TextLabel")
@@ -607,13 +605,13 @@ FlySliderBg.InputBegan:Connect(function(input)
     end
 end)
 
-game:GetService("UserInputService").InputEnded:Connect(function(input)
+UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         flySliderDragging = false
     end
 end)
 
-game:GetService("UserInputService").InputChanged:Connect(function(input)
+UserInputService.InputChanged:Connect(function(input)
     if flySliderDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local pos = input.Position.X
         local absPos = FlySliderBg.AbsolutePosition.X
@@ -626,8 +624,6 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
     end
 end)
 
-
--- 3. Các nút chức năng Aim & Fly
 local AimNormalBtn = Instance.new("TextButton")
 AimNormalBtn.Size = UDim2.new(1, 0, 0, 28)
 AimNormalBtn.Position = UDim2.new(0, 0, 0, 88)
@@ -696,34 +692,37 @@ FlyManualBtn.MouseButton1Click:Connect(function()
     FlyManualBtn.BackgroundColor3 = flyManualEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
 end)
 
--- Tạo vòng tròn FOV hiển thị
-local FOVRing = Drawing.new("Circle")
-FOVRing.Thickness = 2
-FOVRing.NumSides = 60
-FOVRing.Filled = false
-FOVRing.Color = Color3.fromRGB(0, 255, 0)
-FOVRing.Transparency = 0.8
-FOVRing.Visible = false
+local FOVRing = nil
+pcall(function()
+    FOVRing = Drawing.new("Circle")
+    FOVRing.Thickness = 2
+    FOVRing.NumSides = 60
+    FOVRing.Filled = false
+    FOVRing.Color = Color3.fromRGB(0, 255, 0)
+    FOVRing.Transparency = 0.8
+    FOVRing.Visible = false
+end)
 
 local smoothness = 0.25
 
 RunService.RenderStepped:Connect(function()
     if not getgenv().TphatFixLagLoaded then
-        FOVRing.Visible = false
+        if FOVRing then FOVRing.Visible = false end
         return
     end
 
     local screenSize = Camera.ViewportSize
     local centerScreen = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
 
-    FOVRing.Radius = fovRadiusValue
-    FOVRing.Position = centerScreen
-    FOVRing.Visible = aimFOVEnabled
+    if FOVRing then
+        FOVRing.Radius = fovRadiusValue
+        FOVRing.Position = centerScreen
+        FOVRing.Visible = aimFOVEnabled
+    end
 
     local targetPart = nil
     local shortestDistance = math.huge
 
-    -- 1. Xử lý Aim Thường (Toàn bản đồ)
     if aimNormalEnabled then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
@@ -740,7 +739,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 2. Xử lý Aim FOV (Trong phạm vi vòng tròn)
     if aimFOVEnabled and not targetPart then
         shortestDistance = fovRadiusValue
         for _, p in ipairs(Players:GetPlayers()) do
@@ -761,23 +759,19 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Khóa góc nhìn camera mượt mà cho Aim
     if targetPart then
         local currentCFrame = Camera.CFrame
         local targetCFrame = CFrame.new(currentCFrame.Position, targetPart.Position)
         Camera.CFrame = currentCFrame:Lerp(targetCFrame, smoothness)
     end
 
-    -- 3. Xử lý Fly Kill & Fly Manual (Đứng tại chỗ bay lên độ cao tùy chỉnh)
     if (flyKillEnabled or flyManualEnabled) and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local rootPart = LocalPlayer.Character.HumanoidRootPart
         local currentPos = rootPart.Position
         
-        -- Ghim nhân vật đứng lơ lửng trên không ở độ cao đã chọn
         rootPart.Velocity = Vector3.new(0, 0, 0)
         rootPart.CFrame = CFrame.new(currentPos.X, currentPos.Y + (flyHeightValue * 0.05), currentPos.Z)
 
-        -- Nếu là Fly Kill thì tự động khóa tâm bắn vào kẻ địch gần nhất để máy tự xử lý
         if flyKillEnabled then
             local closestEnemy = nil
             local minD = math.huge
