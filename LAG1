@@ -1,0 +1,20 @@
+-- Fix Lag Mesh + Texture (Chạy thẳng, không menu)
+for _, v in pairs(workspace:GetDescendants()) do
+    if v:IsA("MeshPart") or v:IsA("SpecialMesh") or v:IsA("FileMesh")
+    or v:IsA("Texture") or v:IsA("Decal") then
+        pcall(function()
+            v:Destroy()
+        end)
+    end
+end
+
+workspace.DescendantAdded:Connect(function(v)
+    if v:IsA("MeshPart") or v:IsA("SpecialMesh") or v:IsA("FileMesh")
+    or v:IsA("Texture") or v:IsA("Decal") then
+        pcall(function()
+            v:Destroy()
+        end)
+    end
+end)
+
+print("✅ Fix Lag đã chạy")
