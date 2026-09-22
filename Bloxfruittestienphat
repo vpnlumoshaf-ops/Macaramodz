@@ -1,4 +1,4 @@
--- T.Phat Bloxfruit Menu (Updated)
+-- T.Phat Bloxfruit Menu (Updated 2)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
@@ -53,7 +53,7 @@ Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TitleBar
 
--- Nút ẩn (-)
+-- Nút ẩn (–)
 local MinimizeBtn = Instance.new("TextButton")
 MinimizeBtn.Size = UDim2.new(0, 28, 0, 28)
 MinimizeBtn.Position = UDim2.new(1, -62, 0, 3)
@@ -64,7 +64,7 @@ MinimizeBtn.TextSize = 20
 MinimizeBtn.Font = Enum.Font.GothamBold
 MinimizeBtn.Parent = TitleBar
 
--- Nút tắt (X)
+-- Nút tắt (×)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 28, 0, 28)
 CloseBtn.Position = UDim2.new(1, -32, 0, 3)
@@ -117,8 +117,8 @@ local Pages = {
 
 for name, page in pairs(Pages) do
     page.Name = name
-    page.Size = UDim2.new(1, -20, 1, -20)
-    page.Position = UDim2.new(0, 10, 0, 10)
+    page.Size = UDim2.new(1, -16, 1, -16)
+    page.Position = UDim2.new(0, 8, 0, 8)
     page.BackgroundTransparency = 1
     page.Visible = false
     page.Parent = ContentFrame
@@ -170,13 +170,13 @@ MainTab.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 -- ===== TAB VISUAL =====
 local FixLagBtn = Instance.new("TextButton")
-FixLagBtn.Size = UDim2.new(0, 150, 0, 32) -- nhỏ hơn
-FixLagBtn.Position = UDim2.new(0, 15, 0, 15)
-FixLagBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45) -- cùng màu giao diện
+FixLagBtn.Size = UDim2.new(0, 140, 0, 30)
+FixLagBtn.Position = UDim2.new(0, 6, 0, 8) -- sát tab hơn
+FixLagBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 FixLagBtn.BorderSizePixel = 0
 FixLagBtn.Text = "Fix Lag"
 FixLagBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
-FixLagBtn.TextSize = 14
+FixLagBtn.TextSize = 13
 FixLagBtn.Font = Enum.Font.Gotham
 FixLagBtn.Parent = Pages.Visual
 
@@ -188,10 +188,10 @@ FixLagBtn.MouseButton1Click:Connect(function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/vpnlumoshaf-ops/Macaramodz/refs/heads/main/LAG1"))()
 end)
 
--- ===== TAB MAIN & SETTINGS (placeholder) =====
+-- ===== TAB MAIN & SETTINGS =====
 local MainLabel = Instance.new("TextLabel")
 MainLabel.Size = UDim2.new(1, 0, 0, 30)
-MainLabel.Position = UDim2.new(0, 10, 0, 10)
+MainLabel.Position = UDim2.new(0, 6, 0, 8)
 MainLabel.BackgroundTransparency = 1
 MainLabel.Text = "Tab Main - Đang trống"
 MainLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -202,7 +202,7 @@ MainLabel.Parent = Pages.Main
 
 local SettingsLabel = Instance.new("TextLabel")
 SettingsLabel.Size = UDim2.new(1, 0, 0, 30)
-SettingsLabel.Position = UDim2.new(0, 10, 0, 10)
+SettingsLabel.Position = UDim2.new(0, 6, 0, 8)
 SettingsLabel.BackgroundTransparency = 1
 SettingsLabel.Text = "Tab Settings - Đang trống"
 SettingsLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -211,7 +211,7 @@ SettingsLabel.Font = Enum.Font.Gotham
 SettingsLabel.TextXAlignment = Enum.TextXAlignment.Left
 SettingsLabel.Parent = Pages.Settings
 
--- ===== Nút nổi "Menu" =====
+-- ===== Nút nổi "Menu" (kéo được) =====
 local FloatBtn = Instance.new("TextButton")
 FloatBtn.Size = UDim2.new(0, 70, 0, 30)
 FloatBtn.Position = UDim2.new(0, 20, 0.5, -15)
@@ -222,11 +222,52 @@ FloatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 FloatBtn.TextSize = 14
 FloatBtn.Font = Enum.Font.GothamBold
 FloatBtn.Parent = ScreenGui
-FloatBtn.Visible = false -- ẩn khi menu đang mở
+FloatBtn.Visible = false
+FloatBtn.Active = true
+FloatBtn.Draggable = true -- kéo được
 
 local FloatCorner = Instance.new("UICorner")
 FloatCorner.CornerRadius = UDim.new(0, 6)
 FloatCorner.Parent = FloatBtn
+
+-- ===== Resize Handle (kéo giãn menu) =====
+local ResizeHandle = Instance.new("TextButton")
+ResizeHandle.Size = UDim2.new(0, 18, 0, 18)
+ResizeHandle.Position = UDim2.new(1, -18, 1, -18)
+ResizeHandle.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+ResizeHandle.BorderSizePixel = 0
+ResizeHandle.Text = ""
+ResizeHandle.Parent = Main
+ResizeHandle.ZIndex = 10
+
+local ResizeCorner = Instance.new("UICorner")
+ResizeCorner.CornerRadius = UDim.new(0, 4)
+ResizeCorner.Parent = ResizeHandle
+
+local resizing = false
+local startPos, startSize
+
+ResizeHandle.MouseButton1Down:Connect(function()
+    resizing = true
+    startPos = UserInputService:GetMouseLocation()
+    startSize = Main.Size
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local current = UserInputService:GetMouseLocation()
+        local delta = current - startPos
+        local newX = math.clamp(startSize.X.Offset + delta.X, 380, 700)
+        local newY = math.clamp(startSize.Y.Offset + delta.Y, 260, 500)
+        Main.Size = UDim2.new(0, newX, 0, newY)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        resizing = false
+    end
+end)
 
 -- Chức năng ẩn / hiện
 local function ToggleMenu(show)
