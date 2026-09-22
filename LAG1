@@ -1,20 +1,37 @@
--- Fix Lag Mesh + Texture (Chạy thẳng, không menu)
+-- Fix Lag Mesh + Texture (Không reset nhân vật)
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local function isCharacter(obj)
+    local char = LocalPlayer.Character
+    if char and obj:IsDescendantOf(char) then
+        return true
+    end
+    return false
+end
+
+-- Xóa Mesh + Texture (trừ nhân vật)
 for _, v in pairs(workspace:GetDescendants()) do
-    if v:IsA("MeshPart") or v:IsA("SpecialMesh") or v:IsA("FileMesh")
-    or v:IsA("Texture") or v:IsA("Decal") then
-        pcall(function()
-            v:Destroy()
-        end)
+    if not isCharacter(v) then
+        if v:IsA("MeshPart") or v:IsA("SpecialMesh") or v:IsA("FileMesh")
+        or v:IsA("Texture") or v:IsA("Decal") then
+            pcall(function()
+                v:Destroy()
+            end)
+        end
     end
 end
 
+-- Tự xóa object mới (trừ nhân vật)
 workspace.DescendantAdded:Connect(function(v)
-    if v:IsA("MeshPart") or v:IsA("SpecialMesh") or v:IsA("FileMesh")
-    or v:IsA("Texture") or v:IsA("Decal") then
-        pcall(function()
-            v:Destroy()
-        end)
+    if not isCharacter(v) then
+        if v:IsA("MeshPart") or v:IsA("SpecialMesh") or v:IsA("FileMesh")
+        or v:IsA("Texture") or v:IsA("Decal") then
+            pcall(function()
+                v:Destroy()
+            end)
+        end
     end
 end)
 
-print("✅ Fix Lag đã chạy")
+print("✅ Fix Lag đã chạy (không reset nhân vật)")
