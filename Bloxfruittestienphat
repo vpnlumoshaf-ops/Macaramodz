@@ -1,0 +1,212 @@
+-- T.Phat Bloxfruit Menu
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+-- Tạo ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "TPhatBloxfruit"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = game:GetService("CoreGui")
+
+-- Main Frame
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.new(0, 480, 0, 320)
+Main.Position = UDim2.new(0.5, -240, 0.5, -160)
+Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Draggable = true
+Main.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = Main
+
+-- Title Bar
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 35)
+TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = Main
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 10)
+TitleCorner.Parent = TitleBar
+
+local TitleFix = Instance.new("Frame")
+TitleFix.Size = UDim2.new(1, 0, 0, 15)
+TitleFix.Position = UDim2.new(0, 0, 1, -15)
+TitleFix.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+TitleFix.BorderSizePixel = 0
+TitleFix.Parent = TitleBar
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -40, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "T.Phat Bloxfruit"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 16
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TitleBar
+
+-- Close Button
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -32, 0, 2)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "×"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+CloseBtn.TextSize = 22
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Parent = TitleBar
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Left Tab Buttons
+local TabFrame = Instance.new("Frame")
+TabFrame.Size = UDim2.new(0, 120, 1, -45)
+TabFrame.Position = UDim2.new(0, 10, 0, 40)
+TabFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+TabFrame.BorderSizePixel = 0
+TabFrame.Parent = Main
+
+local TabCorner = Instance.new("UICorner")
+TabCorner.CornerRadius = UDim.new(0, 8)
+TabCorner.Parent = TabFrame
+
+local TabList = Instance.new("UIListLayout")
+TabList.Padding = UDim.new(0, 6)
+TabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+TabList.Parent = TabFrame
+
+local TabPadding = Instance.new("UIPadding")
+TabPadding.PaddingTop = UDim.new(0, 8)
+TabPadding.Parent = TabFrame
+
+-- Right Content
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Size = UDim2.new(1, -145, 1, -45)
+ContentFrame.Position = UDim2.new(0, 140, 0, 40)
+ContentFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+ContentFrame.BorderSizePixel = 0
+ContentFrame.Parent = Main
+
+local ContentCorner = Instance.new("UICorner")
+ContentCorner.CornerRadius = UDim.new(0, 8)
+ContentCorner.Parent = ContentFrame
+
+-- Pages
+local Pages = {
+    Main = Instance.new("Frame"),
+    Visual = Instance.new("Frame"),
+    Settings = Instance.new("Frame")
+}
+
+for name, page in pairs(Pages) do
+    page.Name = name
+    page.Size = UDim2.new(1, -20, 1, -20)
+    page.Position = UDim2.new(0, 10, 0, 10)
+    page.BackgroundTransparency = 1
+    page.Visible = false
+    page.Parent = ContentFrame
+end
+
+Pages.Main.Visible = true
+
+-- Tạo nút Tab
+local function CreateTab(name, order)
+    local Btn = Instance.new("TextButton")
+    Btn.Name = name
+    Btn.Size = UDim2.new(0, 105, 0, 32)
+    Btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    Btn.BorderSizePixel = 0
+    Btn.Text = name
+    Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Btn.TextSize = 14
+    Btn.Font = Enum.Font.Gotham
+    Btn.LayoutOrder = order
+    Btn.Parent = TabFrame
+
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 6)
+    BtnCorner.Parent = Btn
+
+    Btn.MouseButton1Click:Connect(function()
+        for _, page in pairs(Pages) do
+            page.Visible = false
+        end
+        Pages[name].Visible = true
+
+        for _, child in pairs(TabFrame:GetChildren()) do
+            if child:IsA("TextButton") then
+                child.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+                child.TextColor3 = Color3.fromRGB(200, 200, 200)
+            end
+        end
+        Btn.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+        Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+
+    return Btn
+end
+
+local MainTab = CreateTab("Main", 1)
+local VisualTab = CreateTab("Visual", 2)
+local SettingsTab = CreateTab("Settings", 3)
+
+-- Highlight tab đầu
+MainTab.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+MainTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+-- ===== TAB VISUAL =====
+local FixLagBtn = Instance.new("TextButton")
+FixLagBtn.Size = UDim2.new(0, 200, 0, 38)
+FixLagBtn.Position = UDim2.new(0, 15, 0, 15)
+FixLagBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+FixLagBtn.BorderSizePixel = 0
+FixLagBtn.Text = "Fix Lag"
+FixLagBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FixLagBtn.TextSize = 15
+FixLagBtn.Font = Enum.Font.GothamBold
+FixLagBtn.Parent = Pages.Visual
+
+local FixLagCorner = Instance.new("UICorner")
+FixLagCorner.CornerRadius = UDim.new(0, 6)
+FixLagCorner.Parent = FixLagBtn
+
+FixLagBtn.MouseButton1Click:Connect(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/vpnlumoshaf-ops/Macaramodz/refs/heads/main/LAG1"))()
+end)
+
+-- ===== TAB MAIN (placeholder) =====
+local MainLabel = Instance.new("TextLabel")
+MainLabel.Size = UDim2.new(1, 0, 0, 30)
+MainLabel.Position = UDim2.new(0, 10, 0, 10)
+MainLabel.BackgroundTransparency = 1
+MainLabel.Text = "Tab Main - Đang trống"
+MainLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+MainLabel.TextSize = 14
+MainLabel.Font = Enum.Font.Gotham
+MainLabel.TextXAlignment = Enum.TextXAlignment.Left
+MainLabel.Parent = Pages.Main
+
+-- ===== TAB SETTINGS (placeholder) =====
+local SettingsLabel = Instance.new("TextLabel")
+SettingsLabel.Size = UDim2.new(1, 0, 0, 30)
+SettingsLabel.Position = UDim2.new(0, 10, 0, 10)
+SettingsLabel.BackgroundTransparency = 1
+SettingsLabel.Text = "Tab Settings - Đang trống"
+SettingsLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+SettingsLabel.TextSize = 14
+SettingsLabel.Font = Enum.Font.Gotham
+SettingsLabel.TextXAlignment = Enum.TextXAlignment.Left
+SettingsLabel.Parent = Pages.Settings
