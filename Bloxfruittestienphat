@@ -1,11 +1,8 @@
--- T.Phat Bloxfruit Menu
+-- T.Phat Bloxfruit Menu (Updated)
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
 
--- Tạo ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "TPhatBloxfruit"
 ScreenGui.ResetOnSpawn = false
@@ -46,7 +43,7 @@ TitleFix.BorderSizePixel = 0
 TitleFix.Parent = TitleBar
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -40, 1, 0)
+Title.Size = UDim2.new(1, -80, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "T.Phat Bloxfruit"
@@ -56,10 +53,21 @@ Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TitleBar
 
--- Close Button
+-- Nút ẩn (-)
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 28, 0, 28)
+MinimizeBtn.Position = UDim2.new(1, -62, 0, 3)
+MinimizeBtn.BackgroundTransparency = 1
+MinimizeBtn.Text = "–"
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 200, 50)
+MinimizeBtn.TextSize = 20
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.Parent = TitleBar
+
+-- Nút tắt (X)
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -32, 0, 2)
+CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseBtn.Position = UDim2.new(1, -32, 0, 3)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.Text = "×"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
@@ -67,11 +75,7 @@ CloseBtn.TextSize = 22
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Parent = TitleBar
 
-CloseBtn.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
-
--- Left Tab Buttons
+-- Left Tab
 local TabFrame = Instance.new("Frame")
 TabFrame.Size = UDim2.new(0, 120, 1, -45)
 TabFrame.Position = UDim2.new(0, 10, 0, 40)
@@ -92,7 +96,7 @@ local TabPadding = Instance.new("UIPadding")
 TabPadding.PaddingTop = UDim.new(0, 8)
 TabPadding.Parent = TabFrame
 
--- Right Content
+-- Content
 local ContentFrame = Instance.new("Frame")
 ContentFrame.Size = UDim2.new(1, -145, 1, -45)
 ContentFrame.Position = UDim2.new(0, 140, 0, 40)
@@ -119,10 +123,9 @@ for name, page in pairs(Pages) do
     page.Visible = false
     page.Parent = ContentFrame
 end
-
 Pages.Main.Visible = true
 
--- Tạo nút Tab
+-- Tạo Tab
 local function CreateTab(name, order)
     local Btn = Instance.new("TextButton")
     Btn.Name = name
@@ -155,7 +158,6 @@ local function CreateTab(name, order)
         Btn.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
         Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     end)
-
     return Btn
 end
 
@@ -163,20 +165,19 @@ local MainTab = CreateTab("Main", 1)
 local VisualTab = CreateTab("Visual", 2)
 local SettingsTab = CreateTab("Settings", 3)
 
--- Highlight tab đầu
 MainTab.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
 MainTab.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 -- ===== TAB VISUAL =====
 local FixLagBtn = Instance.new("TextButton")
-FixLagBtn.Size = UDim2.new(0, 200, 0, 38)
+FixLagBtn.Size = UDim2.new(0, 150, 0, 32) -- nhỏ hơn
 FixLagBtn.Position = UDim2.new(0, 15, 0, 15)
-FixLagBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+FixLagBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45) -- cùng màu giao diện
 FixLagBtn.BorderSizePixel = 0
 FixLagBtn.Text = "Fix Lag"
-FixLagBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-FixLagBtn.TextSize = 15
-FixLagBtn.Font = Enum.Font.GothamBold
+FixLagBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+FixLagBtn.TextSize = 14
+FixLagBtn.Font = Enum.Font.Gotham
 FixLagBtn.Parent = Pages.Visual
 
 local FixLagCorner = Instance.new("UICorner")
@@ -187,7 +188,7 @@ FixLagBtn.MouseButton1Click:Connect(function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/vpnlumoshaf-ops/Macaramodz/refs/heads/main/LAG1"))()
 end)
 
--- ===== TAB MAIN (placeholder) =====
+-- ===== TAB MAIN & SETTINGS (placeholder) =====
 local MainLabel = Instance.new("TextLabel")
 MainLabel.Size = UDim2.new(1, 0, 0, 30)
 MainLabel.Position = UDim2.new(0, 10, 0, 10)
@@ -199,7 +200,6 @@ MainLabel.Font = Enum.Font.Gotham
 MainLabel.TextXAlignment = Enum.TextXAlignment.Left
 MainLabel.Parent = Pages.Main
 
--- ===== TAB SETTINGS (placeholder) =====
 local SettingsLabel = Instance.new("TextLabel")
 SettingsLabel.Size = UDim2.new(1, 0, 0, 30)
 SettingsLabel.Position = UDim2.new(0, 10, 0, 10)
@@ -210,3 +210,46 @@ SettingsLabel.TextSize = 14
 SettingsLabel.Font = Enum.Font.Gotham
 SettingsLabel.TextXAlignment = Enum.TextXAlignment.Left
 SettingsLabel.Parent = Pages.Settings
+
+-- ===== Nút nổi "Menu" =====
+local FloatBtn = Instance.new("TextButton")
+FloatBtn.Size = UDim2.new(0, 70, 0, 30)
+FloatBtn.Position = UDim2.new(0, 20, 0.5, -15)
+FloatBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+FloatBtn.BorderSizePixel = 0
+FloatBtn.Text = "Menu"
+FloatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FloatBtn.TextSize = 14
+FloatBtn.Font = Enum.Font.GothamBold
+FloatBtn.Parent = ScreenGui
+FloatBtn.Visible = false -- ẩn khi menu đang mở
+
+local FloatCorner = Instance.new("UICorner")
+FloatCorner.CornerRadius = UDim.new(0, 6)
+FloatCorner.Parent = FloatBtn
+
+-- Chức năng ẩn / hiện
+local function ToggleMenu(show)
+    Main.Visible = show
+    FloatBtn.Visible = not show
+end
+
+MinimizeBtn.MouseButton1Click:Connect(function()
+    ToggleMenu(false)
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+FloatBtn.MouseButton1Click:Connect(function()
+    ToggleMenu(true)
+end)
+
+-- Phím tắt Ctrl + M
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.M and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+        ToggleMenu(not Main.Visible)
+    end
+end)
