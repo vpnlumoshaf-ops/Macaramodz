@@ -1,4 +1,4 @@
--- Fix Lag Mạnh + Brightness + No Fog
+-- Fix Lag Mạnh + Brightness + No Fog + Xóa Animation
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
@@ -23,6 +23,12 @@ local function clean(obj)
     if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam")
     or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles")
     or obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+        pcall(function() obj:Destroy() end)
+        return
+    end
+
+    -- Xóa Animation
+    if obj:IsA("Animation") or obj:IsA("AnimationClip") or obj:IsA("AnimationController") then
         pcall(function() obj:Destroy() end)
         return
     end
