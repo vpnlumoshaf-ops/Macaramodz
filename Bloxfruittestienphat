@@ -1,4 +1,4 @@
--- [[ ULTRA MENU: ESP RGB, AIMLOCK, FIX LAG & AUTO TP ATTACK ]] --
+-- [[ MASTER MENU: ESP BOX RGB, FLOATING BUTTONS, AIMLOCK, HITBOX X5/X10 & FIX LAG ]] --
 -- Developed by Admin Tienphat
 
 local Players = game:GetService("Players")
@@ -17,20 +17,57 @@ local settingsState = {
     RGBColor = false,
     Aimlock = false,
     FixLag = false,
-    AutoTPAttack = false
+    AutoTPAttack = false,
+    HitboxSize = 1 -- 1 là bình thường, 5 hoặc 10
 }
 
 local selectedTargetPlayer = nil
 local currentBoxColor = Color3.fromRGB(255, 0, 0)
 
--- 1. TẠO GIAO DIỆN MENU UI
+-- 1. TẠO GIAO DIỆN MENU GUI CHÍNH & NÚT NỔI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TienphatMasterMenu"
+ScreenGui.Name = "TienphatUltimateMenu"
 ScreenGui.Parent = CoreGui
 
+-- Nút nổi bật/tắt lại menu khi đã ẩn
+local OpenMenuBtn = Instance.new("TextButton")
+OpenMenuBtn.Size = UDim2.new(0, 45, 0, 45)
+OpenMenuBtn.Position = UDim2.new(0.02, 0, 0.15, 0)
+OpenMenuBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+OpenMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenMenuBtn.TextSize = 12
+OpenMenuBtn.Font = Enum.Font.SourceSansBold
+OpenMenuBtn.Text = "MENU"
+OpenMenuBtn.Visible = false
+OpenMenuBtn.Active = true
+OpenMenuBtn.Draggable = true
+OpenMenuBtn.Parent = ScreenGui
+
+local OpenCorner = Instance.new("UICorner")
+OpenCorner.CornerRadius = UDim.new(1, 0)
+OpenCorner.Parent = OpenMenuBtn
+
+-- Nút nổi đổi mục tiêu nhanh trên màn hình
+local QuickTargetBtn = Instance.new("TextButton")
+QuickTargetBtn.Size = UDim2.new(0, 110, 0, 35)
+QuickTargetBtn.Position = UDim2.new(0.02, 0, 0.25, 0)
+QuickTargetBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+QuickTargetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+QuickTargetBtn.TextSize = 11
+QuickTargetBtn.Font = Enum.Font.SourceSansBold
+QuickTargetBtn.Text = "Đổi Mục Tiêu"
+QuickTargetBtn.Active = true
+QuickTargetBtn.Draggable = true
+QuickTargetBtn.Parent = ScreenGui
+
+local QuickCorner = Instance.new("UICorner")
+QuickCorner.CornerRadius = UDim.new(0, 6)
+QuickCorner.Parent = QuickTargetBtn
+
+-- Khung Menu Chính
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 250, 0, 360)
-MainFrame.Position = UDim2.new(0.05, 0, 0.25, 0)
+MainFrame.Size = UDim2.new(0, 260, 0, 410)
+MainFrame.Position = UDim2.new(0.15, 0, 0.2, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -47,14 +84,35 @@ Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 13
 Title.Font = Enum.Font.SourceSansBold
-Title.Text = "Master Menu - Admin Tienphat"
+Title.Text = "Ultimate Menu - Admin Tienphat"
 Title.Parent = MainFrame
 
 local TitleCorner = Instance.new("UICorner")
 TitleCorner.CornerRadius = UDim.new(0, 8)
 TitleCorner.Parent = Title
 
--- Hàm tạo nút bấm
+-- Xử lý ẩn hiện menu
+local HideBtn = Instance.new("TextButton")
+HideBtn.Size = UDim2.new(0, 30, 0, 30)
+HideBtn.Position = UDim2.new(0.88, 0, 0.015, 0)
+HideBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+HideBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+HideBtn.TextSize = 12
+HideBtn.Font = Enum.Font.SourceSansBold
+HideBtn.Text = "X"
+HideBtn.Parent = MainFrame
+
+HideBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    OpenMenuBtn.Visible = true
+end)
+
+OpenMenuBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    OpenMenuBtn.Visible = false
+end)
+
+-- Hàm tạo nút bấm tính năng
 local function createButton(name, posY, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0.9, 0, 0, 32)
@@ -85,10 +143,10 @@ local function createButton(name, posY, callback)
     return btn
 end
 
--- 2. TẠO TỰ ĐỘNG CHỌN PLAYER TRONG SERVER
+-- Hiển thị thông tin mục tiêu hiện tại
 local TargetLabel = Instance.new("TextLabel")
 TargetLabel.Size = UDim2.new(0.9, 0, 0, 25)
-TargetLabel.Position = UDim2.new(0.05, 0, 0, 210)
+TargetLabel.Position = UDim2.new(0.05, 0, 0, 260)
 TargetLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 TargetLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
 TargetLabel.TextSize = 11
@@ -96,22 +154,9 @@ TargetLabel.Font = Enum.Font.SourceSansBold
 TargetLabel.Text = "Mục tiêu: Chưa chọn"
 TargetLabel.Parent = MainFrame
 
-local TargetBtn = Instance.new("TextButton")
-TargetBtn.Size = UDim2.new(0.9, 0, 0, 30)
-TargetBtn.Position = UDim2.new(0.05, 0, 0, 240)
-TargetBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-TargetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-TargetBtn.TextSize = 12
-TargetBtn.Font = Enum.Font.SourceSansBold
-TargetBtn.Text = "Đổi Mục Tiêu (Next Player)"
-TargetBtn.Parent = MainFrame
-
-local TargetBtnCorner = Instance.new("UICorner")
-TargetBtnCorner.CornerRadius = UDim.new(0, 6)
-TargetBtnCorner.Parent = TargetBtn
-
+-- Logic đổi mục tiêu (Dùng chung cho cả nút trong menu và nút nổi ngoài màn hình)
 local playerIndex = 1
-TargetBtn.MouseButton1Click:Connect(function()
+local function cycleTargetPlayer()
     local allPlayers = {}
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer then
@@ -128,9 +173,11 @@ TargetBtn.MouseButton1Click:Connect(function()
         TargetLabel.Text = "Không có người chơi khác"
         selectedTargetPlayer = nil
     end
-end)
+end
 
--- 3. ESP BOX & RGB MÀU
+QuickTargetBtn.MouseButton1Click:Connect(cycleTargetPlayer)
+
+-- 2. HỆ THỐNG ESP BOX (Đã sửa lỗi hiển thị chuẩn 2D)
 local espBoxes = {}
 
 local function createESPBox(player)
@@ -155,7 +202,7 @@ for _, p in ipairs(Players:GetPlayers()) do
     if p ~= LocalPlayer then createESPBox(p) end
 end
 
--- 4. AIMLOCK CAMERA GẦN NHẤT
+-- 3. HỆ THỐNG AIMLOCK
 local function getClosestPlayer()
     local target = nil
     local shortestDistance = math.huge
@@ -177,7 +224,7 @@ local function getClosestPlayer()
     return target
 end
 
--- 5. LẮP RÁP CÁC TÍNH NĂNG TRONG VÒNG LẶP RENDER
+-- 4. VÒNG LẶP RENDER CHÍNH
 RunService.RenderStepped:Connect(function()
     -- Cập nhật màu RGB
     if settingsState.RGBColor then
@@ -193,8 +240,8 @@ RunService.RenderStepped:Connect(function()
             local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
             if onScreen then
                 local head = player.Character:FindFirstChild("Head")
-                local topPosition = head and Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0)) or vector
-                local bottomPosition = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+                local topPosition = head and Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.8, 0)) or vector
+                local bottomPosition = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 2.5, 0))
                 
                 local height = math.abs(topPosition.Y - bottomPosition.Y)
                 local width = height / 2
@@ -218,23 +265,64 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Cập nhật Bay Lại (TP) & Tự Đánh (Auto Attack)
+    -- Cập nhật Bay Lại & Auto Đánh (Hỗ trợ đánh xa)
     if settingsState.AutoTPAttack and selectedTargetPlayer and selectedTargetPlayer.Character then
         local targetHRP = selectedTargetPlayer.Character:FindFirstChild("HumanoidRootPart")
         local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 
         if targetHRP and myHRP then
-            -- Teleport đến phía sau lưng mục tiêu 3 studs để đánh
             myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
-
-            -- Giả lập cú nhấp chuột / đòn đánh
             VirtualUser:CaptureController()
             VirtualUser:Button1Down(Vector2.new(0, 0))
         end
     end
+
+    -- Cập nhật Hitbox X5 / X10
+    if settingsState.HitboxSize > 1 then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = player.Character.HumanoidRootPart
+                hrp.Size = Vector3.new(2 * settingsState.HitboxSize, 2 * settingsState.HitboxSize, 2 * settingsState.HitboxSize)
+                hrp.Transparency = 0.7
+                hrp.CanCollide = false
+            end
+        end
+    end
 end)
 
--- 6. TÍNH NĂNG FIX LAG ĐỒ HỌA
+-- 5. CÁC NÚT ĐIỀU KHIỂN TRONG MENU
+createButton("ESP Box", 45, function(state) settingsState.ESPBox = state end)
+createButton("ESP Màu RGB", 80, function(state) settingsState.RGBColor = state end)
+createButton("Khóa Tâm (Aimlock)", 115, function(state) settingsState.Aimlock = state end)
+createButton("Bay Lại & Auto Đánh", 150, function(state) settingsState.AutoTPAttack = state end)
+
+-- Nút tùy chỉnh Hitbox X5 / X10
+createButton("Hitbox X5", 185, function(state)
+    if state then settingsState.HitboxSize = 5 else settingsState.HitboxSize = 1 end
+end)
+
+createButton("Hitbox X10", 220, function(state)
+    if state then settingsState.HitboxSize = 10 else settingsState.HitboxSize = 1 end
+end)
+
+-- Nút đổi mục tiêu tích hợp trong menu
+local MenuTargetBtn = Instance.new("TextButton")
+MenuTargetBtn.Size = UDim2.new(0.9, 0, 0, 30)
+MenuTargetBtn.Position = UDim2.new(0.05, 0, 0, 290)
+MenuTargetBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+MenuTargetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MenuTargetBtn.TextSize = 12
+MenuTargetBtn.Font = Enum.Font.SourceSansBold
+MenuTargetBtn.Text = "Chọn Mục Tiêu Tiếp Theo"
+MenuTargetBtn.Parent = MainFrame
+
+local MenuTargetCorner = Instance.new("UICorner")
+MenuTargetCorner.CornerRadius = UDim.new(0, 6)
+MenuTargetCorner.Parent = MenuTargetBtn
+
+MenuTargetBtn.MouseButton1Click:Connect(cycleTargetPlayer)
+
+-- Fix lag đồ họa
 local function applyFixLag(state)
     settingsState.FixLag = state
     if state then
@@ -254,15 +342,6 @@ local function applyFixLag(state)
     end
 end
 
--- Đăng ký các nút tính năng vào Menu
-createButton("ESP Box", 45, function(state) settingsState.ESPBox = state end)
-createButton("ESP Màu RGB", 80, function(state) settingsState.RGBColor = state end)
-createButton("Khóa Tâm (Aimlock)", 115, function(state) settingsState.Aimlock = state end)
-createButton("Bay Lại & Auto Đánh", 150, function(state) settingsState.AutoTPAttack = state end)
-createButton("Fix Lag Đồ Họa", 185, function(state) applyFixLag(state) end)
+createButton("Fix Lag Đồ Họa", 330, function(state) applyFixLag(state) end)
 
-createButton("Ẩn / Hiện Menu", 280, function()
-    MainFrame.Visible = not MainFrame.Visible
-end)
-
-print("Master Menu loaded successfully! - Admin Tienphat")
+print("Ultimate Menu Loaded - Admin Tienphat")
