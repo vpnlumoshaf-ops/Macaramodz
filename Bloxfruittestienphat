@@ -1,4 +1,4 @@
--- [[ MASTER MENU: ESP BOX RGB, FLOATING BUTTONS, AIMLOCK, HITBOX X5/X10 & FIX LAG ]] --
+-- [[ SKYWARS SEASON 3 - MASTER MENU: ESP, AIMLOCK, TP BASE, AUTO ATTACK & BED BREAKER ]] --
 -- Developed by Admin Tienphat
 
 local Players = game:GetService("Players")
@@ -18,18 +18,28 @@ local settingsState = {
     Aimlock = false,
     FixLag = false,
     AutoTPAttack = false,
-    HitboxSize = 1 -- 1 là bình thường, 5 hoặc 10
+    AutoBedBreaker = false,
+    HitboxSize = 1
 }
 
 local selectedTargetPlayer = nil
 local currentBoxColor = Color3.fromRGB(255, 0, 0)
+local mySpawnPosition = nil
 
--- 1. TẠO GIAO DIỆN MENU GUI CHÍNH & NÚT NỔI
+-- Lưu lại vị trí nhà (Điểm hồi sinh ban đầu)
+task.spawn(function()
+    task.wait(1)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        mySpawnPosition = LocalPlayer.Character.HumanoidRootPart.CFrame
+    end
+end)
+
+-- 1. GIAO DIỆN MENU & NÚT NỔI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TienphatUltimateMenu"
+ScreenGui.Name = "SkyWarsTienphatMenu"
 ScreenGui.Parent = CoreGui
 
--- Nút nổi bật/tắt lại menu khi đã ẩn
+-- Nút nổi mở lại Menu
 local OpenMenuBtn = Instance.new("TextButton")
 OpenMenuBtn.Size = UDim2.new(0, 45, 0, 45)
 OpenMenuBtn.Position = UDim2.new(0.02, 0, 0.15, 0)
@@ -47,7 +57,7 @@ local OpenCorner = Instance.new("UICorner")
 OpenCorner.CornerRadius = UDim.new(1, 0)
 OpenCorner.Parent = OpenMenuBtn
 
--- Nút nổi đổi mục tiêu nhanh trên màn hình
+-- Nút nổi đổi mục tiêu nhanh
 local QuickTargetBtn = Instance.new("TextButton")
 QuickTargetBtn.Size = UDim2.new(0, 110, 0, 35)
 QuickTargetBtn.Position = UDim2.new(0.02, 0, 0.25, 0)
@@ -64,10 +74,10 @@ local QuickCorner = Instance.new("UICorner")
 QuickCorner.CornerRadius = UDim.new(0, 6)
 QuickCorner.Parent = QuickTargetBtn
 
--- Khung Menu Chính
+-- Khung Menu Chính (Mở rộng thêm chiều cao)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 260, 0, 410)
-MainFrame.Position = UDim2.new(0.15, 0, 0.2, 0)
+MainFrame.Size = UDim2.new(0, 260, 0, 480)
+MainFrame.Position = UDim2.new(0.15, 0, 0.15, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -84,14 +94,14 @@ Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 13
 Title.Font = Enum.Font.SourceSansBold
-Title.Text = "Ultimate Menu - Admin Tienphat"
+Title.Text = "SkyWars S3 - Admin Tienphat"
 Title.Parent = MainFrame
 
 local TitleCorner = Instance.new("UICorner")
 TitleCorner.CornerRadius = UDim.new(0, 8)
 TitleCorner.Parent = Title
 
--- Xử lý ẩn hiện menu
+-- Nút ẩn Menu
 local HideBtn = Instance.new("TextButton")
 HideBtn.Size = UDim2.new(0, 30, 0, 30)
 HideBtn.Position = UDim2.new(0.88, 0, 0.015, 0)
@@ -115,7 +125,7 @@ end)
 -- Hàm tạo nút bấm tính năng
 local function createButton(name, posY, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.9, 0, 0, 32)
+    btn.Size = UDim2.new(0.9, 0, 0, 30)
     btn.Position = UDim2.new(0.05, 0, 0, posY)
     btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -143,10 +153,10 @@ local function createButton(name, posY, callback)
     return btn
 end
 
--- Hiển thị thông tin mục tiêu hiện tại
+-- Thông tin mục tiêu
 local TargetLabel = Instance.new("TextLabel")
 TargetLabel.Size = UDim2.new(0.9, 0, 0, 25)
-TargetLabel.Position = UDim2.new(0.05, 0, 0, 260)
+TargetLabel.Position = UDim2.new(0.05, 0, 0, 325)
 TargetLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 TargetLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
 TargetLabel.TextSize = 11
@@ -154,7 +164,6 @@ TargetLabel.Font = Enum.Font.SourceSansBold
 TargetLabel.Text = "Mục tiêu: Chưa chọn"
 TargetLabel.Parent = MainFrame
 
--- Logic đổi mục tiêu (Dùng chung cho cả nút trong menu và nút nổi ngoài màn hình)
 local playerIndex = 1
 local function cycleTargetPlayer()
     local allPlayers = {}
@@ -163,7 +172,6 @@ local function cycleTargetPlayer()
             table.insert(allPlayers, p)
         end
     end
-
     if #allPlayers > 0 then
         playerIndex = playerIndex + 1
         if playerIndex > #allPlayers then playerIndex = 1 end
@@ -177,7 +185,7 @@ end
 
 QuickTargetBtn.MouseButton1Click:Connect(cycleTargetPlayer)
 
--- 2. HỆ THỐNG ESP BOX (Đã sửa lỗi hiển thị chuẩn 2D)
+-- 2. HỆ THỐNG ESP BOX
 local espBoxes = {}
 
 local function createESPBox(player)
@@ -202,11 +210,10 @@ for _, p in ipairs(Players:GetPlayers()) do
     if p ~= LocalPlayer then createESPBox(p) end
 end
 
--- 3. HỆ THỐNG AIMLOCK
+-- 3. AIMLOCK
 local function getClosestPlayer()
     local target = nil
     local shortestDistance = math.huge
-
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
             local hrp = player.Character.HumanoidRootPart
@@ -224,15 +231,50 @@ local function getClosestPlayer()
     return target
 end
 
--- 4. VÒNG LẶP RENDER CHÍNH
+-- 4. LUỒNG TASK CHẠY NGẦM CHO AUTO ATTACK & AUTO BED BREAKER
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        -- Auto TP & Đánh (Đã sửa lỗi không đánh)
+        if settingsState.AutoTPAttack and selectedTargetPlayer and selectedTargetPlayer.Character then
+            local targetHRP = selectedTargetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if targetHRP and myHRP then
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
+                pcall(function()
+                    VirtualUser:CaptureController()
+                    VirtualUser:Button1Down(Vector2.new(0, 0))
+                    task.wait(0.05)
+                    VirtualUser:Button1Up(Vector2.new(0, 0))
+                end)
+            end
+        end
+
+        -- Auto Phá Giường (Bed Breaker trong SkyWars)
+        if settingsState.AutoBedBreaker then
+            pcall(function()
+                for _, obj in ipairs(Workspace:GetDescendants()) do
+                    if obj.Name:lower():find("bed") and obj:IsA("Model") and obj.PrimaryPart then
+                        local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        if myHRP then
+                            myHRP.CFrame = obj.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
+                            task.wait(0.2)
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- 5. VÒNG LẶP RENDER CHÍNH
 RunService.RenderStepped:Connect(function()
-    -- Cập nhật màu RGB
     if settingsState.RGBColor then
         local tickTime = tick() * 5
         currentBoxColor = Color3.fromHSV(tickTime % 1, 1, 1)
     end
 
-    -- Cập nhật ESP Box
+    -- ESP Box Render
     for player, box in pairs(espBoxes) do
         box.Color = currentBoxColor
         if settingsState.ESPBox and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
@@ -257,7 +299,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Cập nhật Aimlock Camera
+    -- Aimlock Camera
     if settingsState.Aimlock then
         local targetPlayer = getClosestPlayer()
         if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Head") then
@@ -265,19 +307,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Cập nhật Bay Lại & Auto Đánh (Hỗ trợ đánh xa)
-    if settingsState.AutoTPAttack and selectedTargetPlayer and selectedTargetPlayer.Character then
-        local targetHRP = selectedTargetPlayer.Character:FindFirstChild("HumanoidRootPart")
-        local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-
-        if targetHRP and myHRP then
-            myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
-            VirtualUser:CaptureController()
-            VirtualUser:Button1Down(Vector2.new(0, 0))
-        end
-    end
-
-    -- Cập nhật Hitbox X5 / X10
+    -- Hitbox X5 / X10
     if settingsState.HitboxSize > 1 then
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -290,25 +320,46 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- 5. CÁC NÚT ĐIỀU KHIỂN TRONG MENU
+-- 6. TẠO CÁC NÚT ĐIỀU KHIỂN TRONG MENU
 createButton("ESP Box", 45, function(state) settingsState.ESPBox = state end)
 createButton("ESP Màu RGB", 80, function(state) settingsState.RGBColor = state end)
 createButton("Khóa Tâm (Aimlock)", 115, function(state) settingsState.Aimlock = state end)
 createButton("Bay Lại & Auto Đánh", 150, function(state) settingsState.AutoTPAttack = state end)
+createButton("Auto Phá Giường", 185, function(state) settingsState.AutoBedBreaker = state end)
 
--- Nút tùy chỉnh Hitbox X5 / X10
-createButton("Hitbox X5", 185, function(state)
+createButton("Hitbox X5", 220, function(state)
     if state then settingsState.HitboxSize = 5 else settingsState.HitboxSize = 1 end
 end)
 
-createButton("Hitbox X10", 220, function(state)
+createButton("Hitbox X10", 255, function(state)
     if state then settingsState.HitboxSize = 10 else settingsState.HitboxSize = 1 end
 end)
 
--- Nút đổi mục tiêu tích hợp trong menu
+-- Nút dịch chuyển về nhà (Quay về điểm hồi sinh)
+local TeleportHomeBtn = Instance.new("TextButton")
+TeleportHomeBtn.Size = UDim2.new(0.9, 0, 0, 30)
+TeleportHomeBtn.Position = UDim2.new(0.05, 0, 0, 290)
+TeleportHomeBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+TeleportHomeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TeleportHomeBtn.TextSize = 12
+TeleportHomeBtn.Font = Enum.Font.SourceSansBold
+TeleportHomeBtn.Text = "Quay Về Nhà (TP Base)"
+TeleportHomeBtn.Parent = MainFrame
+
+local HomeCorner = Instance.new("UICorner")
+HomeCorner.CornerRadius = UDim.new(0, 6)
+HomeCorner.Parent = TeleportHomeBtn
+
+TeleportHomeBtn.MouseButton1Click:Connect(function()
+    if mySpawnPosition and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = mySpawnPosition
+    end
+end)
+
+-- Nút đổi mục tiêu trong menu
 local MenuTargetBtn = Instance.new("TextButton")
 MenuTargetBtn.Size = UDim2.new(0.9, 0, 0, 30)
-MenuTargetBtn.Position = UDim2.new(0.05, 0, 0, 290)
+MenuTargetBtn.Position = UDim2.new(0.05, 0, 0, 355)
 MenuTargetBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 MenuTargetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MenuTargetBtn.TextSize = 12
@@ -342,6 +393,6 @@ local function applyFixLag(state)
     end
 end
 
-createButton("Fix Lag Đồ Họa", 330, function(state) applyFixLag(state) end)
+createButton("Fix Lag Đồ Họa", 395, function(state) applyFixLag(state) end)
 
-print("Ultimate Menu Loaded - Admin Tienphat")
+print("SkyWars Season 3 Master Menu Loaded - Admin Tienphat")
