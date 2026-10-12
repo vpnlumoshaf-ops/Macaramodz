@@ -1,947 +1,854 @@
--- Blox Fruit Master Hub - Admin Tienphat (Pure Auto Farm & Manual Quest)
+-- [[ SKYWARS S3 - LANDSCAPE ULTRA HUB (ĐÃ THÊM TAB TÙY CHỈNH NÚT NỔI) ]] --
+-- Developed by Admin Tienphat
+
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualUser = game:GetService("VirtualUser")
-local CoreGui = game:GetService("CoreGui")
 local Lighting = game:GetService("Lighting")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local VirtualUser = game:GetService("VirtualUser")
 
-if CoreGui:FindFirstChild("AdminTienphatBloxFruit") then
-    CoreGui.AdminTienphatBloxFruit:Destroy()
-end
-if CoreGui:FindFirstChild("AdminTienphatToggle") then
-    CoreGui.AdminTienphatToggle:Destroy()
-end
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
 
-local Config = {
-    AutoFarm = false,
-    SelectedWeapon = "Tự động chọn",
-    ShowESP = true,
-    ShowFruitESP = true,
-    FruitNotifier = false,
-    ShowIslandESP = true,
-    ShowWeaponScanner = true,
-    FixLag = true,
-    AutoStatMelee = false,
-    AutoStatDefense = false,
-    AutoStatSword = false,
-    AutoStatDevilFruit = false,
-    StatAmount = 3,
-    InstantTpFruit = false,
-    AutoStoreFruit = false,
-    FlyToFruit = false,
-    SelectedIsland = nil,
-    IslandPos = nil,
-    FlySpeed = 350,
-    FlyToIslandState = false
+-- Trạng thái & Cấu hình
+local settingsState = {
+    ESPBox = false,
+    RGBColor = false,
+    Aimbot = false,
+    AimbotTargetMode = "Closest", -- "Closest" hoặc "Selected"
+    AimbotMode = "Smooth", -- "Smooth" hoặc "Lock"
+    AimbotSmoothness = 0.2,
+    AutoTPAttack = false,
+    IgnoreTeam = true,
+    FastAttack = false,
+    HitboxSize = 1,
+    FixLag = false,
+    TPWalk = false,
+    WalkSpeedMultiplier = 1,
+    InfJump = false
 }
 
-local function applyFixLag(state)
-    if state then
-        pcall(function()
-            Lighting.FogEnd = 999999
-            Lighting.Brightness = 2
-            for _, v in pairs(Lighting:GetChildren()) do
-                if v:IsA("PostEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then
-                    v.Enabled = false
-                end
-            end
-            for _, v in pairs(Workspace:GetDescendants()) do
-                if v:IsA("Part") or v:IsA("MeshPart") then
-                    v.Material = Enum.Material.SmoothPlastic
-                    v.Reflectance = 0
-                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") then
-                    v.Enabled = false
-                end
-            end
-        end)
+local selectedTargetPlayer = nil
+local currentBoxColor = Color3.fromRGB(255, 0, 0)
+local mySpawnPosition = nil
+
+-- Lưu vị trí nhà
+task.spawn(function()
+    task.wait(1)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        mySpawnPosition = LocalPlayer.Character.HumanoidRootPart.CFrame
     end
+end)
+
+-- Hàm kiểm tra đồng đội
+local function isEnemy(player)
+    if not player or player == LocalPlayer then return false end
+    if settingsState.IgnoreTeam and LocalPlayer.Team and player.Team then
+        if LocalPlayer.Team == player.Team then
+            return false
+        end
+    end
+    return true
 end
 
+-- 1. GIAO DIỆN NGANG (LANDSCAPE)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AdminTienphatBloxFruit"
+ScreenGui.Name = "SkyWarsLandscapeUI"
 ScreenGui.Parent = CoreGui
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- ================= CÁC NÚT NỔI TRÊN MÀN HÌNH =================
+
+-- Nút mở lại Menu
+local OpenMenuBtn = Instance.new("TextButton")
+OpenMenuBtn.Size = UDim2.new(0, 45, 0, 45)
+OpenMenuBtn.Position = UDim2.new(0.02, 0, 0.1, 0)
+OpenMenuBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+OpenMenuBtn.TextColor3 = Color3.fromRGB(0, 255, 200)
+OpenMenuBtn.TextSize = 11
+OpenMenuBtn.Font = Enum.Font.SourceSansBold
+OpenMenuBtn.Text = "MENU"
+OpenMenuBtn.Visible = false
+OpenMenuBtn.Active = true
+OpenMenuBtn.Draggable = true
+OpenMenuBtn.Parent = ScreenGui
+
+local OpenCorner = Instance.new("UICorner")
+OpenCorner.CornerRadius = UDim.new(1, 0)
+OpenCorner.Parent = OpenMenuBtn
+
+local OpenStroke = Instance.new("UIStroke")
+OpenStroke.Thickness = 2
+OpenStroke.Color = Color3.fromRGB(255, 0, 0)
+OpenStroke.Parent = OpenMenuBtn
+
+-- Nút Nổi "Đổi Mục Tiêu"
+local QuickTargetBtn = Instance.new("TextButton")
+QuickTargetBtn.Size = UDim2.new(0, 100, 0, 32)
+QuickTargetBtn.Position = UDim2.new(0.02, 0, 0.22, 0)
+QuickTargetBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
+QuickTargetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+QuickTargetBtn.TextSize = 11
+QuickTargetBtn.Font = Enum.Font.SourceSansBold
+QuickTargetBtn.Text = "Đổi Mục Tiêu"
+QuickTargetBtn.Active = true
+QuickTargetBtn.Draggable = true
+QuickTargetBtn.Parent = ScreenGui
+
+local QuickTargetCorner = Instance.new("UICorner")
+QuickTargetCorner.CornerRadius = UDim.new(0, 6)
+QuickTargetCorner.Parent = QuickTargetBtn
+
+-- Nút Nổi "Inf Jump"
+local FloatInfJumpBtn = Instance.new("TextButton")
+FloatInfJumpBtn.Size = UDim2.new(0, 95, 0, 32)
+FloatInfJumpBtn.Position = UDim2.new(0.02, 0, 0.32, 0)
+FloatInfJumpBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 200)
+FloatInfJumpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FloatInfJumpBtn.TextSize = 11
+FloatInfJumpBtn.Font = Enum.Font.SourceSansBold
+FloatInfJumpBtn.Text = "Inf Jump: OFF"
+FloatInfJumpBtn.Active = true
+FloatInfJumpBtn.Draggable = true
+FloatInfJumpBtn.Parent = ScreenGui
+
+local FloatInfCorner = Instance.new("UICorner")
+FloatInfCorner.CornerRadius = UDim.new(0, 6)
+FloatInfCorner.Parent = FloatInfJumpBtn
+
+FloatInfJumpBtn.MouseButton1Click:Connect(function()
+    settingsState.InfJump = not settingsState.InfJump
+    FloatInfJumpBtn.BackgroundColor3 = settingsState.InfJump and Color3.fromRGB(0, 170, 80) or Color3.fromRGB(100, 50, 200)
+    FloatInfJumpBtn.Text = settingsState.InfJump and "Inf Jump: ON" or "Inf Jump: OFF"
+end)
+
+-- Nút Nổi "Aimbot"
+local FloatAimbotBtn = Instance.new("TextButton")
+FloatAimbotBtn.Size = UDim2.new(0, 95, 0, 32)
+FloatAimbotBtn.Position = UDim2.new(0.02, 0, 0.42, 0)
+FloatAimbotBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+FloatAimbotBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FloatAimbotBtn.TextSize = 11
+FloatAimbotBtn.Font = Enum.Font.SourceSansBold
+FloatAimbotBtn.Text = "Aimbot: OFF"
+FloatAimbotBtn.Active = true
+FloatInfCorner:Clone().Parent = FloatAimbotBtn
+FloatAimbotBtn.Draggable = true
+FloatAimbotBtn.Parent = ScreenGui
+
+FloatAimbotBtn.MouseButton1Click:Connect(function()
+    settingsState.Aimbot = not settingsState.Aimbot
+    FloatAimbotBtn.BackgroundColor3 = settingsState.Aimbot and Color3.fromRGB(0, 170, 80) or Color3.fromRGB(150, 50, 50)
+    FloatAimbotBtn.Text = settingsState.Aimbot and "Aimbot: ON" or "Aimbot: OFF"
+end)
+
+-- Nút Nổi "Quay Về Base"
+local FloatHomeBtn = Instance.new("TextButton")
+FloatHomeBtn.Size = UDim2.new(0, 95, 0, 32)
+FloatHomeBtn.Position = UDim2.new(0.02, 0, 0.52, 0)
+FloatHomeBtn.BackgroundColor3 = Color3.fromRGB(0, 110, 190)
+FloatHomeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FloatHomeBtn.TextSize = 11
+FloatHomeBtn.Font = Enum.Font.SourceSansBold
+FloatHomeBtn.Text = "Về Nhà (Base)"
+FloatHomeBtn.Active = true
+FloatHomeBtn.Draggable = true
+FloatHomeBtn.Parent = ScreenGui
+
+local FloatHomeCorner = Instance.new("UICorner")
+FloatHomeCorner.CornerRadius = UDim.new(0, 6)
+FloatHomeCorner.Parent = FloatHomeBtn
+
+FloatHomeBtn.MouseButton1Click:Connect(function()
+    if mySpawnPosition and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = mySpawnPosition
+    end
+end)
+
+-- Nút Nổi "Bay Tới Đánh" (Auto TP Attack)
+local FloatTPAttackBtn = Instance.new("TextButton")
+FloatTPAttackBtn.Size = UDim2.new(0, 110, 0, 32)
+FloatTPAttackBtn.Position = UDim2.new(0.02, 0, 0.62, 0)
+FloatTPAttackBtn.BackgroundColor3 = Color3.fromRGB(180, 100, 0)
+FloatTPAttackBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FloatTPAttackBtn.TextSize = 11
+FloatTPAttackBtn.Font = Enum.Font.SourceSansBold
+FloatTPAttackBtn.Text = "TP Attack: OFF"
+FloatTPAttackBtn.Active = true
+FloatTPAttackBtn.Draggable = true
+FloatTPAttackBtn.Parent = ScreenGui
+
+local FloatTPCorner = Instance.new("UICorner")
+FloatTPCorner.CornerRadius = UDim.new(0, 6)
+FloatTPCorner.Parent = FloatTPAttackBtn
+
+FloatTPAttackBtn.MouseButton1Click:Connect(function()
+    settingsState.AutoTPAttack = not settingsState.AutoTPAttack
+    FloatTPAttackBtn.BackgroundColor3 = settingsState.AutoTPAttack and Color3.fromRGB(0, 170, 80) or Color3.fromRGB(180, 100, 0)
+    FloatTPAttackBtn.Text = settingsState.AutoTPAttack and "TP Attack: ON" or "TP Attack: OFF"
+end)
+
+
+-- ================= GIAO DIỆN MENU CHÍNH =================
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 500, 0, 270)
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -135)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -240)
-MainFrame.Size = UDim2.new(0, 400, 0, 480)
+MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
 
-local Title = Instance.new("TextLabel")
-Title.Parent = MainFrame
-Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-Title.Size = UDim2.new(1, 0, 0, 35)
-Title.Font = Enum.Font.SourceSansBold
-Title.Text = "  🍎 Blox Fruit - Admin Tienphat Hub VIP"
-Title.TextColor3 = Color3.fromRGB(255, 170, 0)
-Title.TextSize = 15
-Title.TextXAlignment = Enum.TextXAlignment.Left
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = MainFrame
 
-local MinimizeBtn = Instance.new("TextButton")
-MinimizeBtn.Parent = MainFrame
-MinimizeBtn.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
-MinimizeBtn.Position = UDim2.new(1, -60, 0, 5)
-MinimizeBtn.Size = UDim2.new(0, 24, 0, 24)
-MinimizeBtn.Font = Enum.Font.SourceSansBold
-MinimizeBtn.Text = "-"
-MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeBtn.TextSize = 16
+local RGBStroke = Instance.new("UIStroke")
+RGBStroke.Thickness = 2.5
+RGBStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+RGBStroke.Color = Color3.fromRGB(255, 0, 0)
+RGBStroke.Parent = MainFrame
 
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Parent = MainFrame
-CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-CloseBtn.Position = UDim2.new(1, -30, 0, 5)
-CloseBtn.Size = UDim2.new(0, 24, 0, 24)
-CloseBtn.Font = Enum.Font.SourceSansBold
-CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.TextSize = 14
+-- Title Bar
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 35)
+TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TitleBar.Parent = MainFrame
 
-local TabBar = Instance.new("Frame", MainFrame)
-TabBar.Position = UDim2.new(0, 0, 0, 38)
-TabBar.Size = UDim2.new(1, 0, 0, 30)
-TabBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-TabBar.BorderSizePixel = 0
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 10)
+TitleCorner.Parent = TitleBar
 
-local function createTabBtn(name, text, posX)
-    local btn = Instance.new("TextButton", TabBar)
-    btn.Name = name
-    btn.Position = UDim2.new(posX, 0, 0, 0)
-    btn.Size = UDim2.new(0.2, 0, 1, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+local TitleText = Instance.new("TextLabel")
+TitleText.Size = UDim2.new(0.7, 0, 1, 0)
+TitleText.Position = UDim2.new(0.03, 0, 0, 0)
+TitleText.BackgroundTransparency = 1
+TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleText.TextSize = 13
+TitleText.Font = Enum.Font.SourceSansBold
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
+TitleText.Text = "SKYWARS S3 HUB - Admin Tienphat"
+TitleText.Parent = TitleBar
+
+local HideBtn = Instance.new("TextButton")
+HideBtn.Size = UDim2.new(0, 30, 0, 25)
+HideBtn.Position = UDim2.new(0.92, 0, 0.15, 0)
+HideBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+HideBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+HideBtn.TextSize = 12
+HideBtn.Font = Enum.Font.SourceSansBold
+HideBtn.Text = "X"
+HideBtn.Parent = TitleBar
+
+local HideCorner = Instance.new("UICorner")
+HideCorner.CornerRadius = UDim.new(0, 5)
+HideCorner.Parent = HideBtn
+
+HideBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    OpenMenuBtn.Visible = true
+end)
+
+OpenMenuBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    OpenMenuBtn.Visible = false
+end)
+
+-- Cột Tabs
+local TabContainer = Instance.new("Frame")
+TabContainer.Size = UDim2.new(0, 110, 0, 225)
+TabContainer.Position = UDim2.new(0, 5, 0, 40)
+TabContainer.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+TabContainer.Parent = MainFrame
+
+local TabCorner = Instance.new("UICorner")
+TabCorner.CornerRadius = UDim.new(0, 8)
+TabCorner.Parent = TabContainer
+
+-- Vùng Nội Dung Tab
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Size = UDim2.new(0, 375, 0, 225)
+ContentContainer.Position = UDim2.new(0, 120, 0, 40)
+ContentContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+ContentContainer.Parent = MainFrame
+
+local ContentCorner = Instance.new("UICorner")
+ContentCorner.CornerRadius = UDim.new(0, 8)
+ContentCorner.Parent = ContentContainer
+
+local MainTabFrame = Instance.new("ScrollingFrame")
+MainTabFrame.Size = UDim2.new(1, -10, 1, -10)
+MainTabFrame.Position = UDim2.new(0, 5, 0, 5)
+MainTabFrame.BackgroundTransparency = 1
+MainTabFrame.CanvasSize = UDim2.new(0, 0, 0, 360)
+MainTabFrame.ScrollBarThickness = 4
+MainTabFrame.Parent = ContentContainer
+
+local PlayerTabFrame = Instance.new("ScrollingFrame")
+PlayerTabFrame.Size = UDim2.new(1, -10, 1, -10)
+PlayerTabFrame.Position = UDim2.new(0, 5, 0, 5)
+PlayerTabFrame.BackgroundTransparency = 1
+PlayerTabFrame.CanvasSize = UDim2.new(0, 0, 0, 280)
+PlayerTabFrame.ScrollBarThickness = 4
+PlayerTabFrame.Visible = false
+PlayerTabFrame.Parent = ContentContainer
+
+local TargetTabFrame = Instance.new("ScrollingFrame")
+TargetTabFrame.Size = UDim2.new(1, -10, 1, -10)
+TargetTabFrame.Position = UDim2.new(0, 5, 0, 5)
+TargetTabFrame.BackgroundTransparency = 1
+TargetTabFrame.CanvasSize = UDim2.new(0, 0, 0, 300)
+TargetTabFrame.ScrollBarThickness = 4
+TargetTabFrame.Visible = false
+TargetTabFrame.Parent = ContentContainer
+
+local FloatTabFrame = Instance.new("ScrollingFrame")
+FloatTabFrame.Size = UDim2.new(1, -10, 1, -10)
+FloatTabFrame.Position = UDim2.new(0, 5, 0, 5)
+FloatTabFrame.BackgroundTransparency = 1
+FloatTabFrame.CanvasSize = UDim2.new(0, 0, 0, 250)
+FloatTabFrame.ScrollBarThickness = 4
+FloatTabFrame.Visible = false
+FloatTabFrame.Parent = ContentContainer
+
+local function makeTabBtn(text, posY, targetFrame)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.9, 0, 0, 32)
+    btn.Position = UDim2.new(0.05, 0, 0, posY)
+    btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 11
     btn.Font = Enum.Font.SourceSansBold
     btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-    btn.TextSize = 11
-    return btn
+    btn.Parent = TabContainer
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        MainTabFrame.Visible = false
+        PlayerTabFrame.Visible = false
+        TargetTabFrame.Visible = false
+        FloatTabFrame.Visible = false
+        targetFrame.Visible = true
+    end)
 end
 
-local TabMainBtn = createTabBtn("TabMain", "🎯 Main", 0)
-local TabEspBtn = createTabBtn("TabEsp", "👁️ ESP", 0.2)
-local TabFruitBtn = createTabBtn("TabFruit", "🍎 Fruit", 0.4)
-local TabTpBtn = createTabBtn("TabTp", "🗺️ TP", 0.6)
-local TabStatsBtn = createTabBtn("TabStats", "📈 Stats", 0.8)
+makeTabBtn("Combat/ESP", 8, MainTabFrame)
+makeTabBtn("Player Tab", 46, PlayerTabFrame)
+makeTabBtn("Chọn Target", 84, TargetTabFrame)
+makeTabBtn("Nút Nổi", 122, FloatTabFrame)
 
-TabMainBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+-- Hàm Tạo Toggle
+local function createToggle(parent, name, posY, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.96, 0, 0, 30)
+    frame.Position = UDim2.new(0.02, 0, 0, posY)
+    frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    frame.Parent = parent
 
-local function createContainer()
-    local c = Instance.new("ScrollingFrame", MainFrame)
-    c.Position = UDim2.new(0, 0, 0, 72)
-    c.Size = UDim2.new(1, 0, 1, -72)
-    c.BackgroundTransparency = 1
-    c.CanvasSize = UDim2.new(0, 0, 0, 380)
-    c.Visible = false
-    return c
-end
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 5)
+    corner.Parent = frame
 
-local MainContainer = createContainer(); MainContainer.Visible = true
-local EspContainer = createContainer()
-local FruitContainer = createContainer()
-local TpContainer = createContainer()
-local StatsContainer = createContainer()
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.65, 0, 1, 0)
+    label.Position = UDim2.new(0.03, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    label.TextSize = 11
+    label.Font = Enum.Font.SourceSansBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Text = name
+    label.Parent = frame
 
-local function switchTab(activeBtn, activeContainer)
-    for _, btn in pairs(TabBar:GetChildren()) do
-        if btn:IsA("TextButton") then
-            btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-            btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-        end
-    end
-    MainContainer.Visible = false
-    EspContainer.Visible = false
-    FruitContainer.Visible = false
-    TpContainer.Visible = false
-    StatsContainer.Visible = false
-
-    activeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    activeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    activeContainer.Visible = true
-end
-
-TabMainBtn.MouseButton1Click:Connect(function() switchTab(TabMainBtn, MainContainer) end)
-TabEspBtn.MouseButton1Click:Connect(function() switchTab(TabEspBtn, EspContainer) end)
-TabFruitBtn.MouseButton1Click:Connect(function() switchTab(TabFruitBtn, FruitContainer) end)
-TabTpBtn.MouseButton1Click:Connect(function() switchTab(TabTpBtn, TpContainer) end)
-TabStatsBtn.MouseButton1Click:Connect(function() switchTab(TabStatsBtn, StatsContainer) end)
-
-local function createToggle(parent, text, defaultVal, callback, customY)
     local btn = Instance.new("TextButton")
-    btn.Parent = parent
-    btn.BackgroundColor3 = defaultVal and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45, 45, 45)
-    btn.Position = UDim2.new(0.05, 0, 0, customY)
-    btn.Size = UDim2.new(0.9, 0, 0, 32)
-    btn.Font = Enum.Font.SourceSansBold
-    btn.Text = text .. (defaultVal and ": On" or ": Off")
+    btn.Size = UDim2.new(0.28, 0, 0.75, 0)
+    btn.Position = UDim2.new(0.68, 0, 0.125, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 13
-    
-    local state = defaultVal
+    btn.TextSize = 11
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Text = "OFF"
+    btn.Parent = frame
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 4)
+    btnCorner.Parent = btn
+
+    local state = false
     btn.MouseButton1Click:Connect(function()
         state = not state
-        btn.Text = text .. (state and ": On" or ": Off")
-        btn.BackgroundColor3 = state and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45, 45, 45)
+        if state then
+            btn.BackgroundColor3 = Color3.fromRGB(0, 170, 80)
+            btn.Text = "ON"
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+            btn.Text = "OFF"
+        end
         callback(state)
     end)
-    return btn
 end
 
--- HỆ THỐNG QUÉT TỌA ĐỘ VÀ NHẬN NHIỆM VỤ THỦ CÔNG (CHỈ DÙNG KHI BẠN BẤM NÚT)
-local function checkAndGetQuestClean()
-    pcall(function()
-        local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-        local pos = char.HumanoidRootPart.Position
-        
-        local questName = "BanditQuest1"
-        local questIndex = 1
+-- ================= TAB NÚT NỔI (BẬT/TẮT CÁC NÚT TRÊN MÀN HÌNH) =================
+createToggle(FloatTabFrame, "Hiện Nút Đổi Mục Tiêu", 5, function(state) QuickTargetBtn.Visible = state end)
+createToggle(FloatTabFrame, "Hiện Nút Inf Jump", 40, function(state) FloatInfJumpBtn.Visible = state end)
+createToggle(FloatTabFrame, "Hiện Nút Aimbot", 75, function(state) FloatAimbotBtn.Visible = state end)
+createToggle(FloatTabFrame, "Hiện Nút Về Nhà (Base)", 110, function(state) FloatHomeBtn.Visible = state end)
+createToggle(FloatTabFrame, "Hiện Nút TP Attack", 145, function(state) FloatTPAttackBtn.Visible = state end)
 
-        if pos.Z > 2000 and pos.Z < 5000 and pos.X > 500 and pos.X < 1500 then
-            questName = "DesertQuest"; questIndex = 1
-        elseif pos.Z > 3000 and pos.Z < 4500 and pos.X > -1500 and pos.X < -500 then
-            questName = "PirateQuest"; questIndex = 1
-        elseif pos.Z > -200 and pos.Z < 800 and pos.X > -1800 and pos.X < -800 then
-            questName = "JungleQuest"; questIndex = 1
-        elseif pos.Z > -1500 and pos.Z < -800 and pos.X > 800 and pos.X < 1800 then
-            questName = "SnowQuest"; questIndex = 1
-        elseif pos.Z > 500 and pos.Z < 1200 and pos.X > 4000 and pos.X < 5500 then
-            questName = "PrisonQuest"; questIndex = 1
-        elseif pos.Z > -3500 and pos.Z < -2500 and pos.X > -1800 and pos.X < -1000 then
-            questName = "ColosseumQuest"; questIndex = 1
-        elseif pos.Z > 7500 and pos.Z < 9500 and pos.X > -6000 and pos.X < -4500 then
-            questName = "MagmaQuest"; questIndex = 1
-        elseif pos.Z > 1000 and pos.Z < 2500 and pos.X > 58000 and pos.X < 64000 then
-            questName = "FishmanQuest"; questIndex = 1
-        else
-            local stats = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level")
-            local level = stats and stats.Value or 1
-            if level >= 30 and level <= 59 then
-                questName = "PirateQuest"; questIndex = 1
-            elseif level >= 60 then
-                questName = "DesertQuest"; questIndex = 1
-            end
-        end
 
-        local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-        if remotes and remotes:FindFirstChild("CommF_") then
-            remotes.CommF_:InvokeServer("StartQuest", questName, questIndex)
-        end
-    end)
-end
+-- 2. TÙY CHỌN AIMBOT
+local AimbotFrame = Instance.new("Frame")
+AimbotFrame.Size = UDim2.new(0.96, 0, 0, 32)
+AimbotFrame.Position = UDim2.new(0.02, 0, 0, 5)
+AimbotFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+AimbotFrame.Parent = MainTabFrame
 
--- LẤY TÊN QUÁI TỪ BẢNG NHIỆM VỤ ĐỂ AUTO FARM ĐÁNH ĐÚNG MỤC TIÊU
-local function getCurrentQuestMobName()
-    local success, mobName = pcall(function()
-        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-        if playerGui then
-            local mainGui = playerGui:FindFirstChild("Main")
-            if mainGui then
-                local questDisplay = mainGui:FindFirstChild("Quest")
-                if questDisplay and questDisplay.Visible then
-                    local container = questDisplay:FindFirstChild("Container")
-                    if container then
-                        for _, v in pairs(container:GetChildren()) do
-                            if v:IsA("TextLabel") and string.find(v.Text, "Defeat") then
-                                local cleaned = v.Text:gsub("Defeat ", ""):gsub("[\n%d/()%s]+", " ")
-                                local parts = {}
-                                for word in cleaned:gmatch("%S+") do
-                                    table.insert(parts, word)
-                                end
-                                if #parts > 0 then
-                                    return parts[1]
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-        return nil
-    end)
-    if success and mobName then
-        return mobName
-    end
-    return nil
-end
+local AimCorner = Instance.new("UICorner")
+AimCorner.CornerRadius = UDim.new(0, 5)
+AimCorner.Parent = AimbotFrame
 
--- TAB MAIN
-local mY = 15
-createToggle(MainContainer, "Auto Farm Theo Nhiệm Vụ (Chỉ Đánh & Check Mục Tiêu)", false, function(v) Config.AutoFarm = v end, mY)
-mY = mY + 40
+local AimToggleBtn = Instance.new("TextButton")
+AimToggleBtn.Size = UDim2.new(0.35, 0, 0.75, 0)
+AimToggleBtn.Position = UDim2.new(0.02, 0, 0.125, 0)
+AimToggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+AimToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimToggleBtn.TextSize = 11
+AimToggleBtn.Font = Enum.Font.SourceSansBold
+AimToggleBtn.Text = "Aimbot: TẮT"
+AimToggleBtn.Parent = AimbotFrame
 
-local GetQuestBtn = Instance.new("TextButton", MainContainer)
-GetQuestBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-GetQuestBtn.Position = UDim2.new(0.05, 0, 0, mY)
-GetQuestBtn.Size = UDim2.new(0.9, 0, 0, 32)
-GetQuestBtn.Font = Enum.Font.SourceSansBold
-GetQuestBtn.Text = "📥 Nhận Nhiệm Vụ Theo Đảo Đang Đứng (Thủ Công)"
-GetQuestBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-GetQuestBtn.TextSize = 12
-GetQuestBtn.MouseButton1Click:Connect(function()
-    checkAndGetQuestClean()
-end)
+local AimToggleCorner = Instance.new("UICorner")
+AimToggleCorner.CornerRadius = UDim.new(0, 4)
+AimToggleCorner.Parent = AimToggleBtn
 
-mY = mY + 40
-createToggle(MainContainer, "Xóa Sương Mù & Fix Lag Siêu Cấp", true, function(v) 
-    Config.FixLag = v 
-    applyFixLag(v)
-end, mY)
-mY = mY + 45
-
-local weaponHeader = Instance.new("TextLabel", MainContainer)
-weaponHeader.Position = UDim2.new(0.05, 0, 0, mY)
-weaponHeader.Size = UDim2.new(0.9, 0, 0, 20)
-weaponHeader.Font = Enum.Font.SourceSansBold
-weaponHeader.Text = "Chọn Vũ Khí Auto Farm:"
-weaponHeader.TextColor3 = Color3.fromRGB(255, 220, 100)
-weaponHeader.TextSize = 13
-mY = mY + 22
-
-local weaponContainer = Instance.new("ScrollingFrame", MainContainer)
-weaponContainer.Position = UDim2.new(0.05, 0, 0, mY)
-weaponContainer.Size = UDim2.new(0.9, 0, 0, 110)
-weaponContainer.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-weaponContainer.CanvasSize = UDim2.new(0, 0, 0, 150)
-
-local function updateWeaponButtons()
-    for _, child in pairs(weaponContainer:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
-    end
-    
-    local weaponsList = {"Tự động chọn"}
-    pcall(function()
-        for _, item in ipairs(LocalPlayer.Backpack:GetChildren()) do
-            if item:IsA("Tool") and not table.find(weaponsList, item.Name) then
-                table.insert(weaponsList, item.Name)
-            end
-        end
-        if LocalPlayer.Character then
-            for _, item in ipairs(LocalPlayer.Character:GetChildren()) do
-                if item:IsA("Tool") and not table.find(weaponsList, item.Name) then
-                    table.insert(weaponsList, item.Name)
-                end
-            end
-        end
-    end)
-
-    local wPosY = 5
-    for _, wName in ipairs(weaponsList) do
-        local btn = Instance.new("TextButton", weaponContainer)
-        btn.Position = UDim2.new(0.02, 0, 0, wPosY)
-        btn.Size = UDim2.new(0.96, 0, 0, 28)
-        btn.Text = wName
-        btn.Font = Enum.Font.SourceSansBold
-        btn.TextSize = 12
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.BackgroundColor3 = (Config.SelectedWeapon == wName) and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(55, 55, 55)
-        
-        btn.MouseButton1Click:Connect(function()
-            Config.SelectedWeapon = wName
-            updateWeaponButtons()
-        end)
-        wPosY = wPosY + 32
-    end
-    weaponContainer.CanvasSize = UDim2.new(0, 0, 0, wPosY)
-end
-updateWeaponButtons()
-
--- TAB ESP
-local eY = 15
-createToggle(EspContainer, "ESP Quái Xanh Lá & Line", true, function(v) Config.ShowESP = v end, eY); eY = eY + 40
-createToggle(EspContainer, "ESP Trái Ác Quỷ Dưới Đất", true, function(v) Config.ShowFruitESP = v end, eY); eY = eY + 40
-createToggle(EspContainer, "Fruit Notifier (Thông báo trái trên màn hình)", false, function(v) Config.FruitNotifier = v end, eY); eY = eY + 40
-createToggle(EspContainer, "ESP Đảo (Island ESP)", true, function(v) Config.ShowIslandESP = v end, eY); eY = eY + 40
-createToggle(EspContainer, "Hiện Tên & Vũ Khí Người Chơi", true, function(v) Config.ShowWeaponScanner = v end, eY)
-
--- TAB FRUIT
-local fY = 15
-createToggle(FruitContainer, "Instant TP Fruit (Dịch chuyển tới trái ngay)", false, function(v) Config.InstantTpFruit = v end, fY); fY = fY + 40
-createToggle(FruitContainer, "Auto Lưu Trữ Trái (Chỉ lưu trái chưa có trong kho)", false, function(v) Config.AutoStoreFruit = v end, fY); fY = fY + 40
-createToggle(FruitContainer, "Bay Lụm Fruit (Bay mượt tới trái dưới đất)", false, function(v) Config.FlyToFruit = v end, fY)
-
--- TAB TELEPORT
-local tpY = 15
-local tpHeader = Instance.new("TextLabel", TpContainer)
-tpHeader.Position = UDim2.new(0.05, 0, 0, tpY)
-tpHeader.Size = UDim2.new(0.9, 0, 0, 20)
-tpHeader.Font = Enum.Font.SourceSansBold
-tpHeader.Text = "Chọn Đảo Dịch Chuyển Nhanh:"
-tpHeader.TextColor3 = Color3.fromRGB(255, 220, 100)
-tpHeader.TextSize = 13
-tpY = tpY + 25
-
-local islandsList = {
-    {"Đảo Hải Tặc / Thủy Quân (Starter Sea 1)", Vector3.new(1075, 16, 1317)},
-    {"Đảo Khỉ (Jungle)", Vector3.new(-1250, 11, 357)},
-    {"Đảo Cướp Biển (Pirate Village)", Vector3.new(-1143, 4, 3825)},
-    {"Sa Mạc (Desert)", Vector3.new(1095, 6, 4350)},
-    {"Đảo Tuyết (Snow Island)", Vector3.new(1230, 20, -1125)},
-    {"Đảo Trời 1 (Sky 1)", Vector3.new(-4845, 717, -2622)},
-    {"Nhà Tù (Prison)", Vector3.new(4875, 5, 735)},
-    {"Đấu Trường (Colosseum)", Vector3.new(-1432, 7, -3000)},
-    {"Đảo Dung Nham (Magma Village)", Vector3.new(-5315, 12, 8515)},
-    {"Đảo Người Cá (Fishman Island)", Vector3.new(61122, 18, 1569)},
-    {"Khu Vực Cảng (Sea 2 - Café)", Vector3.new(-380, 77, 255)},
-    {"Lâu Đài Sáng Tạo / Đảo Ma (Sea 2)", Vector3.new(-6509, 87, -133)},
-    {"Lâu Đài Biển (Sea 3 - Castle on the Sea)", Vector3.new(-5098, 316, -3155)},
-    {"Cổng Đảo Bí Ẩn (Sea 3 - Hydra Island)", Vector3.new(5734, 610, -283)}
-}
-
-local islandScroll = Instance.new("ScrollingFrame", TpContainer)
-islandScroll.Position = UDim2.new(0.05, 0, 0, tpY)
-islandScroll.Size = UDim2.new(0.9, 0, 0, 140)
-islandScroll.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-islandScroll.CanvasSize = UDim2.new(0, 0, 0, #islandsList * 32)
-
-local selectedIslandLabel = Instance.new("TextLabel", TpContainer)
-selectedIslandLabel.Position = UDim2.new(0.05, 0, 0, tpY + 145)
-selectedIslandLabel.Size = UDim2.new(0.9, 0, 0, 22)
-selectedIslandLabel.Font = Enum.Font.SourceSansBold
-selectedIslandLabel.Text = "Đảo đã chọn: Chưa chọn"
-selectedIslandLabel.TextColor3 = Color3.fromRGB(0, 255, 128)
-selectedIslandLabel.TextSize = 12
-
-local iPosY = 5
-for _, data in ipairs(islandsList) do
-    local name = data[1]
-    local pos = data[2]
-    local btn = Instance.new("TextButton", islandScroll)
-    btn.Position = UDim2.new(0.02, 0, 0, iPosY)
-    btn.Size = UDim2.new(0.96, 0, 0, 28)
-    btn.Text = name
-    btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 11
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-    
-    btn.MouseButton1Click:Connect(function()
-        Config.SelectedIsland = name
-        Config.IslandPos = pos
-        selectedIslandLabel.Text = "Đảo đã chọn: " .. name
-    end)
-    iPosY = iPosY + 32
-end
-
-local speedY = tpY + 172
-local speedLbl = Instance.new("TextLabel", TpContainer)
-speedLbl.Position = UDim2.new(0.05, 0, 0, speedY)
-speedLbl.Size = UDim2.new(0.9, 0, 0, 20)
-speedLbl.Font = Enum.Font.SourceSansBold
-speedLbl.Text = "Tốc độ bay: 350 (Min: 300 - Max: 1000)"
-speedLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-speedLbl.TextSize = 12
-
-local speedBox = Instance.new("TextBox", TpContainer)
-speedBox.Position = UDim2.new(0.05, 0, 0, speedY + 22)
-speedBox.Size = UDim2.new(0.9, 0, 0, 28)
-speedBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-speedBox.Font = Enum.Font.SourceSansBold
-speedBox.Text = tostring(Config.FlySpeed)
-speedBox.TextColor3 = Color3.fromRGB(255, 170, 0)
-speedBox.TextSize = 13
-
-speedBox.FocusLost:Connect(function()
-    local val = tonumber(speedBox.Text)
-    if val then
-        if val < 300 then val = 300 end
-        if val > 1000 then val = 1000 end
-        Config.FlySpeed = val
-        speedBox.Text = tostring(val)
-        speedLbl.Text = "Tốc độ bay: " .. val .. " (Min: 300 - Max: 1000)"
+AimToggleBtn.MouseButton1Click:Connect(function()
+    settingsState.Aimbot = not settingsState.Aimbot
+    if settingsState.Aimbot then
+        AimToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 80)
+        AimToggleBtn.Text = "Aimbot: BẬT"
     else
-        speedBox.Text = tostring(Config.FlySpeed)
+        AimToggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+        AimToggleBtn.Text = "Aimbot: TẮT"
     end
 end)
 
-createToggle(TpContainer, "Bật Bay Đến Đảo Đã Chọn", false, function(v) Config.FlyToIslandState = v end, speedY + 55)
+local AimTargetModeBtn = Instance.new("TextButton")
+AimTargetModeBtn.Size = UDim2.new(0.3, 0, 0.75, 0)
+AimTargetModeBtn.Position = UDim2.new(0.38, 0, 0.125, 0)
+AimTargetModeBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+AimTargetModeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimTargetModeBtn.TextSize = 10
+AimTargetModeBtn.Font = Enum.Font.SourceSansBold
+AimTargetModeBtn.Text = "Target: Gần Nhất"
+AimTargetModeBtn.Parent = AimbotFrame
 
--- TAB STATS
-local sY = 15
-local amountLbl = Instance.new("TextLabel", StatsContainer)
-amountLbl.Position = UDim2.new(0.05, 0, 0, sY)
-amountLbl.Size = UDim2.new(0.5, 0, 0, 25)
-amountLbl.Font = Enum.Font.SourceSansBold
-amountLbl.Text = "Số lượng nâng mỗi lần:"
-amountLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-amountLbl.TextSize = 13
-amountLbl.TextXAlignment = Enum.TextXAlignment.Left
+local AimTargetCorner = Instance.new("UICorner")
+AimTargetCorner.CornerRadius = UDim.new(0, 4)
+AimTargetCorner.Parent = AimTargetModeBtn
 
-local amountBox = Instance.new("TextBox", StatsContainer)
-amountBox.Position = UDim2.new(0.58, 0, 0, sY)
-amountBox.Size = UDim2.new(0.37, 0, 0, 25)
-amountBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-amountBox.Font = Enum.Font.SourceSansBold
-amountBox.Text = tostring(Config.StatAmount)
-amountBox.TextColor3 = Color3.fromRGB(0, 255, 128)
-amountBox.TextSize = 14
-amountBox.ClearTextOnFocus = false
-
-amountBox.FocusLost:Connect(function()
-    local num = tonumber(amountBox.Text)
-    if num and num > 0 then
-        Config.StatAmount = math.floor(num)
+AimTargetModeBtn.MouseButton1Click:Connect(function()
+    if settingsState.AimbotTargetMode == "Closest" then
+        settingsState.AimbotTargetMode = "Selected"
+        AimTargetModeBtn.Text = "Target: Chỉ Định"
+        AimTargetModeBtn.BackgroundColor3 = Color3.fromRGB(180, 100, 0)
     else
-        amountBox.Text = tostring(Config.StatAmount)
+        settingsState.AimbotTargetMode = "Closest"
+        AimTargetModeBtn.Text = "Target: Gần Nhất"
+        AimTargetModeBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
     end
 end)
 
-sY = sY + 35
-createToggle(StatsContainer, "Auto Nâng Điểm Cận Chiến (Melee)", false, function(v) Config.AutoStatMelee = v end, sY); sY = sY + 40
-createToggle(StatsContainer, "Auto Nâng Điểm Máu (Defense)", false, function(v) Config.AutoStatDefense = v end, sY); sY = sY + 40
-createToggle(StatsContainer, "Auto Nâng Điểm Kiếm (Sword)", false, function(v) Config.AutoStatSword = v end, sY); sY = sY + 40
-createToggle(StatsContainer, "Auto Nâng Điểm Trái Ác Quỷ (DevilFruit)", false, function(v) Config.AutoStatDevilFruit = v end, sY)
+local AimModeBtn = Instance.new("TextButton")
+AimModeBtn.Size = UDim2.new(0.28, 0, 0.75, 0)
+AimModeBtn.Position = UDim2.new(0.7, 0, 0.125, 0)
+AimModeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+AimModeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimModeBtn.TextSize = 10
+AimModeBtn.Font = Enum.Font.SourceSansBold
+AimModeBtn.Text = "Cam: Mượt"
+AimModeBtn.Parent = AimbotFrame
 
-local ToggleGui = Instance.new("ScreenGui")
-ToggleGui.Name = "AdminTienphatToggle"
-ToggleGui.Parent = CoreGui
-ToggleGui.ResetOnSpawn = false
+local AimModeCorner = Instance.new("UICorner")
+AimModeCorner.CornerRadius = UDim.new(0, 4)
+AimModeCorner.Parent = AimModeBtn
 
-local OpenBtn = Instance.new("TextButton")
-OpenBtn.Parent = ToggleGui
-OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-OpenBtn.Position = UDim2.new(0, 15, 0.5, -20)
-OpenBtn.Size = UDim2.new(0, 80, 0, 40)
-OpenBtn.Font = Enum.Font.SourceSansBold
-OpenBtn.Text = "Tienphat Hub"
-OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-OpenBtn.TextSize = 12
-OpenBtn.Draggable = true
-
-local FruitNotifLabel = Instance.new("TextLabel", ToggleGui)
-FruitNotifLabel.Name = "FruitNotifier"
-FruitNotifLabel.BackgroundTransparency = 0.5
-FruitNotifLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-FruitNotifLabel.Position = UDim2.new(0.5, -175, 0, 10)
-FruitNotifLabel.Size = UDim2.new(0, 350, 0, 30)
-FruitNotifLabel.Font = Enum.Font.SourceSansBold
-FruitNotifLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-FruitNotifLabel.TextSize = 14
-FruitNotifLabel.Text = "Đang có trái ác quỷ: Không có"
-FruitNotifLabel.Visible = false
-
-local isOpen = true
-OpenBtn.MouseButton1Click:Connect(function()
-    isOpen = not isOpen
-    MainFrame.Visible = isOpen
-end)
-MinimizeBtn.MouseButton1Click:Connect(function()
-    isOpen = false
-    MainFrame.Visible = false
-end)
-CloseBtn.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-    ToggleGui:Destroy()
+AimModeBtn.MouseButton1Click:Connect(function()
+    if settingsState.AimbotMode == "Smooth" then
+        settingsState.AimbotMode = "Lock"
+        AimModeBtn.Text = "Cam: Chặt"
+    else
+        settingsState.AimbotMode = "Smooth"
+        AimModeBtn.Text = "Cam: Mượt"
+    end
 end)
 
-applyFixLag(true)
+-- Tạo nút trong Combat Tab
+createToggle(MainTabFrame, "Bỏ Qua Đồng Đội", 42, function(state) settingsState.IgnoreTeam = state end)
+createToggle(MainTabFrame, "Fast Attack (Đánh Siêu Tốc)", 77, function(state) settingsState.FastAttack = state end)
+createToggle(MainTabFrame, "Bay Lại & Auto Attack", 112, function(state) settingsState.AutoTPAttack = state end)
+createToggle(MainTabFrame, "ESP Box Player", 147, function(state) settingsState.ESPBox = state end)
+createToggle(MainTabFrame, "ESP Màu RGB Viền", 182, function(state) settingsState.RGBColor = state end)
+createToggle(MainTabFrame, "Hitbox X5", 217, function(state)
+    if state then settingsState.HitboxSize = 5 else settingsState.HitboxSize = 1 end
+end)
+createToggle(MainTabFrame, "Hitbox X10", 252, function(state)
+    if state then settingsState.HitboxSize = 10 else settingsState.HitboxSize = 1 end
+end)
 
-local espCache = {}
-local fruitEspCache = {}
-local islandEspCache = {}
-local weaponScannerCache = {}
-local camera = Workspace.CurrentCamera
+-- Nút Fix Lag Siêu Mạnh
+local FixLagBtnFrame = Instance.new("TextButton")
+FixLagBtnFrame.Size = UDim2.new(0.96, 0, 0, 30)
+FixLagBtnFrame.Position = UDim2.new(0.02, 0, 0, 287)
+FixLagBtnFrame.BackgroundColor3 = Color3.fromRGB(200, 0, 50)
+FixLagBtnFrame.TextColor3 = Color3.fromRGB(255, 255, 255)
+FixLagBtnFrame.TextSize = 11
+FixLagBtnFrame.Font = Enum.Font.SourceSansBold
+FixLagBtnFrame.Text = "Nút Fix Lag Siêu Mạnh (Ultra FPS)"
+FixLagBtnFrame.Parent = MainTabFrame
 
-local function clearAllESP()
-    for _, elements in pairs(espCache) do
-        if elements.Box then elements.Box.Visible = false end
-        if elements.Line then elements.Line.Visible = false end
+local FixLagCorner = Instance.new("UICorner")
+FixLagCorner.CornerRadius = UDim.new(0, 5)
+FixLagCorner.Parent = FixLagBtnFrame
+
+FixLagBtnFrame.MouseButton1Click:Connect(function()
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    Lighting.Brightness = 0
+    for _, v in ipairs(Workspace:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.Material = Enum.Material.SmoothPlastic
+            v.Reflectance = 0
+            v.CastShadow = false
+        elseif v:IsA("Decal") or v:IsA("Texture") then
+            v:Destroy()
+        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
+            v.Enabled = false
+        end
     end
-    for _, elements in pairs(fruitEspCache) do
-        if elements.Text then elements.Text.Visible = false end
+    FixLagBtnFrame.Text = "Đã Fix Lag Siêu Mạnh!"
+end)
+
+-- 3. PLAYER TAB
+createToggle(PlayerTabFrame, "TP Walk Mode", 5, function(state) settingsState.TPWalk = state end)
+
+local SpeedFrame = Instance.new("Frame")
+SpeedFrame.Size = UDim2.new(0.96, 0, 0, 35)
+SpeedFrame.Position = UDim2.new(0.02, 0, 0, 42)
+SpeedFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+SpeedFrame.Parent = PlayerTabFrame
+
+local SpeedCorner = Instance.new("UICorner")
+SpeedCorner.CornerRadius = UDim.new(0, 5)
+SpeedCorner.Parent = SpeedFrame
+
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Size = UDim2.new(0.5, 0, 1, 0)
+SpeedLabel.Position = UDim2.new(0.03, 0, 0, 0)
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+SpeedLabel.TextSize = 11
+SpeedLabel.Font = Enum.Font.SourceSansBold
+SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+SpeedLabel.Text = "Tốc độ: 1x"
+SpeedLabel.Parent = SpeedFrame
+
+local SpeedPlusBtn = Instance.new("TextButton")
+SpeedPlusBtn.Size = UDim2.new(0.2, 0, 0.7, 0)
+SpeedPlusBtn.Position = UDim2.new(0.76, 0, 0.15, 0)
+SpeedPlusBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+SpeedPlusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedPlusBtn.TextSize = 12
+SpeedPlusBtn.Font = Enum.Font.SourceSansBold
+SpeedPlusBtn.Text = "+5x"
+SpeedPlusBtn.Parent = SpeedFrame
+
+local SpeedResetBtn = Instance.new("TextButton")
+SpeedResetBtn.Size = UDim2.new(0.2, 0, 0.7, 0)
+SpeedResetBtn.Position = UDim2.new(0.54, 0, 0.15, 0)
+SpeedResetBtn.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+SpeedResetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedResetBtn.TextSize = 10
+SpeedResetBtn.Font = Enum.Font.SourceSansBold
+SpeedResetBtn.Text = "Reset"
+SpeedResetBtn.Parent = SpeedFrame
+
+SpeedPlusBtn.MouseButton1Click:Connect(function()
+    settingsState.WalkSpeedMultiplier = settingsState.WalkSpeedMultiplier + 5
+    if settingsState.WalkSpeedMultiplier > 20 then settingsState.WalkSpeedMultiplier = 20 end
+    SpeedLabel.Text = "Tốc độ: " .. tostring(settingsState.WalkSpeedMultiplier) .. "x"
+end)
+
+SpeedResetBtn.MouseButton1Click:Connect(function()
+    settingsState.WalkSpeedMultiplier = 1
+    SpeedLabel.Text = "Tốc độ: 1x"
+end)
+
+createToggle(PlayerTabFrame, "Infinite Jump", 82, function(state) settingsState.InfJump = state end)
+
+local HomeBtnFrame = Instance.new("TextButton")
+HomeBtnFrame.Size = UDim2.new(0.96, 0, 0, 32)
+HomeBtnFrame.Position = UDim2.new(0.02, 0, 0, 122)
+HomeBtnFrame.BackgroundColor3 = Color3.fromRGB(0, 110, 190)
+HomeBtnFrame.TextColor3 = Color3.fromRGB(255, 255, 255)
+HomeBtnFrame.TextSize = 11
+HomeBtnFrame.Font = Enum.Font.SourceSansBold
+HomeBtnFrame.Text = "Quay Về Nhà (TP Base)"
+HomeBtnFrame.Parent = PlayerTabFrame
+
+local HomeBtnCorner = Instance.new("UICorner")
+HomeBtnCorner.CornerRadius = UDim.new(0, 5)
+HomeBtnCorner.Parent = HomeBtnFrame
+
+HomeBtnFrame.MouseButton1Click:Connect(function()
+    if mySpawnPosition and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = mySpawnPosition
     end
-    for _, elements in pairs(islandEspCache) do
-        if elements.Text then elements.Text.Visible = false end
+end)
+
+-- 4. BẢNG CHỌN NGƯỜI CHƠI TRONG SERVER
+local SelectedTargetLabel = Instance.new("TextLabel")
+SelectedTargetLabel.Size = UDim2.new(0.96, 0, 0, 25)
+SelectedTargetLabel.Position = UDim2.new(0.02, 0, 0, 5)
+SelectedTargetLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+SelectedTargetLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+SelectedTargetLabel.TextSize = 11
+SelectedTargetLabel.Font = Enum.Font.SourceSansBold
+SelectedTargetLabel.Text = "Target Đang Chọn: Chưa Chọn"
+SelectedTargetLabel.Parent = TargetTabFrame
+
+local TargetListContainer = Instance.new("Frame")
+TargetListContainer.Size = UDim2.new(0.96, 0, 0, 240)
+TargetListContainer.Position = UDim2.new(0.02, 0, 0, 35)
+TargetListContainer.BackgroundTransparency = 1
+TargetListContainer.Parent = TargetTabFrame
+
+local function updateTargetList()
+    for _, v in ipairs(TargetListContainer:GetChildren()) do
+        if v:IsA("TextButton") then v:Destroy() end
     end
-    for _, textObj in pairs(weaponScannerCache) do
-        if textObj then textObj.Visible = false end
+    local yOffset = 0
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, 0, 0, 28)
+            btn.Position = UDim2.new(0, 0, 0, yOffset)
+            btn.BackgroundColor3 = (selectedTargetPlayer == player) and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(45, 45, 45)
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.TextSize = 11
+            btn.Font = Enum.Font.SourceSansBold
+            btn.Text = player.Name .. (player.Team and (" [" .. player.Team.Name .. "]") or "")
+            btn.Parent = TargetListContainer
+
+            local c = Instance.new("UICorner")
+            c.CornerRadius = UDim.new(0, 4)
+            c.Parent = btn
+
+            btn.MouseButton1Click:Connect(function()
+                selectedTargetPlayer = player
+                SelectedTargetLabel.Text = "Target Đang Chọn: " .. player.Name
+                updateTargetList()
+            end)
+            yOffset = yOffset + 32
+        end
     end
 end
 
+Players.PlayerAdded:Connect(updateTargetList)
+Players.PlayerRemoving:Connect(updateTargetList)
+updateTargetList()
+
+-- Logic nút nổi đổi target
+local playerIndex = 1
+QuickTargetBtn.MouseButton1Click:Connect(function()
+    local validPlayers = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if isEnemy(p) then
+            table.insert(validPlayers, p)
+        end
+    end
+    if #validPlayers > 0 then
+        playerIndex = playerIndex + 1
+        if playerIndex > #validPlayers then playerIndex = 1 end
+        selectedTargetPlayer = validPlayers[playerIndex]
+        SelectedTargetLabel.Text = "Target Đang Chọn: " .. selectedTargetPlayer.Name
+        updateTargetList()
+    end
+end)
+
+-- 5. LỒNG TASK SỬA LỖI AUTO TP & AUTO ATTACK
 task.spawn(function()
     while true do
-        task.wait(1)
-        pcall(function()
-            local data = LocalPlayer:FindFirstChild("Data")
-            local points = data and data:FindFirstChild("Points")
-            if points and points.Value > 0 then
-                local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-                if remotes and remotes:FindFirstChild("CommF_") then
-                    if Config.AutoStatMelee then remotes.CommF_:InvokeServer("AddPoint", "Melee", Config.StatAmount) end
-                    if Config.AutoStatDefense then remotes.CommF_:InvokeServer("AddPoint", "Defense", Config.StatAmount) end
-                    if Config.AutoStatSword then remotes.CommF_:InvokeServer("AddPoint", "Sword", Config.StatAmount) end
-                    if Config.AutoStatDevilFruit then remotes.CommF_:InvokeServer("AddPoint", "Demon Fruit", Config.StatAmount) end
-                end
-            end
-        end)
-    end
-end)
-
-task.spawn(function()
-    while true do
-        task.wait(3)
-        pcall(function()
-            if Config.AutoStoreFruit then
-                local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-                if remotes and remotes:FindFirstChild("CommF_") then
-                    local backpack = LocalPlayer:FindFirstChild("Backpack")
-                    local char = LocalPlayer.Character
+        task.wait(0.02)
+        -- Auto TP & Đánh chuẩn xác
+        if settingsState.AutoTPAttack and selectedTargetPlayer and selectedTargetPlayer.Character then
+            if isEnemy(selectedTargetPlayer) and selectedTargetPlayer.Character:FindFirstChild("HumanoidRootPart") and selectedTargetPlayer.Character:FindFirstChild("Humanoid") and selectedTargetPlayer.Character.Humanoid.Health > 0 then
+                local targetHRP = selectedTargetPlayer.Character.HumanoidRootPart
+                local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if targetHRP and myHRP then
+                    -- TP trực tiếp ra đằng sau lưng mục tiêu
+                    myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 2.5)
                     
-                    local function checkAndStore(tool)
-                        if tool and tool:IsA("Tool") and (string.find(tool.Name, "Fruit") or tool:FindFirstChild("Handle")) then
-                            remotes.CommF_:InvokeServer("StoreFruit", tool.Name)
-                        end
+                    -- Kích hoạt đòn đánh bằng trang bị đang cầm trên tay
+                    local character = LocalPlayer.Character
+                    local tool = character:FindFirstChildOfClass("Tool")
+                    if tool then
+                        tool:Activate()
                     end
-
-                    if backpack then
-                        for _, item in ipairs(backpack:GetChildren()) do
-                            checkAndStore(item)
-                        end
-                    end
-                    if char then
-                        for _, item in ipairs(char:GetChildren()) do
-                            checkAndStore(item)
-                        end
-                    end
+                    VirtualUser:CaptureController()
+                    VirtualUser:Button1Down(Vector2.new(0, 0))
+                    VirtualUser:Button1Up(Vector2.new(0, 0))
                 end
             end
-        end)
+        end
+
+        -- Fast Attack Siêu Tốc
+        if settingsState.FastAttack then
+            pcall(function()
+                local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                if tool then
+                    tool:Activate()
+                end
+            end)
+        end
     end
 end)
 
--- VÒNG LẶP AUTO FARM (ĐÃ LOẠI BỎ HOÀN TOÀN AUTO NHẬN NHIỆM VỤ, CHỈ ĐÁNH THEO MỤC TIÊU)
-RunService.RenderStepped:Connect(function(dt)
-    if not ScreenGui.Parent then 
-        clearAllESP()
-        return 
+-- Infinite Jump
+UserInputService.JumpRequest:Connect(function()
+    if settingsState.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+    end
+end)
+
+-- 6. RENDER STEPPED (AIMBOT, ESP & RGB)
+local espBoxes = {}
+
+local function createESPBox(player)
+    local box = Drawing.new("Square")
+    box.Visible = false
+    box.Color = currentBoxColor
+    box.Thickness = 1.5
+    box.Filled = false
+    espBoxes[player] = box
+end
+
+local function removeESPBox(player)
+    if espBoxes[player] then
+        espBoxes[player]:Remove()
+        espBoxes[player] = nil
+    end
+end
+
+Players.PlayerAdded:Connect(createESPBox)
+Players.PlayerRemoving:Connect(removeESPBox)
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= LocalPlayer then createESPBox(p) end
+end
+
+local function getClosestPlayerToCenter()
+    local target = nil
+    local shortestDistance = math.huge
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if isEnemy(player) and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local hrp = player.Character.HumanoidRootPart
+            local screenPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+            if onScreen then
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    target = player
+                end
+            end
+        end
+    end
+    return target
+end
+
+RunService.RenderStepped:Connect(function()
+    local tickTime = tick() * 3
+    local rainbowColor = Color3.fromHSV(tickTime % 1, 1, 1)
+    RGBStroke.Color = rainbowColor
+    OpenStroke.Color = rainbowColor
+
+    if settingsState.RGBColor then
+        currentBoxColor = rainbowColor
     end
 
-    if tick() % 3 < 0.1 then
-        updateWeaponButtons()
+    -- WalkSpeed & TP Walk
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        local humanoid = LocalPlayer.Character.Humanoid
+        if settingsState.WalkSpeedMultiplier > 1 then
+            humanoid.WalkSpeed = 16 * settingsState.WalkSpeedMultiplier
+        end
+        if settingsState.TPWalk and humanoid.MoveDirection.Magnitude > 0 and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame + (humanoid.MoveDirection * (settingsState.WalkSpeedMultiplier * 0.1))
+        end
     end
 
-    local targetFruitHandle = nil
-    for _, obj in ipairs(Workspace:GetChildren()) do
-        if obj:IsA("Tool") and (string.find(obj.Name, "Fruit") or obj:FindFirstChild("Handle")) then
-            local handle = obj:FindFirstChild("Handle") or obj
-            if handle then
-                targetFruitHandle = handle
-                break
+    -- Xử lý Aimbot
+    if settingsState.Aimbot then
+        local aimTarget = nil
+        if settingsState.AimbotTargetMode == "Closest" then
+            aimTarget = getClosestPlayerToCenter()
+        elseif settingsState.AimbotTargetMode == "Selected" then
+            aimTarget = selectedTargetPlayer
+        end
+
+        if aimTarget and aimTarget.Character and aimTarget.Character:FindFirstChild("Head") and isEnemy(aimTarget) then
+            local targetHead = aimTarget.Character.Head.Position
+            if settingsState.AimbotMode == "Lock" then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetHead)
+            elseif settingsState.AimbotMode == "Smooth" then
+                local currentCFrame = Camera.CFrame
+                local targetCFrame = CFrame.new(Camera.CFrame.Position, targetHead)
+                Camera.CFrame = currentCFrame:Lerp(targetCFrame, settingsState.AimbotSmoothness)
             end
         end
     end
 
-    if Config.InstantTpFruit and targetFruitHandle then
-        pcall(function()
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                char.HumanoidRootPart.CFrame = targetFruitHandle.CFrame + Vector3.new(0, 3, 0)
-            end
-        end)
-    end
-
-    if Config.FlyToIslandState and Config.IslandPos then
-        pcall(function()
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                local hrp = char.HumanoidRootPart
-                local targetPos = Config.IslandPos + Vector3.new(0, 50, 0)
-                local currentPos = hrp.Position
-                local distance = (targetPos - currentPos).Magnitude
+    -- ESP Box
+    for player, box in pairs(espBoxes) do
+        box.Color = currentBoxColor
+        if settingsState.ESPBox and isEnemy(player) and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local hrp = player.Character.HumanoidRootPart
+            local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+            if onScreen then
+                local head = player.Character:FindFirstChild("Head")
+                local topPosition = head and Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.8, 0)) or vector
+                local bottomPosition = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 2.5, 0))
                 
-                if distance > 10 then
-                    local direction = (targetPos - currentPos).Unit
-                    hrp.CFrame = CFrame.new(currentPos + direction * (Config.FlySpeed * dt), targetPos)
-                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                end
+                local height = math.abs(topPosition.Y - bottomPosition.Y)
+                local width = height / 2
+
+                box.Size = Vector2.new(width, height)
+                box.Position = Vector2.new(vector.X - width / 2, topPosition.Y)
+                box.Visible = true
+            else
+                box.Visible = false
             end
-        end)
-    end
-
-    if Config.ShowESP then
-        local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
-        local activeFound = {}
-        if folderEnemies then
-            for _, mob in ipairs(folderEnemies:GetChildren()) do
-                local hrp = mob:FindFirstChild("HumanoidRootPart")
-                local hum = mob:FindFirstChildOfClass("Humanoid")
-                if hrp and hum and hum.Health > 0 then
-                    if not espCache[mob] then
-                        local box = Drawing.new("Square")
-                        box.Visible = false; box.Color = Color3.fromRGB(0, 255, 0); box.Thickness = 1; box.Filled = false
-                        local line = Drawing.new("Line")
-                        line.Visible = false; line.Color = Color3.fromRGB(255, 255, 255); line.Thickness = 1
-                        espCache[mob] = {Box = box, Line = line}
-                    end
-
-                    local vector, onScreen = camera:WorldToViewportPoint(hrp.Position)
-                    if onScreen then
-                        local dist = (camera.CFrame.Position - hrp.Position).Magnitude
-                        local scale = math.clamp(400 / dist, 0.2, 1.5)
-                        local boxW, boxH = 18 * scale, 30 * scale
-                        
-                        local boxObj = espCache[mob].Box
-                        boxObj.Size = Vector2.new(boxW, boxH)
-                        boxObj.Position = Vector2.new(vector.X - boxW/2, vector.Y - boxH/2)
-                        boxObj.Visible = true
-
-                        local lineObj = espCache[mob].Line
-                        lineObj.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
-                        lineObj.To = Vector2.new(vector.X, vector.Y)
-                        lineObj.Visible = true
-                        
-                        activeFound[mob] = true
-                    else
-                        espCache[mob].Box.Visible = false; espCache[mob].Line.Visible = false
-                    end
-                end
-            end
-        end
-        for m, elements in pairs(espCache) do
-            if not activeFound[m] then
-                if elements.Box then elements.Box.Visible = false end
-                if elements.Line then elements.Line.Visible = false end
-            end
-        end
-    else
-        for _, elements in pairs(espCache) do
-            if elements.Box then elements.Box.Visible = false end
-            if elements.Line then elements.Line.Visible = false end
-        end
-    end
-
-    local foundFruitsNames = {}
-    if Config.ShowFruitESP then
-        local activeFruits = {}
-        for _, obj in ipairs(Workspace:GetChildren()) do
-            if obj:IsA("Tool") and (string.find(obj.Name, "Fruit") or obj:FindFirstChild("Handle")) then
-                local handle = obj:FindFirstChild("Handle") or obj
-                if handle then
-                    if not fruitEspCache[obj] then
-                        local tObj = Drawing.new("Text")
-                        tObj.Visible = false; tObj.Size = 14; tObj.Color = Color3.fromRGB(255, 0, 0); tObj.Center = true; tObj.Outline = true
-                        fruitEspCache[obj] = {Text = tObj}
-                    end
-
-                    local vector, onScreen = camera:WorldToViewportPoint(handle.Position)
-                    if onScreen then
-                        local dist = math.floor((camera.CFrame.Position - handle.Position).Magnitude)
-                        local txtObj = fruitEspCache[obj].Text
-                        txtObj.Text = "🍎 [" .. obj.Name .. "] (" .. dist .. "m)"
-                        txtObj.Position = Vector2.new(vector.X, vector.Y)
-                        txtObj.Visible = true
-                        activeFruits[obj] = true
-                    else
-                        fruitEspCache[obj].Text.Visible = false
-                    end
-                    table.insert(foundFruitsNames, obj.Name)
-                end
-            end
-        end
-        for obj, elements in pairs(fruitEspCache) do
-            if not activeFruits[obj] then
-                if elements.Text then elements.Text.Visible = false end
-            end
-        end
-    else
-        for _, elements in pairs(fruitEspCache) do
-            if elements.Text then elements.Text.Visible = false end
-        end
-    end
-
-    if Config.FruitNotifier then
-        FruitNotifLabel.Visible = true
-        if #foundFruitsNames > 0 then
-            FruitNotifLabel.Text = "Đang có trái ác quỷ: " .. table.concat(foundFruitsNames, ", ")
-            FruitNotifLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         else
-            FruitNotifLabel.Text = "Đang có trái ác quỷ: Không có"
-            FruitNotifLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-        end
-    else
-        FruitNotifLabel.Visible = false
-    end
-
-    if Config.ShowIslandESP then
-        local mapFolder = Workspace:FindFirstChild("_Map") or Workspace:FindFirstChild("Map")
-        local activeIslands = {}
-        if mapFolder then
-            for _, island in ipairs(mapFolder:GetChildren()) do
-                if island:IsA("Model") then
-                    local primaryPart = island.PrimaryPart or island:FindFirstChildWhichIsA("BasePart")
-                    if primaryPart then
-                        if not islandEspCache[island] then
-                            local tObj = Drawing.new("Text")
-                            tObj.Visible = false; tObj.Size = 15; tObj.Color = Color3.fromRGB(0, 255, 255); tObj.Center = true; tObj.Outline = true
-                            islandEspCache[island] = {Text = tObj}
-                        end
-
-                        local vector, onScreen = camera:WorldToViewportPoint(primaryPart.Position)
-                        if onScreen then
-                            local dist = math.floor((camera.CFrame.Position - primaryPart.Position).Magnitude)
-                            local txtObj = islandEspCache[island].Text
-                            txtObj.Text = "🏝️ " .. island.Name .. " (" .. dist .. "m)"
-                            txtObj.Position = Vector2.new(vector.X, vector.Y)
-                            txtObj.Visible = true
-                            activeIslands[island] = true
-                        else
-                            islandEspCache[island].Text.Visible = false
-                        end
-                    end
-                end
-            end
-        end
-        for island, elements in pairs(islandEspCache) do
-            if not activeIslands[island] then
-                if elements.Text then elements.Text.Visible = false end
-            end
-        end
-    else
-        for _, elements in pairs(islandEspCache) do
-            if elements.Text then elements.Text.Visible = false end
+            box.Visible = false
         end
     end
 
-    if Config.ShowWeaponScanner then
-        local activePlayers = {}
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                local pChar = plr.Character
-                local pHrp = pChar.HumanoidRootPart
-                local pHum = pChar:FindFirstChildOfClass("Humanoid")
-                
-                if pHum and pHum.Health > 0 then
-                    local activeTool = "Tay không"
-                    local toolInHand = pChar:FindFirstChildOfClass("Tool")
-                    if toolInHand then activeTool = toolInHand.Name end
-
-                    if not weaponScannerCache[plr] then
-                        local tObj = Drawing.new("Text")
-                        tObj.Visible = false; tObj.Size = 13; tObj.Color = Color3.fromRGB(255, 128, 255); tObj.Center = true; tObj.Outline = true
-                        weaponScannerCache[plr] = tObj
-                    end
-
-                    local vector, onScreen = camera:WorldToViewportPoint(pHrp.Position + Vector3.new(0, 3, 0))
-                    if onScreen then
-                        local txtObj = weaponScannerCache[plr]
-                        txtObj.Text = "[" .. plr.Name .. "] ⚔️ " .. activeTool
-                        txtObj.Position = Vector2.new(vector.X, vector.Y)
-                        txtObj.Visible = true
-                        activePlayers[plr] = true
-                    else
-                        weaponScannerCache[plr].Visible = false
-                    end
-                end
+    -- Hitbox X5 / X10
+    if settingsState.HitboxSize > 1 then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if isEnemy(player) and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = player.Character.HumanoidRootPart
+                hrp.Size = Vector3.new(2 * settingsState.HitboxSize, 2 * settingsState.HitboxSize, 2 * settingsState.HitboxSize)
+                hrp.Transparency = 0.7
+                hrp.CanCollide = false
             end
         end
-        for p, tObj in pairs(weaponScannerCache) do
-            if not activePlayers[p] then tObj.Visible = false end
-        end
-    else
-        for _, tObj in pairs(weaponScannerCache) do
-            tObj.Visible = false
-        end
-    end
-
-    if Config.FlyToFruit and targetFruitHandle then
-        pcall(function()
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                local hrp = char.HumanoidRootPart
-                hrp.CFrame = CFrame.new(hrp.Position:Lerp(targetFruitHandle.Position + Vector3.new(0, 3, 0), 0.2))
-                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            end
-        end)
-    end
-
-    -- LOGIC AUTO FARM: CHỈ KIỂM TRA MỤC TIÊU VÀ ĐÁNH (KHÔNG TỰ GỌI NHIỆM VỤ NỮA)
-    if Config.AutoFarm then
-        pcall(function()
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
-                local hrp = char.HumanoidRootPart
-                local hum = char:FindFirstChildOfClass("Humanoid")
-
-                local currentTool = char:FindFirstChildOfClass("Tool")
-                if not currentTool or (Config.SelectedWeapon ~= "Tự động chọn" and currentTool.Name ~= Config.SelectedWeapon) then
-                    local backpack = LocalPlayer:FindFirstChildOfClass("Backpack") or LocalPlayer.Backpack
-                    if backpack then
-                        local targetTool = nil
-                        for _, item in ipairs(backpack:GetChildren()) do
-                            if item:IsA("Tool") then
-                                if Config.SelectedWeapon == "Tự động chọn" then
-                                    targetTool = item; break
-                                elseif item.Name == Config.SelectedWeapon then
-                                    targetTool = item; break
-                                end
-                            end
-                        end
-                        if targetTool then hum:EquipTool(targetTool) end
-                    end
-                end
-
-                local questMobName = getCurrentQuestMobName()
-                local folderEnemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("MobFolders")
-                local targetMob = nil
-                local shortestDist = math.huge
-                
-                if folderEnemies and questMobName then
-                    for _, mob in ipairs(folderEnemies:GetChildren()) do
-                        local mobHrp = mob:FindFirstChild("HumanoidRootPart")
-                        local mobHum = mob:FindFirstChildOfClass("Humanoid")
-                        if mobHrp and mobHum and mobHum.Health > 0 then
-                            if string.find(mob.Name:lower(), questMobName:lower()) then
-                                local d = (mobHrp.Position - hrp.Position).Magnitude
-                                if d < shortestDist then
-                                    shortestDist = d
-                                    targetMob = mob
-                                end
-                            end
-                        end
-                    end
-                end
-
-                if not targetMob and folderEnemies then
-                    for _, mob in ipairs(folderEnemies:GetChildren()) do
-                        local mobHrp = mob:FindFirstChild("HumanoidRootPart")
-                        local mobHum = mob:FindFirstChildOfClass("Humanoid")
-                        if mobHrp and mobHum and mobHum.Health > 0 then
-                            local d = (mobHrp.Position - hrp.Position).Magnitude
-                            if d < shortestDist then
-                                shortestDist = d
-                                targetMob = mob
-                            end
-                        end
-                    end
-                end
-
-                if targetMob and targetMob:FindFirstChild("HumanoidRootPart") then
-                    local mHrp = targetMob.HumanoidRootPart
-                    local mHum = targetMob:FindFirstChildOfClass("Humanoid")
-
-                    hrp.CFrame = CFrame.new(mHrp.Position + Vector3.new(0, 4, 0))
-                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-
-                    if mHum and mHum.Health > 0 then
-                        pcall(function()
-                            local activeTool = char:FindFirstChildOfClass("Tool")
-                            if activeTool then
-                                activeTool:Activate()
-                            end
-                            VirtualUser:Button1Down(Vector2.new(100, 100), camera.CFrame)
-                            task.wait()
-                            VirtualUser:Button1Up(Vector2.new(100, 100), camera.CFrame)
-                        end)
-                    end
-                end
-            end
-        end)
     end
 end)
+
+print("SkyWars S3 Ultra Landscape Hub Loaded - Admin Tienphat")
