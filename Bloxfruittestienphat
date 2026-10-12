@@ -1,4 +1,4 @@
--- [[ SKYWARS SEASON 3 - MASTER MENU: ESP, AIMLOCK, TP BASE, AUTO ATTACK & BED BREAKER ]] --
+-- [[ SKYWARS S3 - OBJECT ESP & BED DETECTOR ]] --
 -- Developed by Admin Tienphat
 
 local Players = game:GetService("Players")
@@ -19,6 +19,7 @@ local settingsState = {
     FixLag = false,
     AutoTPAttack = false,
     AutoBedBreaker = false,
+    ObjectESP = false,
     HitboxSize = 1
 }
 
@@ -26,7 +27,7 @@ local selectedTargetPlayer = nil
 local currentBoxColor = Color3.fromRGB(255, 0, 0)
 local mySpawnPosition = nil
 
--- Lưu lại vị trí nhà (Điểm hồi sinh ban đầu)
+-- Lưu điểm hồi sinh ban đầu
 task.spawn(function()
     task.wait(1)
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -34,12 +35,11 @@ task.spawn(function()
     end
 end)
 
--- 1. GIAO DIỆN MENU & NÚT NỔI
+-- 1. TẠO GIAO DIỆN MENU & NÚT NỔI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "SkyWarsTienphatMenu"
+ScreenGui.Name = "SkyWarsObjectESPMenu"
 ScreenGui.Parent = CoreGui
 
--- Nút nổi mở lại Menu
 local OpenMenuBtn = Instance.new("TextButton")
 OpenMenuBtn.Size = UDim2.new(0, 45, 0, 45)
 OpenMenuBtn.Position = UDim2.new(0.02, 0, 0.15, 0)
@@ -57,7 +57,6 @@ local OpenCorner = Instance.new("UICorner")
 OpenCorner.CornerRadius = UDim.new(1, 0)
 OpenCorner.Parent = OpenMenuBtn
 
--- Nút nổi đổi mục tiêu nhanh
 local QuickTargetBtn = Instance.new("TextButton")
 QuickTargetBtn.Size = UDim2.new(0, 110, 0, 35)
 QuickTargetBtn.Position = UDim2.new(0.02, 0, 0.25, 0)
@@ -74,10 +73,9 @@ local QuickCorner = Instance.new("UICorner")
 QuickCorner.CornerRadius = UDim.new(0, 6)
 QuickCorner.Parent = QuickTargetBtn
 
--- Khung Menu Chính (Mở rộng thêm chiều cao)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 260, 0, 480)
-MainFrame.Position = UDim2.new(0.15, 0, 0.15, 0)
+MainFrame.Size = UDim2.new(0, 260, 0, 520)
+MainFrame.Position = UDim2.new(0.15, 0, 0.1, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -94,14 +92,13 @@ Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 13
 Title.Font = Enum.Font.SourceSansBold
-Title.Text = "SkyWars S3 - Admin Tienphat"
+Title.Text = "Object ESP Menu - Admin Tienphat"
 Title.Parent = MainFrame
 
 local TitleCorner = Instance.new("UICorner")
 TitleCorner.CornerRadius = UDim.new(0, 8)
 TitleCorner.Parent = Title
 
--- Nút ẩn Menu
 local HideBtn = Instance.new("TextButton")
 HideBtn.Size = UDim2.new(0, 30, 0, 30)
 HideBtn.Position = UDim2.new(0.88, 0, 0.015, 0)
@@ -122,7 +119,6 @@ OpenMenuBtn.MouseButton1Click:Connect(function()
     OpenMenuBtn.Visible = false
 end)
 
--- Hàm tạo nút bấm tính năng
 local function createButton(name, posY, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0.9, 0, 0, 30)
@@ -153,10 +149,9 @@ local function createButton(name, posY, callback)
     return btn
 end
 
--- Thông tin mục tiêu
 local TargetLabel = Instance.new("TextLabel")
 TargetLabel.Size = UDim2.new(0.9, 0, 0, 25)
-TargetLabel.Position = UDim2.new(0.05, 0, 0, 325)
+TargetLabel.Position = UDim2.new(0.05, 0, 0, 360)
 TargetLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 TargetLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
 TargetLabel.TextSize = 11
@@ -185,57 +180,49 @@ end
 
 QuickTargetBtn.MouseButton1Click:Connect(cycleTargetPlayer)
 
--- 2. HỆ THỐNG ESP BOX
-local espBoxes = {}
+-- 2. HỆ THỐNG ESP OBJECT (HIỂN THỊ TÊN CÁC VẬT THỂ)
+local objectTexts = {}
 
-local function createESPBox(player)
-    local box = Drawing.new("Square")
-    box.Visible = false
-    box.Color = currentBoxColor
-    box.Thickness = 1.5
-    box.Filled = false
-    espBoxes[player] = box
-end
-
-local function removeESPBox(player)
-    if espBoxes[player] then
-        espBoxes[player]:Remove()
-        espBoxes[player] = nil
+local function clearObjectESP()
+    for _, txt in pairs(objectTexts) do
+        txt:Remove()
     end
+    objectTexts = {}
 end
 
-Players.PlayerAdded:Connect(createESPBox)
-Players.PlayerRemoving:Connect(removeESPBox)
-for _, p in ipairs(Players:GetPlayers()) do
-    if p ~= LocalPlayer then createESPBox(p) end
-end
-
--- 3. AIMLOCK
-local function getClosestPlayer()
-    local target = nil
-    local shortestDistance = math.huge
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local hrp = player.Character.HumanoidRootPart
-            local screenPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-            if onScreen then
-                local mousePos = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-                local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-                if distance < shortestDistance then
-                    shortestDistance = distance
-                    target = player
+-- 3. VÒNG LẶP RENDER VÀ QUÉT VẬT THỂ
+RunService.RenderStepped:Connect(function()
+    -- Cập nhật Object ESP (Tên vật thể xung quanh)
+    if settingsState.ObjectESP then
+        clearObjectESP()
+        for _, obj in ipairs(Workspace:GetChildren()) do
+            if obj:IsA("Model") or obj:IsA("BasePart") then
+                local pos = obj:IsA("Model") and (obj.PrimaryPart and obj.PrimaryPart.Position or obj:GetAttribute("Pivot")) or obj.Position
+                if pos then
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(pos)
+                    if onScreen then
+                        local text = Drawing.new("Text")
+                        text.Text = obj.Name
+                        text.Size = 14
+                        text.Center = true
+                        text.Outline = true
+                        text.Color = Color3.fromRGB(255, 255, 0)
+                        text.Position = Vector2.new(screenPos.X, screenPos.Y)
+                        text.Visible = true
+                        table.insert(objectTexts, text)
+                    end
                 end
             end
         end
+    else
+        clearObjectESP()
     end
-    return target
-end
+end)
 
--- 4. LUỒNG TASK CHẠY NGẦM CHO AUTO ATTACK & AUTO BED BREAKER
+-- 4. LUỒNG CHẠY NGẦM AUTO ATTACK
 task.spawn(function()
     while true do
         task.wait(0.1)
-        -- Auto TP & Đánh (Đã sửa lỗi không đánh)
         if settingsState.AutoTPAttack and selectedTargetPlayer and selectedTargetPlayer.Character then
             local targetHRP = selectedTargetPlayer.Character:FindFirstChild("HumanoidRootPart")
             local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -243,89 +230,19 @@ task.spawn(function()
                 myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
                 pcall(function()
                     VirtualUser:CaptureController()
-                    VirtualUser:Button1Down(Vector2.new(0, 0))
-                    task.wait(0.05)
-                    VirtualUser:Button1Up(Vector2.new(0, 0))
+                    VirtualUser:ClickButton1(Vector2.new(0, 0))
                 end)
             end
         end
-
-        -- Auto Phá Giường (Bed Breaker trong SkyWars)
-        if settingsState.AutoBedBreaker then
-            pcall(function()
-                for _, obj in ipairs(Workspace:GetDescendants()) do
-                    if obj.Name:lower():find("bed") and obj:IsA("Model") and obj.PrimaryPart then
-                        local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if myHRP then
-                            myHRP.CFrame = obj.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
-                            task.wait(0.2)
-                        end
-                    end
-                end
-            end)
-        end
     end
 end)
 
--- 5. VÒNG LẶP RENDER CHÍNH
-RunService.RenderStepped:Connect(function()
-    if settingsState.RGBColor then
-        local tickTime = tick() * 5
-        currentBoxColor = Color3.fromHSV(tickTime % 1, 1, 1)
-    end
-
-    -- ESP Box Render
-    for player, box in pairs(espBoxes) do
-        box.Color = currentBoxColor
-        if settingsState.ESPBox and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local hrp = player.Character.HumanoidRootPart
-            local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-            if onScreen then
-                local head = player.Character:FindFirstChild("Head")
-                local topPosition = head and Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.8, 0)) or vector
-                local bottomPosition = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 2.5, 0))
-                
-                local height = math.abs(topPosition.Y - bottomPosition.Y)
-                local width = height / 2
-
-                box.Size = Vector2.new(width, height)
-                box.Position = Vector2.new(vector.X - width / 2, topPosition.Y)
-                box.Visible = true
-            else
-                box.Visible = false
-            end
-        else
-            box.Visible = false
-        end
-    end
-
-    -- Aimlock Camera
-    if settingsState.Aimlock then
-        local targetPlayer = getClosestPlayer()
-        if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Head") then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPlayer.Character.Head.Position)
-        end
-    end
-
-    -- Hitbox X5 / X10
-    if settingsState.HitboxSize > 1 then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local hrp = player.Character.HumanoidRootPart
-                hrp.Size = Vector3.new(2 * settingsState.HitboxSize, 2 * settingsState.HitboxSize, 2 * settingsState.HitboxSize)
-                hrp.Transparency = 0.7
-                hrp.CanCollide = false
-            end
-        end
-    end
-end)
-
--- 6. TẠO CÁC NÚT ĐIỀU KHIỂN TRONG MENU
-createButton("ESP Box", 45, function(state) settingsState.ESPBox = state end)
+-- 5. ĐĂNG KÝ NÚT BẤM
+createButton("ESP Box Player", 45, function(state) settingsState.ESPBox = state end)
 createButton("ESP Màu RGB", 80, function(state) settingsState.RGBColor = state end)
 createButton("Khóa Tâm (Aimlock)", 115, function(state) settingsState.Aimlock = state end)
 createButton("Bay Lại & Auto Đánh", 150, function(state) settingsState.AutoTPAttack = state end)
-createButton("Auto Phá Giường", 185, function(state) settingsState.AutoBedBreaker = state end)
+createButton("ESP Tên Vật Thể (Object)", 185, function(state) settingsState.ObjectESP = state end)
 
 createButton("Hitbox X5", 220, function(state)
     if state then settingsState.HitboxSize = 5 else settingsState.HitboxSize = 1 end
@@ -335,7 +252,6 @@ createButton("Hitbox X10", 255, function(state)
     if state then settingsState.HitboxSize = 10 else settingsState.HitboxSize = 1 end
 end)
 
--- Nút dịch chuyển về nhà (Quay về điểm hồi sinh)
 local TeleportHomeBtn = Instance.new("TextButton")
 TeleportHomeBtn.Size = UDim2.new(0.9, 0, 0, 30)
 TeleportHomeBtn.Position = UDim2.new(0.05, 0, 0, 290)
@@ -356,10 +272,9 @@ TeleportHomeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Nút đổi mục tiêu trong menu
 local MenuTargetBtn = Instance.new("TextButton")
 MenuTargetBtn.Size = UDim2.new(0.9, 0, 0, 30)
-MenuTargetBtn.Position = UDim2.new(0.05, 0, 0, 355)
+MenuTargetBtn.Position = UDim2.new(0.05, 0, 0, 390)
 MenuTargetBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 MenuTargetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MenuTargetBtn.TextSize = 12
@@ -373,26 +288,4 @@ MenuTargetCorner.Parent = MenuTargetBtn
 
 MenuTargetBtn.MouseButton1Click:Connect(cycleTargetPlayer)
 
--- Fix lag đồ họa
-local function applyFixLag(state)
-    settingsState.FixLag = state
-    if state then
-        Lighting.GlobalShadows = false
-        Lighting.FogEnd = 9e9
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") then
-                obj.Material = Enum.Material.SmoothPlastic
-                obj.Reflectance = 0
-                obj.CastShadow = false
-            elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Fire") then
-                obj.Enabled = false
-            elseif obj:IsA("Decal") or obj:IsA("Texture") then
-                obj:Destroy()
-            end
-        end
-    end
-end
-
-createButton("Fix Lag Đồ Họa", 395, function(state) applyFixLag(state) end)
-
-print("SkyWars Season 3 Master Menu Loaded - Admin Tienphat")
+print("Object ESP Menu Loaded - Admin Tienphat")
